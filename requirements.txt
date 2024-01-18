@@ -1,0 +1,7 @@
+tinytag
+matplotlib
+pyqt5
+pydub
+pyqtdarktheme
+pyqtgraph
+scipy
