@@ -9,24 +9,29 @@ from utils import scan_for_music
 from utils import initialize_library_database
 from utils import AudioVisualizer
 from pyqtgraph import mkBrush
+from components import MusicTable
 
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self):
+    def __init__(self, qapp):
         super(ApplicationWindow, self).__init__()
         self.setupUi(self)
         self.setWindowTitle('MusicPom')
         self.selected_song_filepath = None
         self.current_song_filepath = None
+        self.current_song_metadata = None
+        self.qapp = qapp
+        print(f'ApplicationWindow self.qapp: {self.qapp}')
+        self.tableView.load_qapp(self.qapp)
         
         global stopped
         stopped = False
         
         # Initialization
-        self.player = QMediaPlayer(None, QMediaPlayer.VideoSurface) # Audio player
+        self.player = QMediaPlayer() # Audio player
         self.probe = QAudioProbe() # Get audio data
         self.timer = QTimer(self) # Audio timing things
-        self.model = QStandardItemModel() # Table library listing
+        # self.model = QStandardItemModel() # Table library listing
         self.audio_visualizer = AudioVisualizer(self.player)
         self.current_volume = 50
         self.player.setVolume(self.current_volume)
@@ -35,33 +40,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Provides faster updates than move_slider
         self.probe.setSource(self.player)
         self.probe.audioBufferProbed.connect(self.process_probe)
-        
-        # Probably move all the table logic to its own class
-        # Promote the wigdet to my custom class from utils
-        # inherit from QTableView
-        # then i can handle click events for editing metadata in a class
-        
-        # current song should also be its own class
-        # selected song should be its own class too...
-        
-        #  ______________
-        # |              |
-        # | Table making |
-        # |              |
-        # |______________|
-        
-        # Fetch library data
-        with DBA.DBAccess() as db:
-            data = db.query('SELECT title, artist, album, genre, codec, album_date, filepath FROM library;', ())
-        headers = ['title', 'artist', 'album', 'genre', 'codec', 'year', 'path']
-        self.model.setHorizontalHeaderLabels(headers)
-        for row_data in data: # Populate the model
-            items = [QStandardItem(str(item)) for item in row_data]
-            self.model.appendRow(items)
-        # Set the model to the tableView
-        self.tableView.setModel(self.model)
-        # self.tableView.resizeColumnsToContents()
-        
         
         # Slider Timer (realtime playback feedback horizontal bar)
         self.timer.start(150) # 150ms update interval solved problem with drag seeking halting playback
@@ -79,26 +57,38 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         
         
         # Connections
-        self.playbackSlider.sliderMoved[int].connect(lambda: self.player.setPosition(self.playbackSlider.value()))
-        self.volumeSlider.sliderMoved[int].connect(lambda: self.volume_changed())
-        self.playButton.clicked.connect(self.on_play_clicked)
+        # ! FIXME moving the slider while playing is happening frequently causes playback to halt - the pyqtgraph is also affected by this
+        self.playbackSlider.sliderMoved[int].connect(lambda: self.player.setPosition(self.playbackSlider.value())) # Move slidet to adjust playback time
+        self.volumeSlider.sliderMoved[int].connect(lambda: self.volume_changed()) # Move slider to adjust volume
+        self.playButton.clicked.connect(self.on_play_clicked) # Click to play/pause
         # self.pauseButton.clicked.connect(self.on_pause_clicked)
-        self.previousButton.clicked.connect(self.on_previous_clicked)
-        self.nextButton.clicked.connect(self.on_next_clicked)
-        self.tableView.clicked.connect(self.set_clicked_cell_filepath)
-        self.actionPreferences.triggered.connect(self.actionPreferencesClicked)
-        self.actionScanLibraries.triggered.connect(self.scan_libraries)
-        self.actionClearDatabase.triggered.connect(initialize_library_database)
+        self.previousButton.clicked.connect(self.on_previous_clicked) # Click to previous song
+        self.nextButton.clicked.connect(self.on_next_clicked) # Click to next song
+        # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
+        self.actionPreferences.triggered.connect(self.actionPreferencesClicked) # Open preferences menu
+        self.actionScanLibraries.triggered.connect(self.scan_libraries) # Scan library
+        self.actionClearDatabase.triggered.connect(initialize_library_database) # Clear database
+        self.tableView.doubleClicked.connect(self.play_audio_file) # Double click to play song
+        
     
     def play_audio_file(self):
-        """Start playback of selected track & move playback slider"""
-        self.current_song_filepath = self.selected_song_filepath
-        url = QUrl.fromLocalFile(self.current_song_filepath) # read the file
+        """Start playback of selected track & moves playback slider"""
+        self.current_song_metadata = self.tableView.get_current_song_metadata() # get metadata
+        url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath()) # read the file
         content = QMediaContent(url) # load the audio content
-        
         self.player.setMedia(content) # what content to play
         self.player.play() # play
         self.move_slider() # mover
+        
+        # assign metadata
+        # FIXME when i change tinytag to something else
+        artist = self.current_song_metadata.artist
+        album = self.current_song_metadata.album
+        title = self.current_song_metadata.title
+        # edit labels
+        self.artistLabel.setText(artist)
+        self.albumLabel.setText(album)
+        self.titleLabel.setText(title)
         
     def update_audio_visualization(self):
         """Handles upading points on the pyqtgraph visual"""
@@ -149,10 +139,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             else:
                 self.play_audio_file()
                 self.playButton.setText("⏸️")
-
-    def set_clicked_cell_filepath(self):
-        """Sets the filepath of the currently selected song"""
-        self.selected_song_filepath = self.tableView.currentIndex().siblingAtColumn(6).data()
         
     def on_previous_clicked(self):
         """"""
@@ -178,7 +164,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
+    print(f'main.py app: {app}')
     qdarktheme.setup_theme()
-    ui = ApplicationWindow()
+    ui = ApplicationWindow(app)
     ui.show()
     sys.exit(app.exec_())

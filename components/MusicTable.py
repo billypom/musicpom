@@ -1,24 +1,97 @@
 import DBA
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QTableView
+from PyQt5.QtWidgets import QTableView, QApplication
+from PyQt5.QtCore import QTimer
+from tinytag import TinyTag
 
 
 class MusicTable(QTableView):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None, qapp=None):
+        QTableView.__init__(self, parent)
+        self.headers = ['title', 'artist', 'album', 'genre', 'codec', 'year', 'path']
+        self.model = QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(self.headers)
+        self.songChanged = None
+        self.selected_song_filepath = None
+        self.current_song_filepath = None
+        self.qapp = None
+        # self.tableView.resizeColumnsToContents()
+        self.clicked.connect(self.set_selected_song_filepath) # These are faster than the click/double determination
+        self.doubleClicked.connect(self.set_current_song_filepath) # These are faster than the click/double determination
+        self.fetch_library()
+        
+    def mousePressEvent(self, event):
+        self.last = "Click"
+        QTableView.mousePressEvent(self, event) # Keep original functionality
+    
+    def mouseReleaseEvent(self, event):
+        if self.last == "Click":
+            QTimer.singleShot(self.qapp.instance().doubleClickInterval(),
+                              self.performSingleClickAction)
+        else:
+            # Perform double click action.
+            self.set_current_song_filepath
+            self.message = "Double Click"
+            self.update()
+        QTableView.mouseReleaseEvent(self, event) # Keep original functionality
+    
+    def mouseDoubleClickEvent(self, event):
+        self.last = "Double Click"
+        self.doubleClicked.emit(self.selectionModel().currentIndex())
+        QTableView.mouseDoubleClickEvent(self, event) # Keep original functionality
+    
+    def performSingleClickAction(self):
+        if self.last == "Click":
+            self.message = "Click"
+            self.update()
+        
+    def get_selected_rows(self):
+        """Returns a list of indexes for every selected row"""
+        rows = []
+        for idx in self.selectionModel().siblingAtColumn():
+            rows.append(idx.row())
+        return rows
+    
+    def set_selected_song_filepath(self):
+        """Sets the filepath of the currently selected song"""
+        self.selected_song_filepath = self.currentIndex().siblingAtColumn(self.headers.index('path')).data()
+        print(f'Selected song: {self.selected_song_filepath}')
+    
+    def set_current_song_filepath(self):
+        """Sets the filepath of the currently playing/chosen song"""
+        self.current_song_filepath = self.currentIndex().siblingAtColumn(self.headers.index('path')).data()
+        print(f'Current song: {self.current_song_filepath}')
+        
+    def get_selected_song_filepath(self):
+        """Returns the selected song filepath"""
+        return self.selected_song_filepath
+    
+    def get_selected_song_metadata(self):
+        """Returns the current/chosen song's ID3 tags"""
+        return TinyTag.get(self.selected_song_filepath)
+    
+    def get_current_song_filepath(self):
+        """Returns the current/chosen song filepath"""
+        return self.current_song_filepath
+
+    def get_current_song_metadata(self):
+        """Returns the current/chosen song's ID3 tags"""
+        return TinyTag.get(self.current_song_filepath)
+        
+    
+    def fetch_library(self):
         # Fetch library data
-        with DBA.DBAccess() as db: # returns a tuple, 1 row just for metadata purposes
+        with DBA.DBAccess() as db:
             data = db.query('SELECT title, artist, album, genre, codec, album_date, filepath FROM library;', ())
-        headers = ['title', 'artist', 'album', 'genre', 'codec', 'year', 'path']
-        # Create a model
-        model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(headers)
         # Populate the model
         for row_data in data:
             items = [QStandardItem(str(item)) for item in row_data]
-            model.appendRow(items)
-        # Set the model to the tableView
-        self.tableView.setModel(model)
-        # self.tableView.resizeColumnsToContents()
-        self.music_table.clicked.connect(self.set_clicked_cell_filepath)
+            self.model.appendRow(items)
+        # Set the model to the tableView (we are the tableview)
+        self.setModel(self.model)
+        
+    def load_qapp(self, qapp):
+        self.qapp = qapp
+
+
         
