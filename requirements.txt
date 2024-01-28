@@ -1,4 +1,4 @@
-tinytag
+mutagen
 matplotlib
 pyqt5
 pydub

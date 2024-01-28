@@ -1,7 +1,7 @@
 import os
 import DBA
 from configparser import ConfigParser
-from tinytag import TinyTag
+from utils import get_id3_tags
 
 config = ConfigParser()
 config.read('config.ini')
@@ -16,7 +16,7 @@ def scan_for_music():
         for filename in filenames:
             if any(filename.lower().endswith(ext) for ext in extensions):
                 filepath = os.path.join(dirpath, filename)
-                audio = TinyTag.get(filepath)
+                audio = get_id3_tags(filepath)
                 
                 # Append data tuple to insert_data list
                 insert_data.append((

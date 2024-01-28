@@ -1,16 +1,17 @@
 import DBA
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QTableView, QApplication
+from PyQt5.QtWidgets import QTableView
 from PyQt5.QtCore import QTimer
 from tinytag import TinyTag
+from utils import add_files_to_library
+from utils import get_id3_tags
+import logging
 
 
 class MusicTable(QTableView):
     def __init__(self, parent=None, qapp=None):
         QTableView.__init__(self, parent)
         self.headers = ['title', 'artist', 'album', 'genre', 'codec', 'year', 'path']
-        self.model = QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(self.headers)
         self.songChanged = None
         self.selected_song_filepath = None
         self.current_song_filepath = None
@@ -56,6 +57,9 @@ class MusicTable(QTableView):
         """Sets the filepath of the currently selected song"""
         self.selected_song_filepath = self.currentIndex().siblingAtColumn(self.headers.index('path')).data()
         print(f'Selected song: {self.selected_song_filepath}')
+        print('TAGS:')
+        print(get_id3_tags(self.selected_song_filepath))
+        print('END TAGS')
     
     def set_current_song_filepath(self):
         """Sets the filepath of the currently playing/chosen song"""
@@ -80,6 +84,9 @@ class MusicTable(QTableView):
         
     
     def fetch_library(self):
+        """Initialize the tableview model"""
+        self.model = QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(self.headers)
         # Fetch library data
         with DBA.DBAccess() as db:
             data = db.query('SELECT title, artist, album, genre, codec, album_date, filepath FROM library;', ())
@@ -89,6 +96,20 @@ class MusicTable(QTableView):
             self.model.appendRow(items)
         # Set the model to the tableView (we are the tableview)
         self.setModel(self.model)
+        self.update()
+    
+    def add_files(self, files):
+        """When song(s) added to the library, update the tableview model
+        - Drag & Drop song(s) on tableView
+        - File > Open > List of song(s)
+        """
+        print(f'tableView - adding files: {files}')
+        response = add_files_to_library(files)
+        if response:
+            self.fetch_library()
+        else:
+            logging.warning('MusicTable.add_files | failed to add files to library')
+        
         
     def load_qapp(self, qapp):
         self.qapp = qapp

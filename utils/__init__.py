@@ -1,4 +1,5 @@
+from .get_id3_tags import get_id3_tags
 from .initialize_library_database import initialize_library_database
 from .scan_for_music import scan_for_music
-from .audio_visualizer import AudioVisualizer
-from.fft_analyser import FFTAnalyser
+from .fft_analyser import FFTAnalyser
+from .add_files_to_library import add_files_to_library

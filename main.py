@@ -2,15 +2,16 @@ import DBA
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QApplication
 import qdarktheme
-from PyQt5.QtCore import QUrl, QTimer, QFile, QTextStream
+from PyQt5.QtCore import QUrl, QTimer, QEvent
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from utils import scan_for_music
 from utils import initialize_library_database
-from utils import AudioVisualizer
+from components import AudioVisualizer
 from pyqtgraph import mkBrush
-from components import MusicTable
+import configparser
 
+# Create ui.py file from Qt Designer
+# pyuic5 ui.ui -o ui.py
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, qapp):
@@ -23,6 +24,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.qapp = qapp
         print(f'ApplicationWindow self.qapp: {self.qapp}')
         self.tableView.load_qapp(self.qapp)
+        self.config = configparser.ConfigParser()
+        self.config.read('config.ini')
         
         global stopped
         stopped = False
@@ -64,12 +67,51 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # self.pauseButton.clicked.connect(self.on_pause_clicked)
         self.previousButton.clicked.connect(self.on_previous_clicked) # Click to previous song
         self.nextButton.clicked.connect(self.on_next_clicked) # Click to next song
-        # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
         self.actionPreferences.triggered.connect(self.actionPreferencesClicked) # Open preferences menu
         self.actionScanLibraries.triggered.connect(self.scan_libraries) # Scan library
         self.actionClearDatabase.triggered.connect(initialize_library_database) # Clear database
+        ## tableView
+        # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
         self.tableView.doubleClicked.connect(self.play_audio_file) # Double click to play song
+        self.tableView.viewport().installEventFilter(self) # for drag & drop functionality
+        # self.tableView.model.layoutChanged()
+        ### set column widths
+        table_view_column_widths = str(self.config['table']['column_widths']).split(',')
+        for i in range(self.tableView.model.columnCount()):
+            self.tableView.setColumnWidth(i, int(table_view_column_widths[i]))
         
+    def eventFilter(self, source, event):
+        """Handles events"""
+        # tableView (drag & drop)
+        if (source is self.tableView.viewport() and
+            (event.type() == QEvent.DragEnter or
+             event.type() == QEvent.DragMove or
+             event.type() == QEvent.Drop) and
+            event.mimeData().hasUrls()):
+            files = []
+            if event.type() == QEvent.Drop:
+                for url in event.mimeData().urls():
+                    if url.isLocalFile():
+                        files.append(url.path())
+            self.tableView.add_files(files)
+            event.accept()
+            return True
+        return super().eventFilter(source, event)
+    
+    def closeEvent(self, event):
+        """Save settings when closing the application"""
+        # MusicTable/tableView column widths
+        list_of_column_widths = []
+        for i in range(self.tableView.model.columnCount()):
+            list_of_column_widths.append(str(self.tableView.columnWidth(i)))
+        column_widths_as_string = ','.join(list_of_column_widths)
+        self.config['table']['column_widths'] = column_widths_as_string
+        
+        
+        # Save the config
+        with open('config.ini', 'w') as configfile:
+            self.config.write(configfile)
+        super().closeEvent(event)
     
     def play_audio_file(self):
         """Start playback of selected track & moves playback slider"""

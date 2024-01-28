@@ -5,6 +5,11 @@ from pydub import AudioSegment
 
 
 def create_waveform_from_file(file):
+    """_summary_
+
+    Args:
+        file (_type_): _description_
+    """    
     # Read the MP3 file
     audio = AudioSegment.from_file(file)
     # Convert to mono and get frame rate and number of channels
@@ -43,7 +48,7 @@ def create_waveform_from_file(file):
     # Graph goes to ends of pic
     plt.xlim(0, len(waveform))
     # Save pic
-    plt.savefig('now_playing_waveform.png', dpi=64, bbox_inches='tight', pad_inches=0)
+    plt.savefig('assets/now_playing_waveform.png', dpi=64, bbox_inches='tight', pad_inches=0)
     # Show me tho
     # plt.show()
     

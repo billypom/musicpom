@@ -1,10 +1,17 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets
 import numpy as np
 
-from .fft_analyser import FFTAnalyser
+from utils import FFTAnalyser
 
 class AudioVisualizer(QtWidgets.QWidget):
+    """_Audio Visualizer component_
 
+    Args:
+        QtWidgets (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     def __init__(self, media_player):
         super().__init__()
         self.media_player = media_player
