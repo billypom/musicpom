@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QTableView
 from PyQt5.QtCore import QTimer
 from tinytag import TinyTag
 from utils import add_files_to_library
-from utils import get_id3_tags
 import logging
 
 
@@ -57,9 +56,6 @@ class MusicTable(QTableView):
         """Sets the filepath of the currently selected song"""
         self.selected_song_filepath = self.currentIndex().siblingAtColumn(self.headers.index('path')).data()
         print(f'Selected song: {self.selected_song_filepath}')
-        print('TAGS:')
-        print(get_id3_tags(self.selected_song_filepath))
-        print('END TAGS')
     
     def set_current_song_filepath(self):
         """Sets the filepath of the currently playing/chosen song"""

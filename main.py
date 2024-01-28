@@ -69,7 +69,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.nextButton.clicked.connect(self.on_next_clicked) # Click to next song
         self.actionPreferences.triggered.connect(self.actionPreferencesClicked) # Open preferences menu
         self.actionScanLibraries.triggered.connect(self.scan_libraries) # Scan library
-        self.actionClearDatabase.triggered.connect(initialize_library_database) # Clear database
+        self.actionClearDatabase.triggered.connect(self.clear_database) # Clear database
         ## tableView
         # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
         self.tableView.doubleClicked.connect(self.play_audio_file) # Double click to play song
@@ -194,7 +194,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         
     def scan_libraries(self):
         scan_for_music()
-        # refresh datatable
+        self.tableView.fetch_library()
+        
+    def clear_database(self):
+        initialize_library_database()
+        self.tableView.fetch_library()
         
     def process_probe(self, buff):
         buff.startTime()
