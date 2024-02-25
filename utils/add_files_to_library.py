@@ -9,9 +9,13 @@ config.read("config.ini")
 
 def add_files_to_library(files):
     """Adds audio file(s) to the sqllite db
-    `files` | list() | List of fully qualified paths to audio file(s)
-    Returns a count of records added
+    
+    files | list() of fully qualified paths to audio file(s)
+    
+    Returns true if any files were added
     """
+    if not files:
+        return False
     print(f"utils | adding files to library: {files}")
     extensions = config.get("settings", "extensions").split(",")
     insert_data = []  # To store data for batch insert
@@ -20,7 +24,7 @@ def add_files_to_library(files):
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
             if "title" not in audio:
-                return
+                return False
             # Append data tuple to insert_data list
             insert_data.append(
                 (

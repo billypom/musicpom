@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import QTableView
 from PyQt5.QtCore import QTimer
 from tinytag import TinyTag
 from utils import add_files_to_library
+from utils import get_id3_tags
+from utils import get_album_art
 import logging
 
 
@@ -68,7 +70,7 @@ class MusicTable(QTableView):
     
     def get_selected_song_metadata(self):
         """Returns the current/chosen song's ID3 tags"""
-        return TinyTag.get(self.selected_song_filepath)
+        return get_id3_tags(self.selected_song_filepath)
     
     def get_current_song_filepath(self):
         """Returns the current/chosen song filepath"""
@@ -76,7 +78,11 @@ class MusicTable(QTableView):
 
     def get_current_song_metadata(self):
         """Returns the current/chosen song's ID3 tags"""
-        return TinyTag.get(self.current_song_filepath)
+        return get_id3_tags(self.current_song_filepath)
+    
+    def get_current_song_album_art(self):
+        """Returns the APIC data for the currently playing song"""
+        return get_album_art(self.current_song_filepath)
         
     
     def fetch_library(self):
@@ -92,7 +98,8 @@ class MusicTable(QTableView):
             self.model.appendRow(items)
         # Set the model to the tableView (we are the tableview)
         self.setModel(self.model)
-        self.update()
+        # self.update()
+        self.viewport().update()
     
     def add_files(self, files):
         """When song(s) added to the library, update the tableview model
@@ -100,11 +107,9 @@ class MusicTable(QTableView):
         - File > Open > List of song(s)
         """
         print(f'tableView - adding files: {files}')
-        response = add_files_to_library(files)
-        if response:
+        number_of_files_added = add_files_to_library(files)
+        if number_of_files_added:
             self.fetch_library()
-        else:
-            logging.warning('MusicTable.add_files | failed to add files to library')
         
         
     def load_qapp(self, qapp):

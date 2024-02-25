@@ -1,9 +1,10 @@
 import DBA
 from ui import Ui_MainWindow
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene
 import qdarktheme
-from PyQt5.QtCore import QUrl, QTimer, QEvent
+from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt, QRect
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
+from PyQt5.QtGui import QPixmap
 from utils import scan_for_music
 from utils import initialize_library_database
 from components import AudioVisualizer
@@ -21,6 +22,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.selected_song_filepath = None
         self.current_song_filepath = None
         self.current_song_metadata = None
+        self.current_song_album_art = None
+        self.album_art_scene = QGraphicsScene()
         self.qapp = qapp
         print(f'ApplicationWindow self.qapp: {self.qapp}')
         self.tableView.load_qapp(self.qapp)
@@ -116,6 +119,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def play_audio_file(self):
         """Start playback of selected track & moves playback slider"""
         self.current_song_metadata = self.tableView.get_current_song_metadata() # get metadata
+        self.current_song_album_art = self.tableView.get_current_song_album_art()
         url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath()) # read the file
         content = QMediaContent(url) # load the audio content
         self.player.setMedia(content) # what content to play
@@ -124,13 +128,31 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         
         # assign metadata
         # FIXME when i change tinytag to something else
-        artist = self.current_song_metadata.artist
-        album = self.current_song_metadata.album
-        title = self.current_song_metadata.title
+        artist = self.current_song_metadata["artist"][0] if "artist" in self.current_song_metadata else None
+        album = self.current_song_metadata["album"][0] if "album" in self.current_song_metadata else None
+        title = self.current_song_metadata["title"][0]
         # edit labels
         self.artistLabel.setText(artist)
         self.albumLabel.setText(album)
         self.titleLabel.setText(title)
+        # set album artwork
+        self.load_album_art(self.current_song_album_art)
+        
+
+    def load_album_art(self, album_art_data):
+        """Sets the album art for the currently playing track"""
+        if self.current_song_album_art:
+            # Create pixmap for album art
+            pixmap = QPixmap()
+            pixmap.loadFromData(self.current_song_album_art)
+            self.album_art_scene.addPixmap(pixmap)
+            # Reset the scene
+            self.albumGraphicsView.setScene(None)
+            # Set the scene
+            self.albumGraphicsView.setScene(self.album_art_scene)
+            # Put artwork in the scene, fit to graphics view widget
+            self.albumGraphicsView.fitInView(self.album_art_scene.sceneRect(), Qt.KeepAspectRatio)
+        
         
     def update_audio_visualization(self):
         """Handles upading points on the pyqtgraph visual"""
