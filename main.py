@@ -1,6 +1,6 @@
 import DBA
 from ui import Ui_MainWindow
-from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene
+from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, QHeaderView
 import qdarktheme
 from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt, QRect
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
@@ -8,6 +8,7 @@ from PyQt5.QtGui import QPixmap
 from utils import scan_for_music
 from utils import initialize_library_database
 from components import AudioVisualizer
+from components import PreferencesWindow
 from pyqtgraph import mkBrush
 import configparser
 
@@ -78,11 +79,15 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.doubleClicked.connect(self.play_audio_file) # Double click to play song
         self.tableView.viewport().installEventFilter(self) # for drag & drop functionality
         # self.tableView.model.layoutChanged()
-        ### set column widths
+                ### set column widths
         table_view_column_widths = str(self.config['table']['column_widths']).split(',')
         for i in range(self.tableView.model.columnCount()):
             self.tableView.setColumnWidth(i, int(table_view_column_widths[i]))
-        
+            # dont extend last column past table view border
+        self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tableView.horizontalHeader().setStretchLastSection(False)
+
+                
     def eventFilter(self, source, event):
         """Handles events"""
         # tableView (drag & drop)
@@ -212,8 +217,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         print('next')
         
     def actionPreferencesClicked(self):
-        print('preferences')
-        
+        preferences_window = PreferencesWindow(self.config)
+        preferences_window.exec_()  # Display the preferences window modally
     def scan_libraries(self):
         scan_for_music()
         self.tableView.fetch_library()

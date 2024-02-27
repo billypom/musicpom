@@ -6,7 +6,7 @@ class DBAccess:
         config = ConfigParser()
         config.read('config.ini')
         if db_name is None:
-            db_name = config.get('db', 'library')
+            db_name = config.get('db', 'database')
         self._conn = sqlite3.connect(db_name)
         self._cursor = self._conn.cursor()
 

@@ -19,16 +19,25 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="3,8,1,1">
     <item>
-     <layout class="QHBoxLayout" name="hLayoutHead" stretch="2,4,6">
+     <layout class="QHBoxLayout" name="hLayoutHead" stretch="1,4,6">
       <item>
        <layout class="QVBoxLayout" name="vlayoutAlbumArt">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetFixedSize</enum>
+        </property>
         <item>
          <widget class="QGraphicsView" name="albumGraphicsView">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>200</height>
+           </size>
           </property>
           <property name="verticalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -141,7 +150,7 @@
        <widget class="MusicTable" name="tableView">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-          <horstretch>1</horstretch>
+          <horstretch>0</horstretch>
           <verstretch>1</verstretch>
          </sizepolicy>
         </property>
