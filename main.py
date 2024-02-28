@@ -77,6 +77,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         ## tableView
         # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
         self.tableView.doubleClicked.connect(self.play_audio_file) # Double click to play song
+        self.tableView.enterKey.connect(self.play_audio_file) # Press Enter to play song
+        self.tableView.playPauseSignal.connect(self.on_play_clicked) # Spacebar toggle playpause signal
         self.tableView.viewport().installEventFilter(self) # for drag & drop functionality
         # self.tableView.model.layoutChanged()
                 ### set column widths
