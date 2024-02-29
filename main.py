@@ -1,8 +1,8 @@
 import DBA
 from ui import Ui_MainWindow
-from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, QHeaderView
+from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, QHeaderView, QGraphicsPixmapItem
 import qdarktheme
-from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt, QRect
+from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QPixmap
 from utils import scan_for_music
@@ -76,7 +76,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionClearDatabase.triggered.connect(self.clear_database) # Clear database
         ## tableView
         # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
-        self.tableView.doubleClicked.connect(self.play_audio_file) # Double click to play song
+        self.tableView.doubleClicked.connect(self.play_audio_file) # Listens for the double click event, and plays the song
         self.tableView.enterKey.connect(self.play_audio_file) # Press Enter to play song
         self.tableView.playPauseSignal.connect(self.on_play_clicked) # Spacebar toggle playpause signal
         self.tableView.viewport().installEventFilter(self) # for drag & drop functionality
@@ -124,7 +124,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         super().closeEvent(event)
     
     def play_audio_file(self):
-        """Start playback of selected track & moves playback slider"""
+        """Start playback of tableView.current_song_filepath track & moves playback slider"""
         self.current_song_metadata = self.tableView.get_current_song_metadata() # get metadata
         self.current_song_album_art = self.tableView.get_current_song_album_art()
         url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath()) # read the file
@@ -149,17 +149,36 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def load_album_art(self, album_art_data):
         """Sets the album art for the currently playing track"""
         if self.current_song_album_art:
+            # Clear the scene
+            self.album_art_scene.clear()
+            # Reset the scene
+            self.albumGraphicsView.setScene(None)
             # Create pixmap for album art
             pixmap = QPixmap()
             pixmap.loadFromData(self.current_song_album_art)
-            self.album_art_scene.addPixmap(pixmap)
-            # Reset the scene
-            self.albumGraphicsView.setScene(None)
+            # Create a QGraphicsPixmapItem for more control over pic
+            pixmapItem = QGraphicsPixmapItem(pixmap)
+            pixmapItem.setTransformationMode(Qt.SmoothTransformation)  # For better quality scaling
+            # Add pixmap item to the scene
+            self.album_art_scene.addItem(pixmapItem)
             # Set the scene
             self.albumGraphicsView.setScene(self.album_art_scene)
-            # Put artwork in the scene, fit to graphics view widget
-            self.albumGraphicsView.fitInView(self.album_art_scene.sceneRect(), Qt.KeepAspectRatio)
+            # Adjust the album art scaling
+            self.adjustPixmapScaling(pixmapItem)
         
+    def adjustPixmapScaling(self, pixmapItem):
+        """Adjust the scaling of the pixmap item to fit the QGraphicsView, maintaining aspect ratio"""
+        viewWidth = self.albumGraphicsView.width()
+        viewHeight = self.albumGraphicsView.height()
+        pixmapSize = pixmapItem.pixmap().size()
+        
+        # Calculate scaling factor while maintaining aspect ratio
+        scaleX = viewWidth / pixmapSize.width()
+        scaleY = viewHeight / pixmapSize.height()
+        scaleFactor = min(scaleX, scaleY)
+        
+        # Apply scaling to the pixmap item
+        pixmapItem.setScale(scaleFactor)
         
     def update_audio_visualization(self):
         """Handles upading points on the pyqtgraph visual"""

@@ -39,6 +39,12 @@
             <height>200</height>
            </size>
           </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
           <property name="verticalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
           </property>
@@ -50,6 +56,9 @@
           </property>
           <property name="interactive">
            <bool>false</bool>
+          </property>
+          <property name="resizeAnchor">
+           <enum>QGraphicsView::AnchorViewCenter</enum>
           </property>
           <property name="viewportUpdateMode">
            <enum>QGraphicsView::FullViewportUpdate</enum>
