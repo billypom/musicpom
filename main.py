@@ -1,4 +1,3 @@
-import DBA
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, QHeaderView, QGraphicsPixmapItem
 import qdarktheme
@@ -76,9 +75,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionClearDatabase.triggered.connect(self.clear_database) # Clear database
         ## tableView
         # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
-        self.tableView.doubleClicked.connect(self.play_audio_file) # Listens for the double click event, and plays the song
-        self.tableView.enterKey.connect(self.play_audio_file) # Press Enter to play song
-        self.tableView.playPauseSignal.connect(self.on_play_clicked) # Spacebar toggle playpause signal
+        self.tableView.doubleClicked.connect(self.play_audio_file) # Listens for the double click event, then plays the song
+        self.tableView.enterKey.connect(self.play_audio_file) # Listens for the enter key event, then plays the song
+        self.tableView.playPauseSignal.connect(self.on_play_clicked) # Spacebar toggle play/pause signal
         self.tableView.viewport().installEventFilter(self) # for drag & drop functionality
         # self.tableView.model.layoutChanged()
                 ### set column widths
@@ -116,7 +115,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             list_of_column_widths.append(str(self.tableView.columnWidth(i)))
         column_widths_as_string = ','.join(list_of_column_widths)
         self.config['table']['column_widths'] = column_widths_as_string
-        
         
         # Save the config
         with open('config.ini', 'w') as configfile:

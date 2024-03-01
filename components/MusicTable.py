@@ -21,7 +21,8 @@ class MusicTable(QTableView):
         self.qapp = None
         # self.tableView.resizeColumnsToContents()
         self.clicked.connect(self.set_selected_song_filepath)
-        self.doubleClicked.connect(self.set_current_song_filepath) # listens for emitted signal, runs set_current_song_filepath
+        # doubleClicked is a built in event for QTableView - we listen for this event and run set_current_song_filepath
+        self.doubleClicked.connect(self.set_current_song_filepath)
         self.enterKey.connect(self.set_current_song_filepath)
         self.fetch_library()
 
@@ -45,42 +46,11 @@ class MusicTable(QTableView):
         else: # Default behavior
             super().keyPressEvent(event)
 
-    def mousePressEvent(self, event):
-        """Press mouse button. Do thing"""
-        self.last = "Click"
-        QTableView.mousePressEvent(self, event) # Keep original functionality
-    
-    def mouseReleaseEvent(self, event):
-        """Release mouse button. Do thing"""
-        if self.last == "Click":
-            QTimer.singleShot(self.qapp.instance().doubleClickInterval(),
-                              self.performSingleClickAction)
-        else:
-            # Perform double click action.
-            self.set_current_song_filepath
-            self.message = "Double Click"
-            self.update()
-        QTableView.mouseReleaseEvent(self, event) # Keep original functionality
-    
-    def mouseDoubleClickEvent(self, event):
-        self.last = "Double Click"
-        self.doubleClicked.emit(self.selectionModel().currentIndex()) # emits the current index of the double clicked song
-        QTableView.mouseDoubleClickEvent(self, event) # Keep original functionality
-    
-    def performSingleClickAction(self):
-        if self.last == "Click":
-            self.message = "Click"
-            self.update()
-
     def toggle_play_pause(self):
         """Toggles the currently playing song by emitting a signal"""
         if not self.current_song_filepath:
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
-
-    def choose_new_song(self):
-        """Starts the playback of a new song by emitting a signal"""
-        
         
     def get_selected_rows(self):
         """Returns a list of indexes for every selected row"""
@@ -95,30 +65,30 @@ class MusicTable(QTableView):
         print(f'Selected song: {self.selected_song_filepath}')
     
     def set_current_song_filepath(self):
-        """Sets the filepath of the currently playing/chosen song"""
+        """Sets the filepath of the currently playing song"""
         # Setting the current song filepath automatically plays that song
         # self.tableView listens to this function and plays the audio file located at self.current_song_filepath
         self.current_song_filepath = self.currentIndex().siblingAtColumn(self.headers.index('path')).data()
         print(f'Current song: {self.current_song_filepath}')
         
     def get_selected_song_filepath(self):
-        """Returns the selected song filepath"""
+        """Returns the selected songs filepath"""
         return self.selected_song_filepath
     
     def get_selected_song_metadata(self):
-        """Returns the current/chosen song's ID3 tags"""
+        """Returns the selected song's ID3 tags"""
         return get_id3_tags(self.selected_song_filepath)
     
     def get_current_song_filepath(self):
-        """Returns the current/chosen song filepath"""
+        """Returns the currently playing song filepath"""
         return self.current_song_filepath
 
     def get_current_song_metadata(self):
-        """Returns the current/chosen song's ID3 tags"""
+        """Returns the currently playing song's ID3 tags"""
         return get_id3_tags(self.current_song_filepath)
     
     def get_current_song_album_art(self):
-        """Returns the APIC data for the currently playing song"""
+        """Returns the APIC data (album art lol) for the currently playing song"""
         return get_album_art(self.current_song_filepath)
         
     
@@ -150,6 +120,7 @@ class MusicTable(QTableView):
         
         
     def load_qapp(self, qapp):
+        # why was this necessary again? :thinking:
         self.qapp = qapp
 
 
