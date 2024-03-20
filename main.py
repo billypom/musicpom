@@ -1,5 +1,6 @@
 from ui import Ui_MainWindow
-from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, QHeaderView, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, \
+    QHeaderView, QGraphicsPixmapItem
 import qdarktheme
 from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
@@ -13,6 +14,7 @@ import configparser
 
 # Create ui.py file from Qt Designer
 # pyuic5 ui.ui -o ui.py
+
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, qapp):
@@ -29,24 +31,21 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.load_qapp(self.qapp)
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
-        
         global stopped
         stopped = False
-        
         # Initialization
-        self.player = QMediaPlayer() # Audio player
-        self.probe = QAudioProbe() # Get audio data
-        self.timer = QTimer(self) # Audio timing things
+        self.player = QMediaPlayer()  # Audio player
+        self.probe = QAudioProbe()  # Get audio data
+        self.timer = QTimer(self)  # Audio timing things
         # self.model = QStandardItemModel() # Table library listing
         self.audio_visualizer = AudioVisualizer(self.player)
         self.current_volume = 50
         self.player.setVolume(self.current_volume)
-        
         # Audio probe for processing audio signal in real time
         # Provides faster updates than move_slider
         self.probe.setSource(self.player)
         self.probe.audioBufferProbed.connect(self.process_probe)
-        
+ 
         # Slider Timer (realtime playback feedback horizontal bar)
         self.timer.start(150) # 150ms update interval solved problem with drag seeking halting playback
         self.timer.timeout.connect(self.move_slider)
@@ -56,7 +55,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.PlotWidget.setYRange(0,0.3,padding=0) # y axis range
         self.PlotWidget.getAxis('bottom').setTicks([]) # Remove x-axis ticks
         self.PlotWidget.getAxis('bottom').setLabel('') # Remove x-axis label
-        self.PlotWidget.setLogMode(False,False)
+        self.PlotWidget.setLogMode(False, False)
         # Remove y-axis labels and decorations
         self.PlotWidget.getAxis('left').setTicks([]) # Remove y-axis ticks
         self.PlotWidget.getAxis('left').setLabel('') # Remove y-axis label
@@ -80,7 +79,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.playPauseSignal.connect(self.on_play_clicked) # Spacebar toggle play/pause signal
         self.tableView.viewport().installEventFilter(self) # for drag & drop functionality
         # self.tableView.model.layoutChanged()
-                ### set column widths
+        # set column widths
         table_view_column_widths = str(self.config['table']['column_widths']).split(',')
         for i in range(self.tableView.model.columnCount()):
             self.tableView.setColumnWidth(i, int(table_view_column_widths[i]))
@@ -88,15 +87,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setStretchLastSection(False)
 
-                
     def eventFilter(self, source, event):
         """Handles events"""
         # tableView (drag & drop)
         if (source is self.tableView.viewport() and
             (event.type() == QEvent.DragEnter or
-             event.type() == QEvent.DragMove or
-             event.type() == QEvent.Drop) and
-            event.mimeData().hasUrls()):
+                event.type() == QEvent.DragMove or
+                event.type() == QEvent.Drop) and
+                event.mimeData().hasUrls()):
             files = []
             if event.type() == QEvent.Drop:
                 for url in event.mimeData().urls():
@@ -206,7 +204,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
                 self.startTimeLabel.setText(f"{int(current_minutes):02d}:{int(current_seconds):02d}")
                 self.endTimeLabel.setText(f"{int(duration_minutes):02d}:{int(duration_seconds):02d}")
-    
+
     def volume_changed(self):
         """Handles volume changes"""
         try:
@@ -214,7 +212,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.player.setVolume(self.current_volume)
         except Exception as e:
             print(f"Changing volume error: {e}")
-        
+
     def on_play_clicked(self):
         """Updates the Play & Pause buttons when clicked"""
         if self.player.state() == QMediaPlayer.PlayingState:
@@ -227,31 +225,30 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             else:
                 self.play_audio_file()
                 self.playButton.setText("⏸️")
-        
+
     def on_previous_clicked(self):
         """"""
         print('previous')
-        
+
     def on_next_clicked(self):
         print('next')
-        
+
     def actionPreferencesClicked(self):
         preferences_window = PreferencesWindow(self.config)
         preferences_window.exec_()  # Display the preferences window modally
+
     def scan_libraries(self):
         scan_for_music()
         self.tableView.fetch_library()
-        
+
     def clear_database(self):
         initialize_library_database()
         self.tableView.fetch_library()
-        
+
     def process_probe(self, buff):
         buff.startTime()
         self.update_audio_visualization()
-        
-    
-        
+
 
 if __name__ == "__main__":
     import sys
