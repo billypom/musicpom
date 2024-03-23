@@ -9,14 +9,12 @@ config.read("config.ini")
 
 def add_files_to_library(files):
     """Adds audio file(s) to the sqllite db
-    
-    files | list() of fully qualified paths to audio file(s)
-    
+    files = list() of fully qualified paths to audio file(s)
     Returns true if any files were added
     """
     if not files:
         return False
-    print(f"utils | adding files to library: {files}")
+    print(f"utils/add_files_to_library: {files}")
     extensions = config.get("settings", "extensions").split(",")
     insert_data = []  # To store data for batch insert
     for filepath in files:

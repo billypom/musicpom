@@ -2,9 +2,9 @@ from ui import Ui_MainWindow
 from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, \
     QHeaderView, QGraphicsPixmapItem
 import qdarktheme
-from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt
+from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt, QModelIndex
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QStandardItemModel
 from utils import scan_for_music
 from utils import initialize_library_database
 from components import AudioVisualizer
@@ -27,17 +27,18 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.current_song_album_art = None
         self.album_art_scene = QGraphicsScene()
         self.qapp = qapp
-        print(f'ApplicationWindow self.qapp: {self.qapp}')
+        # print(f'ApplicationWindow self.qapp: {self.qapp}')
         self.tableView.load_qapp(self.qapp)
+        # print(f'tableView type: {type(self.tableView)}')
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
         global stopped
         stopped = False
         # Initialization
-        self.player = QMediaPlayer()  # Audio player
-        self.probe = QAudioProbe()  # Get audio data
+        self.player = QMediaPlayer()  # Audio player object
+        self.probe = QAudioProbe()  # Gets audio data
         self.timer = QTimer(self)  # Audio timing things
-        # self.model = QStandardItemModel() # Table library listing
+        # self.music_table_model = QStandardItemModel(self) # Table library listing
         self.audio_visualizer = AudioVisualizer(self.player)
         self.current_volume = 50
         self.player.setVolume(self.current_volume)
@@ -49,7 +50,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Slider Timer (realtime playback feedback horizontal bar)
         self.timer.start(150) # 150ms update interval solved problem with drag seeking halting playback
         self.timer.timeout.connect(self.move_slider)
-        
+
         # Graphics plot
         self.PlotWidget.setXRange(0,100,padding=0) # x axis range
         self.PlotWidget.setYRange(0,0.3,padding=0) # y axis range
@@ -59,26 +60,22 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Remove y-axis labels and decorations
         self.PlotWidget.getAxis('left').setTicks([]) # Remove y-axis ticks
         self.PlotWidget.getAxis('left').setLabel('') # Remove y-axis label
-        
-        
+
         # Connections
         # ! FIXME moving the slider while playing is happening frequently causes playback to halt - the pyqtgraph is also affected by this
         self.playbackSlider.sliderMoved[int].connect(lambda: self.player.setPosition(self.playbackSlider.value())) # Move slidet to adjust playback time
         self.volumeSlider.sliderMoved[int].connect(lambda: self.volume_changed()) # Move slider to adjust volume
         self.playButton.clicked.connect(self.on_play_clicked) # Click to play/pause
-        # self.pauseButton.clicked.connect(self.on_pause_clicked)
         self.previousButton.clicked.connect(self.on_previous_clicked) # Click to previous song
         self.nextButton.clicked.connect(self.on_next_clicked) # Click to next song
         self.actionPreferences.triggered.connect(self.actionPreferencesClicked) # Open preferences menu
         self.actionScanLibraries.triggered.connect(self.scan_libraries) # Scan library
         self.actionClearDatabase.triggered.connect(self.clear_database) # Clear database
         ## tableView
-        # self.tableView.clicked.connect(self.set_clicked_cell_filepath)
         self.tableView.doubleClicked.connect(self.play_audio_file) # Listens for the double click event, then plays the song
         self.tableView.enterKey.connect(self.play_audio_file) # Listens for the enter key event, then plays the song
         self.tableView.playPauseSignal.connect(self.on_play_clicked) # Spacebar toggle play/pause signal
         self.tableView.viewport().installEventFilter(self) # for drag & drop functionality
-        # self.tableView.model.layoutChanged()
         # set column widths
         table_view_column_widths = str(self.config['table']['column_widths']).split(',')
         for i in range(self.tableView.model.columnCount()):
@@ -104,7 +101,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             event.accept()
             return True
         return super().eventFilter(source, event)
-    
+
     def closeEvent(self, event):
         """Save settings when closing the application"""
         # MusicTable/tableView column widths
@@ -113,12 +110,13 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             list_of_column_widths.append(str(self.tableView.columnWidth(i)))
         column_widths_as_string = ','.join(list_of_column_widths)
         self.config['table']['column_widths'] = column_widths_as_string
-        
+
         # Save the config
         with open('config.ini', 'w') as configfile:
             self.config.write(configfile)
         super().closeEvent(event)
-    
+
+
     def play_audio_file(self):
         """Start playback of tableView.current_song_filepath track & moves playback slider"""
         self.current_song_metadata = self.tableView.get_current_song_metadata() # get metadata
@@ -128,7 +126,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.player.setMedia(content) # what content to play
         self.player.play() # play
         self.move_slider() # mover
-        
+
         # assign metadata
         # FIXME when i change tinytag to something else
         artist = self.current_song_metadata["artist"][0] if "artist" in self.current_song_metadata else None
@@ -140,7 +138,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.titleLabel.setText(title)
         # set album artwork
         self.load_album_art(self.current_song_album_art)
-        
 
     def load_album_art(self, album_art_data):
         """Sets the album art for the currently playing track"""
@@ -161,21 +158,21 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.albumGraphicsView.setScene(self.album_art_scene)
             # Adjust the album art scaling
             self.adjustPixmapScaling(pixmapItem)
-        
+
     def adjustPixmapScaling(self, pixmapItem):
         """Adjust the scaling of the pixmap item to fit the QGraphicsView, maintaining aspect ratio"""
         viewWidth = self.albumGraphicsView.width()
         viewHeight = self.albumGraphicsView.height()
         pixmapSize = pixmapItem.pixmap().size()
-        
+
         # Calculate scaling factor while maintaining aspect ratio
         scaleX = viewWidth / pixmapSize.width()
         scaleY = viewHeight / pixmapSize.height()
         scaleFactor = min(scaleX, scaleY)
-        
+
         # Apply scaling to the pixmap item
         pixmapItem.setScale(scaleFactor)
-        
+
     def update_audio_visualization(self):
         """Handles upading points on the pyqtgraph visual"""
         self.clear_audio_visualization()
@@ -183,10 +180,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.x = [i for i in range(len(self.y))]
         self.PlotWidget.plot(self.x, self.y, fillLevel=0, fillBrush=mkBrush('b'))
         self.PlotWidget.show()
-    
+
     def clear_audio_visualization(self):
         self.PlotWidget.clear()
-    
+
     def move_slider(self):
         """Handles moving the playback slider"""
         if stopped:
