@@ -11,6 +11,8 @@ from components import AudioVisualizer
 from components import PreferencesWindow
 from pyqtgraph import mkBrush
 import configparser
+import os
+import sys
 
 # Create ui.py file from Qt Designer
 # pyuic5 ui.ui -o ui.py
@@ -248,10 +250,15 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
 
 if __name__ == "__main__":
-    import sys
+    # Allow for dynamic imports of my custom classes and utilities
+    project_root = os.path.abspath(os.path.dirname(__file__))
+    sys.path.append(project_root)
+    # Start the app
     app = QApplication(sys.argv)
     print(f'main.py app: {app}')
+    # Dark theme >:3
     qdarktheme.setup_theme()
+    # Show the UI
     ui = ApplicationWindow(app)
     ui.show()
     sys.exit(app.exec_())
