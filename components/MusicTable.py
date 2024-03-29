@@ -4,6 +4,7 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel, QKeySequence
 from PyQt5.QtWidgets import QTableView, QShortcut, QMessageBox, QAbstractItemView
 from PyQt5.QtCore import QModelIndex, Qt, pyqtSignal, QTimer
 from utils import add_files_to_library
+from utils import update_song_in_library
 from utils import get_id3_tags
 from utils import get_album_art
 from utils import set_id3_tag
@@ -50,21 +51,23 @@ class MusicTable(QTableView):
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
         print('on_cell_data_changed')
-        filepath_column_idx = self.model.columnCount() - 1 # always the last column
-        filepath_index = self.model.index(topLeft.row(), filepath_column_idx) # exact index of the edited cell
+        id_index = self.model.index(topLeft.row(), 0) # ID is column 0, always
+        library_id = self.model.data(id_index, Qt.UserRole)
+        filepath_column_idx = self.model.columnCount() - 1 # filepath is always the last column
+        filepath_index = self.model.index(topLeft.row(), filepath_column_idx) # exact index of the edited cell in 2d space
         filepath = self.model.data(filepath_index) # filepath
         # update the ID3 information
         user_input_data = topLeft.data()
         edited_column_name = self.database_columns[topLeft.column()]
         response = set_id3_tag(filepath, edited_column_name, user_input_data)
         if response:
-            update_song_in_library(filepath, edited_column_name, user_input_data)
+            # Update the library with new metadata
+            update_song_in_library(library_id, edited_column_name, user_input_data)
 
 
     def reorganize_selected_files(self):
         """Ctrl+Shift+R = Reorganize"""
         filepaths = self.get_selected_songs_filepaths()
-        print(f'yay: {filepaths}')
         # Confirmation screen (yes, no)
         reply = QMessageBox.question(self, 'Confirmation', 'Are you sure you want to reorganize these files?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply:
@@ -82,16 +85,17 @@ class MusicTable(QTableView):
                     os.makedirs(os.path.dirname(new_path), exist_ok=True)
                     # Move the file to the new directory
                     shutil.move(filepath, new_path)
-                    # Update the db?
+                    # Update the db
                     with DBA.DBAccess() as db:
                         db.query('UPDATE library SET filepath = ? WHERE filepath = ?', (new_path, filepath))
                     print(f'Moved: {filepath} -> {new_path}')
                 except Exception as e:
                     print(f'Error moving file: {filepath} | {e}')
-
+            # Draw the rest of the owl
+            self.model.dataChanged.disconnect(self.on_cell_data_changed)
             self.fetch_library()
+            self.model.dataChanged.connect(self.on_cell_data_changed)
             QMessageBox.information(self, 'Reorganization complete', 'Files successfully reorganized')
-            # add new files to library
 
 
     def keyPressEvent(self, event):
@@ -125,11 +129,49 @@ class MusicTable(QTableView):
         self.playPauseSignal.emit()
 
 
+    def fetch_library(self):
+        """Initialize the tableview model"""
+        self.vertical_scroll_position = self.verticalScrollBar().value() # Get my scroll position before clearing
+        # temporarily disconnect the datachanged signal to avoid EVERY SONG getting triggered
+        self.model.clear()
+        self.model.setHorizontalHeaderLabels(self.table_headers)
+        # Fetch library data
+        with DBA.DBAccess() as db:
+            data = db.query('SELECT id, title, artist, album, genre, codec, album_date, filepath FROM library;', ())
+        # Populate the model
+        for row_data in data:
+            id, *rest_of_data = row_data
+            items = [QStandardItem(str(item)) for item in rest_of_data]
+            self.model.appendRow(items)
+            # store id using setData - useful for later faster db fetching
+            row = self.model.rowCount() - 1
+            for item in items:
+                item.setData(id, Qt.UserRole)
+        # Update the viewport/model
+        self.model.layoutChanged.emit() # emits a signal that the view should be updated
+
+
+    def restore_scroll_position(self):
+        """Restores the scroll position"""
+        print(f'Returning to {self.vertical_scroll_position}')
+        QTimer.singleShot(100, lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position))
+
+
+    def add_files(self, files):
+        """When song(s) added to the library, update the tableview model
+        - Drag & Drop song(s) on tableView
+        - File > Open > List of song(s)
+        """
+        number_of_files_added = add_files_to_library(files)
+        if number_of_files_added:
+            self.model.dataChanged.disconnect(self.on_cell_data_changed)
+            self.fetch_library()
+            self.model.dataChanged.connect(self.on_cell_data_changed)
+
+
     def set_selected_song_filepath(self):
         """Sets the filepath of the currently selected song"""
         self.selected_song_filepath = self.currentIndex().siblingAtColumn(self.table_headers.index('path')).data()
-        print(f'Selected song: {self.selected_song_filepath}')
-        # print(get_id3_tags(self.selected_song_filepath))
 
 
     def set_current_song_filepath(self):
@@ -137,17 +179,12 @@ class MusicTable(QTableView):
         # Setting the current song filepath automatically plays that song
         # self.tableView listens to this function and plays the audio file located at self.current_song_filepath
         self.current_song_filepath = self.currentIndex().siblingAtColumn(self.table_headers.index('path')).data()
-        # print(f'Current song: {self.current_song_filepath}')
 
 
     def get_selected_rows(self):
         """Returns a list of indexes for every selected row"""
         selection_model = self.selectionModel()
         return [index.row() for index in selection_model.selectedRows()]
-        # rows = []
-        # for idx in self.selectionModel().siblingAtColumn():
-        #     rows.append(idx.row())
-        # return rows
 
 
     def get_selected_songs_filepaths(self):
@@ -183,39 +220,6 @@ class MusicTable(QTableView):
     def get_current_song_album_art(self):
         """Returns the APIC data (album art lol) for the currently playing song"""
         return get_album_art(self.current_song_filepath)
-
-
-    def fetch_library(self):
-        """Initialize the tableview model"""
-        self.vertical_scroll_position = self.verticalScrollBar().value() # Get my scroll position before clearing
-        self.model.clear()
-        self.model.setHorizontalHeaderLabels(self.table_headers)
-        # Fetch library data
-        with DBA.DBAccess() as db:
-            data = db.query('SELECT title, artist, album, genre, codec, album_date, filepath FROM library;', ())
-        # Populate the model
-        for row_data in data:
-            items = [QStandardItem(str(item)) for item in row_data]
-            self.model.appendRow(items)
-        # Update the viewport/model
-        # self.viewport().update()
-        self.model.layoutChanged.emit()
-
-    def restore_scroll_position(self):
-        """Restores the scroll position"""
-        print(f'Returning to {self.vertical_scroll_position}')
-        QTimer.singleShot(100, lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position))
-
-
-    def add_files(self, files):
-        """When song(s) added to the library, update the tableview model
-        - Drag & Drop song(s) on tableView
-        - File > Open > List of song(s)
-        """
-        print(f'tableView - adding files: {files}')
-        number_of_files_added = add_files_to_library(files)
-        if number_of_files_added:
-            self.fetch_library()
 
 
     def load_qapp(self, qapp):

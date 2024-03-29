@@ -10,10 +10,10 @@ config.read("config.ini")
 def add_files_to_library(files):
     """Adds audio file(s) to the sqllite db
     files = list() of fully qualified paths to audio file(s)
-    Returns true if any files were added
+    Returns a list of dictionaries of metadata
     """
     if not files:
-        return False
+        return []
     print(f"utils/add_files_to_library: {files}")
     extensions = config.get("settings", "extensions").split(",")
     insert_data = []  # To store data for batch insert
@@ -21,9 +21,9 @@ def add_files_to_library(files):
         if any(filepath.lower().endswith(ext) for ext in extensions):
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
-            if "title" not in audio: # This should never run
-                # get_id3_tags sets the title when no tags exist
-                return False
+            # Skip if no title is found (but should never happen
+            if "title" not in audio:
+                continue
             # Append data tuple to insert_data list
             insert_data.append(
                 (
@@ -39,7 +39,6 @@ def add_files_to_library(files):
                     safe_get(audio, "bitrate", [])[0] if "birate" in audio else None,
                 )
             )
-
             # Check if batch size is reached
             if len(insert_data) >= 1000:
                 with DBA.DBAccess() as db:
@@ -48,7 +47,6 @@ def add_files_to_library(files):
                         insert_data,
                     )
                 insert_data = []  # Reset the insert_data list
-
         # Insert any remaining data
         if insert_data:
             with DBA.DBAccess() as db:

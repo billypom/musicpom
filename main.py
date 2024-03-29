@@ -6,7 +6,7 @@ from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt, QModelIndex
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QPixmap, QStandardItemModel
 from utils import scan_for_music
-from utils import initialize_library_database
+from utils import delete_and_create_library_database
 from components import AudioVisualizer
 from components import PreferencesWindow
 from pyqtgraph import mkBrush
@@ -241,7 +241,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.fetch_library()
 
     def clear_database(self):
-        initialize_library_database()
+        delete_and_create_library_database()
         self.tableView.fetch_library()
 
     def process_probe(self, buff):
