@@ -86,23 +86,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setStretchLastSection(False)
 
-    def eventFilter(self, source, event):
-        """Handles events"""
-        # tableView (drag & drop)
-        if (source is self.tableView.viewport() and
-            (event.type() == QEvent.DragEnter or
-                event.type() == QEvent.DragMove or
-                event.type() == QEvent.Drop) and
-                event.mimeData().hasUrls()):
-            files = []
-            if event.type() == QEvent.Drop:
-                for url in event.mimeData().urls():
-                    if url.isLocalFile():
-                        files.append(url.path())
-            self.tableView.add_files(files)
-            event.accept()
-            return True
-        return super().eventFilter(source, event)
 
     def closeEvent(self, event):
         """Save settings when closing the application"""
@@ -142,7 +125,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.load_album_art(self.current_song_album_art)
 
     def load_album_art(self, album_art_data):
-        """Sets the album art for the currently playing track"""
+        """Displays the album art for the currently playing track in the GraphicsView"""
         if self.current_song_album_art:
             # Clear the scene
             self.album_art_scene.clear()

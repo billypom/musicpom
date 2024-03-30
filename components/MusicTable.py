@@ -1,6 +1,6 @@
 from mutagen.easyid3 import EasyID3
 import DBA
-from PyQt5.QtGui import QStandardItem, QStandardItemModel, QKeySequence
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QKeySequence, QDragEnterEvent, QDropEvent
 from PyQt5.QtWidgets import QTableView, QShortcut, QMessageBox, QAbstractItemView
 from PyQt5.QtCore import QModelIndex, Qt, pyqtSignal, QTimer
 from utils import add_files_to_library
@@ -40,6 +40,32 @@ class MusicTable(QTableView):
         self.setup_keyboard_shortcuts()
         self.model.dataChanged.connect(self.on_cell_data_changed) # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
+
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+
+
+    def dragMoveEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+
+
+    def dropEvent(self, event: QDropEvent):
+        if event.mimeData().hasUrls():
+            files = []
+            for url in event.mimeData().urls():
+                if url.isLocalFile():
+                    files.append(url.path())
+            self.add_files(files)
+            event.accept()
+        else:
+            event.ignore()
 
 
     def setup_keyboard_shortcuts(self):
