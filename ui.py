@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
         self.vlayoutAlbumArt = QtWidgets.QVBoxLayout()
         self.vlayoutAlbumArt.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         self.vlayoutAlbumArt.setObjectName("vlayoutAlbumArt")
-        self.albumGraphicsView = QtWidgets.QGraphicsView(self.centralwidget)
+        self.albumGraphicsView = AlbumArtGraphicsView(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -33,6 +33,7 @@ class Ui_MainWindow(object):
         self.albumGraphicsView.setSizePolicy(sizePolicy)
         self.albumGraphicsView.setMinimumSize(QtCore.QSize(200, 200))
         self.albumGraphicsView.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.albumGraphicsView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.albumGraphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.albumGraphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.albumGraphicsView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustIgnored)
@@ -153,7 +154,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.setStretch(3, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1152, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1152, 41))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -204,5 +205,5 @@ class Ui_MainWindow(object):
         self.actionPreferences.setStatusTip(_translate("MainWindow", "Open preferences"))
         self.actionScanLibraries.setText(_translate("MainWindow", "Scan libraries"))
         self.actionClearDatabase.setText(_translate("MainWindow", "Clear Database"))
-from components import MusicTable
+from components import AlbumArtGraphicsView, MusicTable
 from pyqtgraph import PlotWidget

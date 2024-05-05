@@ -1,6 +1,12 @@
 from mutagen.easyid3 import EasyID3
 import DBA
-from PyQt5.QtGui import QStandardItem, QStandardItemModel, QKeySequence, QDragEnterEvent, QDropEvent
+from PyQt5.QtGui import (
+    QStandardItem,
+    QStandardItemModel,
+    QKeySequence,
+    QDragEnterEvent,
+    QDropEvent,
+)
 from PyQt5.QtWidgets import QTableView, QShortcut, QMessageBox, QAbstractItemView
 from PyQt5.QtCore import QModelIndex, Qt, pyqtSignal, QTimer
 from utils import add_files_to_library
@@ -17,16 +23,37 @@ import shutil
 class MusicTable(QTableView):
     playPauseSignal = pyqtSignal()
     enterKey = pyqtSignal()
+
     def __init__(self, parent=None):
         # QTableView.__init__(self, parent)
         super().__init__(parent)
-        self.model = QStandardItemModel(self) # Necessary for actions related to cell values
-        self.setModel(self.model) # Same as above
+        self.model = QStandardItemModel(self)
+        # Necessary for actions related to cell values
+        self.setModel(self.model)  # Same as above
         self.config = configparser.ConfigParser()
-        self.config.read('config.ini')
-        self.table_headers = ['title', 'artist', 'album', 'genre', 'codec', 'year', 'path'] # gui names of headers
-        self.id3_headers = ['title', 'artist', 'album', 'content_type', ]
-        self.database_columns = str(self.config['table']['columns']).split(',') # db names of headers
+        self.config.read("config.ini")
+        # gui names of headers
+        self.table_headers = [
+            "title",
+            "artist",
+            "album",
+            "genre",
+            "codec",
+            "year",
+            "path",
+        ]
+        # id3 names of headers
+        self.id3_headers = [
+            "title",
+            "artist",
+            "album",
+            "content_type",
+            None,
+            None,
+            None,
+        ]
+        # db names of headers
+        self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
         self.songChanged = None
         self.selected_song_filepath = None
@@ -38,9 +65,8 @@ class MusicTable(QTableView):
         self.enterKey.connect(self.set_current_song_filepath)
         self.fetch_library()
         self.setup_keyboard_shortcuts()
-        self.model.dataChanged.connect(self.on_cell_data_changed) # editing cells
+        self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
-
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
@@ -48,13 +74,11 @@ class MusicTable(QTableView):
         else:
             event.ignore()
 
-
     def dragMoveEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
             event.accept()
         else:
             event.ignore()
-
 
     def dropEvent(self, event: QDropEvent):
         if event.mimeData().hasUrls():
@@ -67,86 +91,101 @@ class MusicTable(QTableView):
         else:
             event.ignore()
 
-
     def setup_keyboard_shortcuts(self):
         """Setup shortcuts here"""
         shortcut = QShortcut(QKeySequence("Ctrl+Shift+R"), self)
         shortcut.activated.connect(self.reorganize_selected_files)
 
-
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
-        print('on_cell_data_changed')
-        id_index = self.model.index(topLeft.row(), 0) # ID is column 0, always
+        print("on_cell_data_changed")
+        id_index = self.model.index(topLeft.row(), 0)  # ID is column 0, always
         library_id = self.model.data(id_index, Qt.UserRole)
-        filepath_column_idx = self.model.columnCount() - 1 # filepath is always the last column
-        filepath_index = self.model.index(topLeft.row(), filepath_column_idx) # exact index of the edited cell in 2d space
-        filepath = self.model.data(filepath_index) # filepath
+        # filepath is always the last column
+        filepath_column_idx = self.model.columnCount() - 1
+        filepath_index = self.model.index(topLeft.row(), filepath_column_idx)
+        # exact index of the edited cell in 2d space
+        filepath = self.model.data(filepath_index)  # filepath
         # update the ID3 information
         user_input_data = topLeft.data()
         edited_column_name = self.database_columns[topLeft.column()]
+        print(f"edited column name: {edited_column_name}")
         response = set_id3_tag(filepath, edited_column_name, user_input_data)
         if response:
             # Update the library with new metadata
             update_song_in_library(library_id, edited_column_name, user_input_data)
 
-
     def reorganize_selected_files(self):
         """Ctrl+Shift+R = Reorganize"""
         filepaths = self.get_selected_songs_filepaths()
         # Confirmation screen (yes, no)
-        reply = QMessageBox.question(self, 'Confirmation', 'Are you sure you want to reorganize these files?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        reply = QMessageBox.question(
+            self,
+            "Confirmation",
+            "Are you sure you want to reorganize these files?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
         if reply:
             # Get target directory
-            target_dir = str(self.config['directories']['reorganize_destination'])
+            target_dir = str(self.config["directories"]["reorganize_destination"])
             for filepath in filepaths:
                 try:
                     # Read file metadata
                     audio = EasyID3(filepath)
-                    artist = audio.get('artist', ['Unknown Artist'])[0]
-                    album = audio.get('album', ['Unknown Album'])[0]
+                    artist = audio.get("artist", ["Unknown Artist"])[0]
+                    album = audio.get("album", ["Unknown Album"])[0]
                     # Determine the new path that needs to be made
-                    new_path = os.path.join(target_dir, artist, album, os.path.basename(filepath))
+                    new_path = os.path.join(
+                        target_dir, artist, album, os.path.basename(filepath)
+                    )
                     # Create the directories if they dont exist
                     os.makedirs(os.path.dirname(new_path), exist_ok=True)
                     # Move the file to the new directory
                     shutil.move(filepath, new_path)
                     # Update the db
                     with DBA.DBAccess() as db:
-                        db.query('UPDATE library SET filepath = ? WHERE filepath = ?', (new_path, filepath))
-                    print(f'Moved: {filepath} -> {new_path}')
+                        db.query(
+                            "UPDATE library SET filepath = ? WHERE filepath = ?",
+                            (new_path, filepath),
+                        )
+                    print(f"Moved: {filepath} -> {new_path}")
                 except Exception as e:
-                    print(f'Error moving file: {filepath} | {e}')
+                    print(f"Error moving file: {filepath} | {e}")
             # Draw the rest of the owl
             self.model.dataChanged.disconnect(self.on_cell_data_changed)
             self.fetch_library()
             self.model.dataChanged.connect(self.on_cell_data_changed)
-            QMessageBox.information(self, 'Reorganization complete', 'Files successfully reorganized')
-
+            QMessageBox.information(
+                self, "Reorganization complete", "Files successfully reorganized"
+            )
 
     def keyPressEvent(self, event):
         """Press a key. Do a thing"""
         key = event.key()
-        if key == Qt.Key_Space: # Spacebar to play/pause
+        if key == Qt.Key_Space:  # Spacebar to play/pause
             self.toggle_play_pause()
-        elif key == Qt.Key_Up: # Arrow key navigation
+        elif key == Qt.Key_Up:  # Arrow key navigation
             current_index = self.currentIndex()
-            new_index = self.model.index(current_index.row() - 1, current_index.column())
+            new_index = self.model.index(
+                current_index.row() - 1, current_index.column()
+            )
             if new_index.isValid():
                 self.setCurrentIndex(new_index)
-        elif key == Qt.Key_Down: # Arrow key navigation
+        elif key == Qt.Key_Down:  # Arrow key navigation
             current_index = self.currentIndex()
-            new_index = self.model.index(current_index.row() + 1, current_index.column())
+            new_index = self.model.index(
+                current_index.row() + 1, current_index.column()
+            )
             if new_index.isValid():
                 self.setCurrentIndex(new_index)
         elif key in (Qt.Key_Return, Qt.Key_Enter):
             if self.state() != QAbstractItemView.EditingState:
-                self.enterKey.emit() # Enter key detected
+                self.enterKey.emit()  # Enter key detected
             else:
                 super().keyPressEvent(event)
-        else: # Default behavior
+        else:  # Default behavior
             super().keyPressEvent(event)
-
 
     def toggle_play_pause(self):
         """Toggles the currently playing song by emitting a signal"""
@@ -154,16 +193,20 @@ class MusicTable(QTableView):
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
 
-
     def fetch_library(self):
         """Initialize the tableview model"""
-        self.vertical_scroll_position = self.verticalScrollBar().value() # Get my scroll position before clearing
+        self.vertical_scroll_position = (
+            self.verticalScrollBar().value()
+        )  # Get my scroll position before clearing
         # temporarily disconnect the datachanged signal to avoid EVERY SONG getting triggered
         self.model.clear()
         self.model.setHorizontalHeaderLabels(self.table_headers)
         # Fetch library data
         with DBA.DBAccess() as db:
-            data = db.query('SELECT id, title, artist, album, genre, codec, album_date, filepath FROM library;', ())
+            data = db.query(
+                "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM library;",
+                (),
+            )
         # Populate the model
         for row_data in data:
             id, *rest_of_data = row_data
@@ -174,16 +217,16 @@ class MusicTable(QTableView):
             for item in items:
                 item.setData(id, Qt.UserRole)
         # Update the viewport/model
-        self.model.layoutChanged.emit() # emits a signal that the view should be updated
+        self.model.layoutChanged.emit()  # emits a signal that the view should be updated
 
-
-    def restore_scroll_position(self):
+    def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
-        print(f'Returning to {self.vertical_scroll_position}')
-        QTimer.singleShot(100, lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position))
+        QTimer.singleShot(
+            100,
+            lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),
+        )
 
-
-    def add_files(self, files):
+    def add_files(self, files) -> None:
         """When song(s) added to the library, update the tableview model
         - Drag & Drop song(s) on tableView
         - File > Open > List of song(s)
@@ -194,62 +237,54 @@ class MusicTable(QTableView):
             self.fetch_library()
             self.model.dataChanged.connect(self.on_cell_data_changed)
 
-
-    def set_selected_song_filepath(self):
-        """Sets the filepath of the currently selected song"""
-        self.selected_song_filepath = self.currentIndex().siblingAtColumn(self.table_headers.index('path')).data()
-
-
-    def set_current_song_filepath(self):
-        """Sets the filepath of the currently playing song"""
-        # Setting the current song filepath automatically plays that song
-        # self.tableView listens to this function and plays the audio file located at self.current_song_filepath
-        self.current_song_filepath = self.currentIndex().siblingAtColumn(self.table_headers.index('path')).data()
-
-
-    def get_selected_rows(self):
+    def get_selected_rows(self) -> list[int]:
         """Returns a list of indexes for every selected row"""
         selection_model = self.selectionModel()
         return [index.row() for index in selection_model.selectedRows()]
 
-
-    def get_selected_songs_filepaths(self):
+    def get_selected_songs_filepaths(self) -> list[str]:
         """Returns a list of the filepaths for the currently selected songs"""
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
-            idx = self.model.index(row, self.table_headers.index('path'))
+            idx = self.model.index(row, self.table_headers.index("path"))
             filepaths.append(idx.data())
         return filepaths
 
-
-    def get_selected_song_filepath(self):
+    def get_selected_song_filepath(self) -> str:
         """Returns the selected songs filepath"""
         return self.selected_song_filepath
 
-
-    def get_selected_song_metadata(self):
+    def get_selected_song_metadata(self) -> dict:
         """Returns the selected song's ID3 tags"""
         return get_id3_tags(self.selected_song_filepath)
 
-
-    def get_current_song_filepath(self):
+    def get_current_song_filepath(self) -> str:
         """Returns the currently playing song filepath"""
         return self.current_song_filepath
 
-
-    def get_current_song_metadata(self):
+    def get_current_song_metadata(self) -> dict:
         """Returns the currently playing song's ID3 tags"""
         return get_id3_tags(self.current_song_filepath)
 
-
-    def get_current_song_album_art(self):
+    def get_current_song_album_art(self) -> None:
         """Returns the APIC data (album art lol) for the currently playing song"""
         return get_album_art(self.current_song_filepath)
 
+    def set_selected_song_filepath(self) -> None:
+        """Sets the filepath of the currently selected song"""
+        self.selected_song_filepath = (
+            self.currentIndex().siblingAtColumn(self.table_headers.index("path")).data()
+        )
 
-    def load_qapp(self, qapp):
-        # why was this necessary again? :thinking:
+    def set_current_song_filepath(self) -> None:
+        """Sets the filepath of the currently playing song"""
+        # Setting the current song filepath automatically plays that song
+        # self.tableView listens to this function and plays the audio file located at self.current_song_filepath
+        self.current_song_filepath = (
+            self.currentIndex().siblingAtColumn(self.table_headers.index("path")).data()
+        )
+
+    def load_qapp(self, qapp) -> None:
+        """Necessary for talking between components..."""
         self.qapp = qapp
-
-

@@ -7,3 +7,4 @@ from .update_song_in_library import update_song_in_library
 from .scan_for_music import scan_for_music
 from .fft_analyser import FFTAnalyser
 from .add_files_to_library import add_files_to_library
+from .handle_year_and_date_id3_tag import handle_year_and_date_id3_tag
