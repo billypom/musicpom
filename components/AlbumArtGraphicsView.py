@@ -1,6 +1,6 @@
 import os
 import tempfile
-from PyQt5.QtWidgets import QGraphicsView, QMenu, QAction
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QAction
 from PyQt5.QtCore import QEvent, Qt, pyqtSignal, QUrl, QPoint
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QClipboard, QPixmap
 
@@ -13,6 +13,7 @@ class AlbumArtGraphicsView(QGraphicsView):
         super().__init__(parent)
         self.setAcceptDrops(True)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.scene = QGraphicsScene
         self.customContextMenuRequested.connect(self.showContextMenu)
         self.qapp = None
 
@@ -75,6 +76,7 @@ class AlbumArtGraphicsView(QGraphicsView):
         clipboard = self.qapp.clipboard()
         mime_data = clipboard.mimeData()
         # Check if clipboard data is raw data or filepath
+        pixmap = None
         if mime_data.hasUrls():
             for url in mime_data.urls():
                 file_path = url.toLocalFile()
@@ -83,9 +85,9 @@ class AlbumArtGraphicsView(QGraphicsView):
         else:
             pixmap = clipboard.pixmap()
         # Put image on screen and emit signal for ID3 tags to be updated
-        if not pixmap.isNull():  # Add pixmap raw data image
+        if pixmap != None:  # Add pixmap raw data image
             try:
-                self.scene().clear()  # clear the scene
+                self.scene().clear()
             except Exception:
                 pass
             self.scene().addPixmap(pixmap)
