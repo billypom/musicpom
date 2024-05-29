@@ -7,7 +7,7 @@ from PyQt5.QtGui import (
     QDragEnterEvent,
     QDropEvent,
 )
-from PyQt5.QtWidgets import QTableView, QShortcut, QMessageBox, QAbstractItemView
+from PyQt5.QtWidgets import QAction, QMenu, QTableView, QShortcut, QMessageBox, QAbstractItemView
 from PyQt5.QtCore import QModelIndex, Qt, pyqtSignal, QTimer
 from utils import add_files_to_library
 from utils import update_song_in_library
@@ -56,8 +56,8 @@ class MusicTable(QTableView):
         self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
         self.songChanged = None
-        self.selected_song_filepath = None
-        self.current_song_filepath = None
+        self.selected_song_filepath = ''
+        self.current_song_filepath = ''
         # self.tableView.resizeColumnsToContents()
         self.clicked.connect(self.set_selected_song_filepath)
         # doubleClicked is a built in event for QTableView - we listen for this event and run set_current_song_filepath
@@ -67,6 +67,19 @@ class MusicTable(QTableView):
         self.setup_keyboard_shortcuts()
         self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
+
+    def contextMenuEvent(self, event):
+        """Show a context menu when you right-click a row"""
+        menu = QMenu(self)
+        delete_action = QAction("Delete", self)
+        delete_action.triggered.connect(self.delete_selected_rows)
+        menu.addAction(delete_action)
+        menu.exec_(event.globalPos())
+
+    def delete_selected_rows(self):
+        selected_rows = self.selectionModel().selectedRows()
+        for index in selected_rows:
+            self.model().removeRow(index.row())
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
@@ -255,7 +268,7 @@ class MusicTable(QTableView):
         """Returns the selected songs filepath"""
         return self.selected_song_filepath
 
-    def get_selected_song_metadata(self) -> dict:
+    def get_selected_song_metadata(self) -> EasyID3 | dict:
         """Returns the selected song's ID3 tags"""
         return get_id3_tags(self.selected_song_filepath)
 
@@ -263,11 +276,11 @@ class MusicTable(QTableView):
         """Returns the currently playing song filepath"""
         return self.current_song_filepath
 
-    def get_current_song_metadata(self) -> dict:
+    def get_current_song_metadata(self) -> EasyID3 | dict:
         """Returns the currently playing song's ID3 tags"""
         return get_id3_tags(self.current_song_filepath)
 
-    def get_current_song_album_art(self) -> None:
+    def get_current_song_album_art(self) -> bytes:
         """Returns the APIC data (album art lol) for the currently playing song"""
         return get_album_art(self.current_song_filepath)
 

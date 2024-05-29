@@ -21,6 +21,8 @@ def add_files_to_library(files):
         if any(filepath.lower().endswith(ext) for ext in extensions):
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
+            print('add_files_to_library audio:')
+            print(audio)
             # Skip if no title is found (but should never happen
             if "title" not in audio:
                 continue

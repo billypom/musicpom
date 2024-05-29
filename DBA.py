@@ -1,14 +1,18 @@
 import sqlite3
+import logging
 from configparser import ConfigParser
 
 class DBAccess:
     def __init__(self, db_name=None):
+        logging.info('Instantiating DBAccess')
         config = ConfigParser()
         config.read('config.ini')
         if db_name is None:
             db_name = config.get('db', 'database')
-        self._conn = sqlite3.connect(db_name)
-        self._cursor = self._conn.cursor()
+        self._conn: sqlite3.Connection = sqlite3.connect(db_name)
+        logging.info(f'DBAccess | self._conn = [\n{type(self._conn)}\n{self._conn}\n]')
+        self._cursor: sqlite3.Cursor = self._conn.cursor()
+        logging.info(f'DBAccess | self._cursor = [\n{type(self._cursor)}\n{self._cursor}\n]')
 
     def __enter__(self):
         return self
