@@ -14,6 +14,7 @@ from utils import update_song_in_library
 from utils import get_id3_tags
 from utils import get_album_art
 from utils import set_id3_tag
+from subprocess import Popen
 import logging
 import configparser
 import os
@@ -71,15 +72,48 @@ class MusicTable(QTableView):
     def contextMenuEvent(self, event):
         """Show a context menu when you right-click a row"""
         menu = QMenu(self)
+        # delete song
         delete_action = QAction("Delete", self)
-        delete_action.triggered.connect(self.delete_selected_rows)
+        delete_action.triggered.connect(self.delete_songs)
         menu.addAction(delete_action)
+        # lyrics
+        lyrics_menu = QAction("Lyrics (View/Edit)", self)
+        lyrics_menu.triggered.connect(self.show_lyrics_menu)
+        menu.addAction(lyrics_menu)
+        # open in file explorer
+        open_containing_folder_action = QAction("Open in system file manager", self)
+        open_containing_folder_action.triggered.connect(self.open_directory)
+        menu.addAction(open_containing_folder_action)
+        # show
+        self.set_selected_song_filepath()
         menu.exec_(event.globalPos())
 
-    def delete_selected_rows(self):
-        selected_rows = self.selectionModel().selectedRows()
-        for index in selected_rows:
-            self.model().removeRow(index.row())
+    def delete_songs(self):
+        """Deletes the currently selected songs from the db and table (not the filesystem)"""
+        reply = QMessageBox.question(
+            self,
+            "Confirmation",
+            "Are you sure you want to delete these songs?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply:
+            # selected_rows = self.get_selected_rows()
+            selected_filepaths = self.get_selected_songs_filepaths()
+            # for index in selected_rows:
+            #     self.model().removeRow(index)
+            for file in selected_filepaths:
+                with DBA.DBAccess() as db:
+                    db.execute('DELETE FROM library WHERE filepath = ?', (file,))
+
+    def open_directory(self):
+        filepath = self.get_selected_song_filepath().split('/')
+        filepath.pop()
+        path = '/'.join(filepath)
+        Popen(["xdg-open", path])
+
+    def show_lyrics_menu(self):
+        pass
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
@@ -289,6 +323,7 @@ class MusicTable(QTableView):
         self.selected_song_filepath = (
             self.currentIndex().siblingAtColumn(self.table_headers.index("path")).data()
         )
+        print(self.selected_song_filepath)
 
     def set_current_song_filepath(self) -> None:
         """Sets the filepath of the currently playing song"""
