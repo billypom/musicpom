@@ -1,6 +1,7 @@
 from mutagen.easyid3 import EasyID3
 import DBA
 from PyQt5.QtGui import (
+    QDragMoveEvent,
     QStandardItem,
     QStandardItemModel,
     QKeySequence,
@@ -16,6 +17,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
 )
 from PyQt5.QtCore import QModelIndex, Qt, pyqtSignal, QTimer
+from components.LyricsWindow import LyricsWindow
 from utils import add_files_to_library
 from utils import update_song_in_library
 from utils import get_id3_tags
@@ -107,45 +109,79 @@ class MusicTable(QTableView):
             QMessageBox.Yes,
         )
         if reply:
-            # selected_rows = self.get_selected_rows()
             selected_filepaths = self.get_selected_songs_filepaths()
-            # for index in selected_rows:
-            #     self.model().removeRow(index)
+            selected_indices = self.get_selected_rows()
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
                     db.execute("DELETE FROM library WHERE filepath = ?", (file,))
+            for index in selected_indices:
+                self.model.removeRow(index)
 
     def open_directory(self):
+        """Opens the currently selected song in the system file manager"""
+        if self.get_selected_song_filepath() is None:
+            QMessageBox.warning(
+                self,
+                "File does not exist",
+                "No file is selected, or the file does not exist",
+                QMessageBox.Ok,
+                QMessageBox.Ok,
+            )
+            return
         filepath = self.get_selected_song_filepath().split("/")
         filepath.pop()
         path = "/".join(filepath)
         Popen(["xdg-open", path])
 
     def show_lyrics_menu(self):
-        pass
+        """Shows the lyrics for the currently selected song"""
+        selected_song_filepath = self.get_selected_song_filepath()
+        if selected_song_filepath is None:
+            return
+        current_song = self.get_selected_song_metadata()
+        print(f"MusicTable.py | show_lyrics_menu | current song: {current_song}")
+        try:
+            lyrics = current_song["lyrics"]
+        except Exception:
+            pass
+        try:
+            lyrics = current_song["USLT"]
+        except Exception:
+            lyrics = ""
+        lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
+        lyrics_window.exec_()
 
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.accept()
+    def dragEnterEvent(self, e: QDragEnterEvent | None):
+        if e is None:
+            return
+        data = e.mimeData()
+        if data and data.hasUrls():
+            e.accept()
         else:
-            event.ignore()
+            e.ignore()
 
-    def dragMoveEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.accept()
+    def dragMoveEvent(self, e: QDragMoveEvent | None):
+        if e is None:
+            return
+        data = e.mimeData()
+        if data and data.hasUrls():
+            e.accept()
         else:
-            event.ignore()
+            e.ignore()
 
-    def dropEvent(self, event: QDropEvent):
-        if event.mimeData().hasUrls():
+    def dropEvent(self, e: QDropEvent | None):
+        if e is None:
+            return
+        data = e.mimeData()
+        if data and data.hasUrls():
             files = []
-            for url in event.mimeData().urls():
+            for url in data.urls():
                 if url.isLocalFile():
                     files.append(url.path())
             self.add_files(files)
-            event.accept()
+            e.accept()
         else:
-            event.ignore()
+            e.ignore()
 
     def setup_keyboard_shortcuts(self):
         """Setup shortcuts here"""

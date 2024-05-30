@@ -10,19 +10,20 @@ from configparser import ConfigParser
 import DBA
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
+    QFileDialog,
     QMainWindow,
     QApplication,
     QGraphicsScene,
     QHeaderView,
     QGraphicsPixmapItem,
+    QMessageBox,
 )
 from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt, QModelIndex
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QPixmap, QStandardItemModel
 from utils import scan_for_music
 from utils import delete_and_create_library_database
-from components import AudioVisualizer
-from components import PreferencesWindow
+from components import PreferencesWindow, AudioVisualizer
 
 # Create ui.py file from Qt Designer
 # pyuic5 ui.ui -o ui.py
@@ -89,14 +90,19 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.on_previous_clicked
         )  # Click to previous song
         self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
+        # FILE MENU
+        self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
+        # EDIT MENU
+        # VIEW MENU
         self.actionPreferences.triggered.connect(
-            self.actionPreferencesClicked
+            self.open_preferences
         )  # Open preferences menu
+        # QUICK ACTIONS MENU
         self.actionScanLibraries.triggered.connect(self.scan_libraries)  # Scan library
         self.actionClearDatabase.triggered.connect(
             self.clear_database
         )  # Clear database
-        ## tableView
+        ## tableView triggers
         self.tableView.doubleClicked.connect(
             self.play_audio_file
         )  # Listens for the double click event, then plays the song
@@ -322,17 +328,42 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def on_next_clicked(self) -> None:
         print("next")
 
-    def actionPreferencesClicked(self) -> None:
+    def open_files(self) -> None:
+        """Opens the open files window"""
+        open_files_window = QFileDialog(
+            self, "Open file(s)", ".", "Audio files (*.mp3)"
+        )
+        # QFileDialog.FileMode enum { AnyFile, ExistingFile, Directory, ExistingFiles }
+        open_files_window.setFileMode(QFileDialog.ExistingFiles)
+        open_files_window.exec_()
+        filenames = open_files_window.selectedFiles()
+        print("file names chosen")
+        print(filenames)
+        self.tableView.add_files(filenames)
+
+    def open_preferences(self) -> None:
+        """Opens the preferences window"""
         preferences_window = PreferencesWindow(self.config)
         preferences_window.exec_()  # Display the preferences window modally
 
     def scan_libraries(self) -> None:
+        """Scans for new files in the configured library folder
+        Refreshes the datagridview"""
         scan_for_music()
         self.tableView.fetch_library()
 
     def clear_database(self) -> None:
-        delete_and_create_library_database()
-        self.tableView.fetch_library()
+        """Clears all songs from the database"""
+        reply = QMessageBox.question(
+            self,
+            "Confirmation",
+            "Clear all songs from database?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply:
+            delete_and_create_library_database()
+            self.tableView.fetch_library()
 
     def process_probe(self, buff) -> None:
         buff.startTime()

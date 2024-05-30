@@ -20,23 +20,24 @@ def get_id3_tags(file):
         is_easy_id3 = False
         audio = {}
 
-    print('get_id3_tags audio:')
-    print(audio)
+    # print('get_id3_tags audio:')
+    # print(audio)
 
     # Check if all tags are empty
     tags_are_empty = all(not values for values in audio.values())
     if tags_are_empty:
         # split on / to get just the filename
         # os.path.splitext to get name without extension
-        audio['title'] = [os.path.splitext(file.split('/')[-1])[0]] 
+        audio["title"] = [os.path.splitext(file.split("/")[-1])[0]]
 
-    if audio['title'] is None: # I guess a song could have other tags
+    if audio["title"] is None:  # I guess a song could have other tags
         #                       without a title, so i make sure to have title
-        audio['title'] = [os.path.splitext(file.split('/')[-1])[0]] 
+        audio["title"] = [os.path.splitext(file.split("/")[-1])[0]]
 
-    if is_easy_id3: # i can ignore this error because of this check
-        audio.save() # type: ignore
+    if is_easy_id3:  # i can ignore this error because of this check
+        audio.save()  # type: ignore
     return audio
+
 
 # import sys
 # my_file = sys.argv[1]

@@ -154,7 +154,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.setStretch(3, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1152, 41))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1152, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -174,6 +174,9 @@ class Ui_MainWindow(object):
         self.actionScanLibraries.setObjectName("actionScanLibraries")
         self.actionClearDatabase = QtWidgets.QAction(MainWindow)
         self.actionClearDatabase.setObjectName("actionClearDatabase")
+        self.actionOpenFiles = QtWidgets.QAction(MainWindow)
+        self.actionOpenFiles.setObjectName("actionOpenFiles")
+        self.menuFile.addAction(self.actionOpenFiles)
         self.menuEdit.addAction(self.actionPreferences)
         self.menuQuick_Actions.addAction(self.actionScanLibraries)
         self.menuQuick_Actions.addAction(self.actionClearDatabase)
@@ -205,5 +208,6 @@ class Ui_MainWindow(object):
         self.actionPreferences.setStatusTip(_translate("MainWindow", "Open preferences"))
         self.actionScanLibraries.setText(_translate("MainWindow", "Scan libraries"))
         self.actionClearDatabase.setText(_translate("MainWindow", "Clear Database"))
+        self.actionOpenFiles.setText(_translate("MainWindow", "Open file(s)"))
 from components import AlbumArtGraphicsView, MusicTable
 from pyqtgraph import PlotWidget

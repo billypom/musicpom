@@ -274,13 +274,14 @@
      <x>0</x>
      <y>0</y>
      <width>1152</width>
-     <height>41</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionOpenFiles"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -322,6 +323,11 @@
   <action name="actionClearDatabase">
    <property name="text">
     <string>Clear Database</string>
+   </property>
+  </action>
+  <action name="actionOpenFiles">
+   <property name="text">
+    <string>Open file(s)</string>
    </property>
   </action>
  </widget>

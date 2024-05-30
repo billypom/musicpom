@@ -84,12 +84,12 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
     Args:
         filepath: path to the mp3 file
         tag_name: common name of the ID3 tag
-        value: valut to set for the tag
+        value: value to set for the tag
 
     Returns:
         True / False"""
     print(
-        f"set_id3_tag(): filepath: {filepath} | tag_name: {tag_name} | value: {value}"
+        f"set_id3_tag.py | filepath: {filepath} | tag_name: {tag_name} | value: {value}"
     )
 
     try:
@@ -105,11 +105,16 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             if tdat_tag:
                 # update TDAT if we have it
                 audio_file.tags.add(tdat_tag)
+        elif tag_name == "lyrics":
+            print("lyrics..........")
+            audio_file.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=value))
         elif tag_name in id3_tag_mapping:  # Tag accounted for
             tag_class = id3_tag_mapping[tag_name]
+            print(f"set_id3_tag.py | tag_class: {tag_class}")
             # if issubclass(tag_class, EasyID3) or issubclass(tag_class, ID3): # Type safety
             if issubclass(tag_class, Frame):
                 audio_file.tags.add(tag_class(encoding=3, text=value))  # Add the tag
+                print(f"AAAAAAAAAAAAAA")
             else:
                 # dialog = ErrorDialog(f'ID3 tag not supported.\nTag: {tag_name}\nTag class: {tag_class}\nValue:{value}')
                 # dialog.exec_()
@@ -122,9 +127,9 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             pass
 
         audio_file.save()
-        print("ID3 tags updated:")
+        print("set_id3_tag.py | ID3 tags updated:")
         print(get_id3_tags(filepath))
-        print("-----")
+        print("set_id3_tag.py | -----")
         return True
 
     except Exception as e:

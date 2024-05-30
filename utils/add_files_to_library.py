@@ -14,15 +14,15 @@ def add_files_to_library(files):
     """
     if not files:
         return []
-    print(f"utils/add_files_to_library: {files}")
+    # print(f"utils/add_files_to_library: {files}")
     extensions = config.get("settings", "extensions").split(",")
     insert_data = []  # To store data for batch insert
     for filepath in files:
         if any(filepath.lower().endswith(ext) for ext in extensions):
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
-            print('add_files_to_library audio:')
-            print(audio)
+            # print("add_files_to_library audio:")
+            # print(audio)
             # Skip if no title is found (but should never happen
             if "title" not in audio:
                 continue
