@@ -15,7 +15,7 @@ class LyricsWindow(QDialog):
         self.setWindowTitle("Lyrics")
         self.lyrics = lyrics
         self.song_filepath = song_filepath
-        self.input_field = ""
+        self.input_field = "empty"
         layout = QVBoxLayout()
         # label = QLabel("Lyrics")
         # layout.addWidget(label)

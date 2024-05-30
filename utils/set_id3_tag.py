@@ -1,16 +1,17 @@
-import logging
 from components.ErrorDialog import ErrorDialog
 from utils.get_id3_tags import get_id3_tags
 from utils.handle_year_and_date_id3_tag import handle_year_and_date_id3_tag
-from mutagen.id3 import ID3, ID3NoHeaderError, Frame
+from mutagen.id3 import ID3
+from mutagen.id3._util import ID3NoHeaderError
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
-from mutagen.id3 import (
+from mutagen.id3._frames import (
+    Frame,
     TIT2,
     TPE1,
     TALB,
     TRCK,
-    TYER,
+    # TYER,
     TCON,
     TPOS,
     COMM,
@@ -25,7 +26,7 @@ from mutagen.id3 import (
     TENC,
     TBPM,
     TKEY,
-    TDAT,
+    # TDAT,
     TIME,
     TSSE,
     TOPE,
@@ -106,8 +107,10 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
                 # update TDAT if we have it
                 audio_file.tags.add(tdat_tag)
         elif tag_name == "lyrics":
-            print("lyrics..........")
-            audio_file.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=value))
+            audio = ID3(filepath)
+            frame = USLT(encoding=3, lang="eng", desc="desc", text=value)
+            audio.add(frame)
+            audio.save()
         elif tag_name in id3_tag_mapping:  # Tag accounted for
             tag_class = id3_tag_mapping[tag_name]
             print(f"set_id3_tag.py | tag_class: {tag_class}")
@@ -121,17 +124,15 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
                 # return False
                 pass
         else:
-            # dialog = ErrorDialog(f'Invalid ID3 tag. Tag: {tag_name}, Value:{value}')
+            # dialog = ErrorDialog(f"Invalid ID3 tag. Tag: {tag_name}, Value:{value}")
             # dialog.exec_()
             # return False
             pass
-
-        audio_file.save()
+        audio_file.save(v2_version=3)
         print("set_id3_tag.py | ID3 tags updated:")
         print(get_id3_tags(filepath))
         print("set_id3_tag.py | -----")
         return True
-
     except Exception as e:
         dialog = ErrorDialog(f"An unhandled exception occurred:\n{e}")
         dialog.exec_()
