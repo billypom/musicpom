@@ -7,14 +7,23 @@ from PyQt5.QtGui import (
     QDragEnterEvent,
     QDropEvent,
 )
-from PyQt5.QtWidgets import QAction, QMenu, QTableView, QShortcut, QMessageBox, QAbstractItemView
+from PyQt5.QtWidgets import (
+    QAction,
+    QMenu,
+    QTableView,
+    QShortcut,
+    QMessageBox,
+    QAbstractItemView,
+)
 from PyQt5.QtCore import QModelIndex, Qt, pyqtSignal, QTimer
 from utils import add_files_to_library
 from utils import update_song_in_library
 from utils import get_id3_tags
 from utils import get_album_art
 from utils import set_id3_tag
+from utils import delete_and_create_library_database
 from subprocess import Popen
+from sqlite3 import OperationalError
 import logging
 import configparser
 import os
@@ -57,8 +66,8 @@ class MusicTable(QTableView):
         self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
         self.songChanged = None
-        self.selected_song_filepath = ''
-        self.current_song_filepath = ''
+        self.selected_song_filepath = ""
+        self.current_song_filepath = ""
         # self.tableView.resizeColumnsToContents()
         self.clicked.connect(self.set_selected_song_filepath)
         # doubleClicked is a built in event for QTableView - we listen for this event and run set_current_song_filepath
@@ -104,12 +113,12 @@ class MusicTable(QTableView):
             #     self.model().removeRow(index)
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
-                    db.execute('DELETE FROM library WHERE filepath = ?', (file,))
+                    db.execute("DELETE FROM library WHERE filepath = ?", (file,))
 
     def open_directory(self):
-        filepath = self.get_selected_song_filepath().split('/')
+        filepath = self.get_selected_song_filepath().split("/")
         filepath.pop()
-        path = '/'.join(filepath)
+        path = "/".join(filepath)
         Popen(["xdg-open", path])
 
     def show_lyrics_menu(self):
@@ -241,7 +250,7 @@ class MusicTable(QTableView):
         self.playPauseSignal.emit()
 
     def fetch_library(self):
-        """Initialize the tableview model"""
+        """Initializes the tableview model"""
         self.vertical_scroll_position = (
             self.verticalScrollBar().value()
         )  # Get my scroll position before clearing
@@ -249,18 +258,22 @@ class MusicTable(QTableView):
         self.model.clear()
         self.model.setHorizontalHeaderLabels(self.table_headers)
         # Fetch library data
-        with DBA.DBAccess() as db:
-            data = db.query(
-                "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM library;",
-                (),
-            )
+        try:
+            with DBA.DBAccess() as db:
+                data = db.query(
+                    "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM library;",
+                    (),
+                )
+        except Exception as e:
+            logging.warning(f"MusicTable.py | fetch_library | Unhandled exception: {e}")
+            return
         # Populate the model
         for row_data in data:
             id, *rest_of_data = row_data
             items = [QStandardItem(str(item)) for item in rest_of_data]
             self.model.appendRow(items)
             # store id using setData - useful for later faster db fetching
-            row = self.model.rowCount() - 1
+            # row = self.model.rowCount() - 1
             for item in items:
                 item.setData(id, Qt.UserRole)
         # Update the viewport/model

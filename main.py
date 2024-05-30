@@ -1,10 +1,13 @@
 import os
 import configparser
 import sys
+from subprocess import run
 import qdarktheme
 from pyqtgraph import mkBrush
 from mutagen.id3 import ID3, APIC, error
 from mutagen.mp3 import MP3
+from configparser import ConfigParser
+import DBA
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -337,6 +340,25 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
 
 if __name__ == "__main__":
+    # First run initialization
+    if not os.path.exists("config.ini"):
+        # Create config file from sample
+        run(["cp", "sample_config.ini", "config.ini"])
+        config = ConfigParser()
+        config.read("config.ini")
+        db_name = config.get("db", "database")
+        db_path = db_name.split("/")
+        db_path.pop()
+        path_as_string = "/".join(db_path)
+        if not os.path.exists(path_as_string):
+            os.makedirs(path_as_string)
+            # Create database on first run
+            with DBA.DBAccess() as db:
+                with open("utils/delete_and_create_library.sql", "r") as file:
+                    lines = file.read()
+                    for statement in lines.split(";"):
+                        print(f"executing [{statement}]")
+                        db.execute(statement, ())
     # Allow for dynamic imports of my custom classes and utilities
     project_root = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(project_root)
