@@ -5,7 +5,7 @@ from mutagen.id3 import ID3
 from mutagen.id3._util import ID3NoHeaderError
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
-from mutagen.id3._frames import (
+from mutagen.id3 import (
     Frame,
     TIT2,
     TPE1,
@@ -89,49 +89,42 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
 
     Returns:
         True / False"""
-    print(
-        f"set_id3_tag.py | filepath: {filepath} | tag_name: {tag_name} | value: {value}"
-    )
+    # print(
+    #     f"set_id3_tag.py | filepath: {filepath} | tag_name: {tag_name} | value: {value}"
+    # )
 
     try:
         try:  # Load existing tags
-            audio_file = MP3(filepath, ID3=ID3)
+            audio_file = ID3(filepath)
         except ID3NoHeaderError:  # Create new tags if none exist
-            audio_file = MP3(filepath)
-            audio_file.add_tags()
+            audio_file = ID3()
         if tag_name == "album_date":
             tyer_tag, tdat_tag = handle_year_and_date_id3_tag(value)
             # always update TYER
-            audio_file.tags.add(tyer_tag)
+            audio_file.add(tyer_tag)
             if tdat_tag:
                 # update TDAT if we have it
-                audio_file.tags.add(tdat_tag)
+                audio_file.add(tdat_tag)
         elif tag_name == "lyrics":
-            audio = ID3(filepath)
-            frame = USLT(encoding=3, lang="eng", desc="desc", text=value)
+            try:
+                audio = ID3(filepath)
+            except:
+                audio = ID3()
+            audio.delall("USLT")
+            frame = USLT(encoding=3, text=value)
             audio.add(frame)
             audio.save()
+            return True
         elif tag_name in id3_tag_mapping:  # Tag accounted for
             tag_class = id3_tag_mapping[tag_name]
-            print(f"set_id3_tag.py | tag_class: {tag_class}")
-            # if issubclass(tag_class, EasyID3) or issubclass(tag_class, ID3): # Type safety
             if issubclass(tag_class, Frame):
-                audio_file.tags.add(tag_class(encoding=3, text=value))  # Add the tag
-                print(f"AAAAAAAAAAAAAA")
+                frame = tag_class(encoding=3, text=[value])
+                audio_file.add(frame)  # Add the tag
             else:
-                # dialog = ErrorDialog(f'ID3 tag not supported.\nTag: {tag_name}\nTag class: {tag_class}\nValue:{value}')
-                # dialog.exec_()
-                # return False
                 pass
         else:
-            # dialog = ErrorDialog(f"Invalid ID3 tag. Tag: {tag_name}, Value:{value}")
-            # dialog.exec_()
-            # return False
             pass
-        audio_file.save(v2_version=3)
-        print("set_id3_tag.py | ID3 tags updated:")
-        print(get_id3_tags(filepath))
-        print("set_id3_tag.py | -----")
+        audio_file.save(filepath)
         return True
     except Exception as e:
         dialog = ErrorDialog(f"An unhandled exception occurred:\n{e}")

@@ -21,24 +21,45 @@ def add_files_to_library(files):
         if any(filepath.lower().endswith(ext) for ext in extensions):
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
-            # print("add_files_to_library audio:")
-            # print(audio)
+            print("add_files_to_library audio:")
+            print(audio)
+
             # Skip if no title is found (but should never happen
-            if "title" not in audio:
+            if "TIT2" not in audio:
                 continue
+            title = audio["TIT2"].text[0]
+            try:
+                artist = audio["TPE1"].text[0]
+            except KeyError:
+                artist = ""
+            try:
+                album = audio["TALB"].text[0]
+            except KeyError:
+                album = ""
+            try:
+                genre = audio["TCON"].text[0]
+            except KeyError:
+                genre = ""
+            try:
+                date = audio["TDRC"].text[0]
+            except KeyError:
+                date = ""
+            try:
+                bitrate = audio["TBIT"].text[0]
+            except KeyError:
+                bitrate = ""
+
             # Append data tuple to insert_data list
             insert_data.append(
                 (
                     filepath,
-                    safe_get(audio, "title", [])[0],
-                    safe_get(audio, "album", [])[0] if "album" in audio else None,
-                    safe_get(audio, "artist", [])[0] if "artist" in audio else None,
-                    ",".join(safe_get(audio, "genre", []))
-                    if "genre" in audio
-                    else None,
+                    title,
+                    album,
+                    artist,
+                    genre,
                     filename.split(".")[-1],
-                    safe_get(audio, "date", [])[0] if "date" in audio else None,
-                    safe_get(audio, "bitrate", [])[0] if "birate" in audio else None,
+                    date,
+                    bitrate
                 )
             )
             # Check if batch size is reached

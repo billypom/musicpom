@@ -1,4 +1,4 @@
-from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3
 import DBA
 from PyQt5.QtGui import (
     QDragMoveEvent,
@@ -141,12 +141,9 @@ class MusicTable(QTableView):
         current_song = self.get_selected_song_metadata()
         print(f"MusicTable.py | show_lyrics_menu | current song: {current_song}")
         try:
-            lyrics = current_song["lyrics"]
-        except Exception:
-            pass
-        try:
-            lyrics = current_song["USLT"]
-        except Exception:
+            lyrics = current_song["USLT::XXX"].text
+        except Exception as e:
+            print(f'MusicTable.py | show_lyrics_menu | could not retrieve lyrics | {e}')
             lyrics = ""
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
@@ -224,9 +221,9 @@ class MusicTable(QTableView):
             for filepath in filepaths:
                 try:
                     # Read file metadata
-                    audio = EasyID3(filepath)
-                    artist = audio.get("artist", ["Unknown Artist"])[0]
-                    album = audio.get("album", ["Unknown Album"])[0]
+                    audio = ID3(filepath)
+                    artist = audio["TIT2"].text[0] if not '' or None else 'Unknown Artist'
+                    album = audio["TALB"].text[0] if not '' or None else 'Unknown Album'
                     # Determine the new path that needs to be made
                     new_path = os.path.join(
                         target_dir, artist, album, os.path.basename(filepath)
@@ -351,7 +348,7 @@ class MusicTable(QTableView):
         """Returns the selected songs filepath"""
         return self.selected_song_filepath
 
-    def get_selected_song_metadata(self) -> EasyID3 | dict:
+    def get_selected_song_metadata(self) -> ID3 | dict:
         """Returns the selected song's ID3 tags"""
         return get_id3_tags(self.selected_song_filepath)
 
@@ -359,7 +356,7 @@ class MusicTable(QTableView):
         """Returns the currently playing song filepath"""
         return self.current_song_filepath
 
-    def get_current_song_metadata(self) -> EasyID3 | dict:
+    def get_current_song_metadata(self) -> ID3 | dict:
         """Returns the currently playing song's ID3 tags"""
         return get_id3_tags(self.current_song_filepath)
 

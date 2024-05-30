@@ -1,5 +1,5 @@
-from mutagen.easyid3 import EasyID3
-from mutagen import File
+from mutagen.id3 import ID3
+from mutagen.id3._frames import TIT2
 import os
 
 
@@ -12,34 +12,22 @@ def get_id3_tags(file):
     if all tags are empty, at minimum fill in the 'title'
     """
 
-    is_easy_id3 = False
     try:
-        is_easy_id3 = True
-        audio = EasyID3(file)
-    except Exception as e:
-        is_easy_id3 = False
+        audio = ID3(file)
+    except:
         audio = {}
 
-    # print('get_id3_tags audio:')
-    # print(audio)
-
     # Check if all tags are empty
-    tags_are_empty = all(not values for values in audio.values())
-    if tags_are_empty:
-        # split on / to get just the filename
-        # os.path.splitext to get name without extension
-        audio["title"] = [os.path.splitext(file.split("/")[-1])[0]]
-
-    if audio["title"] is None:  # I guess a song could have other tags
-        #                       without a title, so i make sure to have title
-        audio["title"] = [os.path.splitext(file.split("/")[-1])[0]]
-
-    if is_easy_id3:  # i can ignore this error because of this check
+    # tags_are_empty = all(not values for values in audio.values())
+    try:
+        title = os.path.splitext(os.path.basename(file))[0]
+        frame = TIT2(encoding=3, text=[title])
+        audio["TIT2"] = frame
+    except Exception as e:
+        print(f'get_id3_tags.py | Exception: {e}')
+        pass
+    try:
         audio.save()  # type: ignore
+    except:
+        pass
     return audio
-
-
-# import sys
-# my_file = sys.argv[1]
-# data = get_id3_tags(my_file)
-# print(data)
