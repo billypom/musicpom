@@ -16,7 +16,7 @@ class PreferencesWindow(QDialog):
         self.input_fields = {}
         for category in self.config.sections():
             category_label = QLabel(f"{category}")
-            category_label.setFont(QFont("", weight=QFont.Bold))  # bold category
+            category_label.setFont(QFont("Sans", weight=QFont.Bold))  # bold category
             category_label.setStyleSheet(
                 "text-transform:uppercase;"
             )  # uppercase category
