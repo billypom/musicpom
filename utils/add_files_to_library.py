@@ -14,7 +14,6 @@ def add_files_to_library(files):
     """
     if not files:
         return []
-    # print(f"utils/add_files_to_library: {files}")
     extensions = config.get("settings", "extensions").split(",")
     insert_data = []  # To store data for batch insert
     for filepath in files:
@@ -59,7 +58,7 @@ def add_files_to_library(files):
                     genre,
                     filename.split(".")[-1],
                     date,
-                    bitrate
+                    bitrate,
                 )
             )
             # Check if batch size is reached

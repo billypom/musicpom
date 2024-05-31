@@ -1,11 +1,8 @@
 from components.ErrorDialog import ErrorDialog
-from utils.get_id3_tags import get_id3_tags
 from utils.handle_year_and_date_id3_tag import handle_year_and_date_id3_tag
 from mutagen.id3 import ID3
 from mutagen.id3._util import ID3NoHeaderError
-from mutagen.mp3 import MP3
-from mutagen.easyid3 import EasyID3
-from mutagen.id3 import (
+from mutagen.id3._frames import (
     Frame,
     TIT2,
     TPE1,

@@ -27,7 +27,8 @@ python3 main.py
 
 ## Todo:
 
-- [ ] Delete songs from library (del key || right-click delete)
 - [x] Right-click menu
+- [x] Editable lyrics textbox
+- [ ] Delete songs from library (del key || right-click delete)
 - [ ] .wav, .ogg, .flac convertor
-- [ ] Editable lyrics textbox
+- [ ] Alternatives to Gstreamer?

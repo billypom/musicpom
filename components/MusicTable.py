@@ -16,16 +16,14 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QAbstractItemView,
 )
-from PyQt5.QtCore import QModelIndex, Qt, pyqtSignal, QTimer
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
 from components.LyricsWindow import LyricsWindow
 from utils import add_files_to_library
 from utils import update_song_in_library
 from utils import get_id3_tags
 from utils import get_album_art
 from utils import set_id3_tag
-from utils import delete_and_create_library_database
 from subprocess import Popen
-from sqlite3 import OperationalError
 import logging
 import configparser
 import os
@@ -35,12 +33,13 @@ import shutil
 class MusicTable(QTableView):
     playPauseSignal = pyqtSignal()
     enterKey = pyqtSignal()
+    deleteKey = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self: QTableView, parent=None):
         # QTableView.__init__(self, parent)
         super().__init__(parent)
-        self.model = QStandardItemModel(self)
         # Necessary for actions related to cell values
+        self.model = QStandardItemModel(self)
         self.setModel(self.model)  # Same as above
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
@@ -56,9 +55,9 @@ class MusicTable(QTableView):
         ]
         # id3 names of headers
         self.id3_headers = [
-            "title",
-            "artist",
-            "album",
+            "TIT2",
+            "TPE1",
+            "TALB",
             "content_type",
             None,
             None,
@@ -75,6 +74,7 @@ class MusicTable(QTableView):
         # doubleClicked is a built in event for QTableView - we listen for this event and run set_current_song_filepath
         self.doubleClicked.connect(self.set_current_song_filepath)
         self.enterKey.connect(self.set_current_song_filepath)
+        self.deleteKey.connect(self.delete_songs)
         self.fetch_library()
         self.setup_keyboard_shortcuts()
         self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
@@ -104,7 +104,7 @@ class MusicTable(QTableView):
         reply = QMessageBox.question(
             self,
             "Confirmation",
-            "Are you sure you want to delete these songs?",
+            "Remove these songs from the library? (Files stay on your computer)",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
@@ -139,11 +139,11 @@ class MusicTable(QTableView):
         if selected_song_filepath is None:
             return
         current_song = self.get_selected_song_metadata()
-        print(f"MusicTable.py | show_lyrics_menu | current song: {current_song}")
+        # print(f"MusicTable.py | show_lyrics_menu | current song: {current_song}")
         try:
             lyrics = current_song["USLT::XXX"].text
         except Exception as e:
-            print(f'MusicTable.py | show_lyrics_menu | could not retrieve lyrics | {e}')
+            print(f"MusicTable.py | show_lyrics_menu | could not retrieve lyrics | {e}")
             lyrics = ""
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
@@ -179,6 +179,33 @@ class MusicTable(QTableView):
             e.accept()
         else:
             e.ignore()
+
+    def keyPressEvent(self, event):
+        """Press a key. Do a thing"""
+        key = event.key()
+        if key == Qt.Key_Space:  # Spacebar to play/pause
+            self.toggle_play_pause()
+        elif key == Qt.Key_Up:  # Arrow key navigation
+            current_index = self.currentIndex()
+            new_index = self.model.index(
+                current_index.row() - 1, current_index.column()
+            )
+            if new_index.isValid():
+                self.setCurrentIndex(new_index)
+        elif key == Qt.Key_Down:  # Arrow key navigation
+            current_index = self.currentIndex()
+            new_index = self.model.index(
+                current_index.row() + 1, current_index.column()
+            )
+            if new_index.isValid():
+                self.setCurrentIndex(new_index)
+        elif key in (Qt.Key_Return, Qt.Key_Enter):
+            if self.state() != QAbstractItemView.EditingState:
+                self.enterKey.emit()  # Enter key detected
+            else:
+                super().keyPressEvent(event)
+        else:  # Default behavior
+            super().keyPressEvent(event)
 
     def setup_keyboard_shortcuts(self):
         """Setup shortcuts here"""
@@ -222,8 +249,10 @@ class MusicTable(QTableView):
                 try:
                     # Read file metadata
                     audio = ID3(filepath)
-                    artist = audio["TIT2"].text[0] if not '' or None else 'Unknown Artist'
-                    album = audio["TALB"].text[0] if not '' or None else 'Unknown Album'
+                    artist = (
+                        audio["TIT2"].text[0] if not "" or None else "Unknown Artist"
+                    )
+                    album = audio["TALB"].text[0] if not "" or None else "Unknown Album"
                     # Determine the new path that needs to be made
                     new_path = os.path.join(
                         target_dir, artist, album, os.path.basename(filepath)
@@ -248,33 +277,6 @@ class MusicTable(QTableView):
             QMessageBox.information(
                 self, "Reorganization complete", "Files successfully reorganized"
             )
-
-    def keyPressEvent(self, event):
-        """Press a key. Do a thing"""
-        key = event.key()
-        if key == Qt.Key_Space:  # Spacebar to play/pause
-            self.toggle_play_pause()
-        elif key == Qt.Key_Up:  # Arrow key navigation
-            current_index = self.currentIndex()
-            new_index = self.model.index(
-                current_index.row() - 1, current_index.column()
-            )
-            if new_index.isValid():
-                self.setCurrentIndex(new_index)
-        elif key == Qt.Key_Down:  # Arrow key navigation
-            current_index = self.currentIndex()
-            new_index = self.model.index(
-                current_index.row() + 1, current_index.column()
-            )
-            if new_index.isValid():
-                self.setCurrentIndex(new_index)
-        elif key in (Qt.Key_Return, Qt.Key_Enter):
-            if self.state() != QAbstractItemView.EditingState:
-                self.enterKey.emit()  # Enter key detected
-            else:
-                super().keyPressEvent(event)
-        else:  # Default behavior
-            super().keyPressEvent(event)
 
     def toggle_play_pause(self):
         """Toggles the currently playing song by emitting a signal"""

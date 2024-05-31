@@ -14,7 +14,7 @@ def get_id3_tags(file):
 
     try:
         audio = ID3(file)
-    except:
+    except Exception:
         audio = {}
 
     # Check if all tags are empty
@@ -24,10 +24,10 @@ def get_id3_tags(file):
         frame = TIT2(encoding=3, text=[title])
         audio["TIT2"] = frame
     except Exception as e:
-        print(f'get_id3_tags.py | Exception: {e}')
+        print(f"get_id3_tags.py | Exception: {e}")
         pass
     try:
         audio.save()  # type: ignore
-    except:
+    except Exception:
         pass
     return audio

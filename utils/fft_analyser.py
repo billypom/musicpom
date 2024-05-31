@@ -19,7 +19,7 @@ class FFTAnalyser(QtCore.QThread):
 
     calculated_visual = QtCore.pyqtSignal(np.ndarray)
 
-    def __init__(self, player: 'MusicPlayer'):  # noqa: F821
+    def __init__(self, player):  # noqa: F821
         super().__init__()
         self.player = player
         self.reset_media()
@@ -32,7 +32,7 @@ class FFTAnalyser(QtCore.QThread):
     def reset_media(self):
         """Resets the media to the currently playing song."""
         audio_file = self.player.currentMedia().canonicalUrl().path()
-        if os.name == 'nt' and audio_file.startswith('/'):
+        if os.name == "nt" and audio_file.startswith("/"):
             audio_file = audio_file[1:]
         if audio_file:
             try:
@@ -52,13 +52,15 @@ class FFTAnalyser(QtCore.QThread):
         """Calculates the amplitudes used for visualising the media."""
 
         sample_count = int(self.song.frame_rate * 0.05)
-        start_index = int((self.player.position()/1000) * self.song.frame_rate)
-        v_sample = self.samples[start_index:start_index+sample_count]  # samples to analyse
+        start_index = int((self.player.position() / 1000) * self.song.frame_rate)
+        v_sample = self.samples[
+            start_index : start_index + sample_count
+        ]  # samples to analyse
 
         # use FFTs to analyse frequency and amplitudes
         fourier = np.fft.fft(v_sample)
         freq = np.fft.fftfreq(fourier.size, d=0.05)
-        amps = 2/v_sample.size * np.abs(fourier)
+        amps = 2 / v_sample.size * np.abs(fourier)
         data = np.array([freq, amps]).T
 
         point_range = 1 / self.resolution
@@ -73,17 +75,26 @@ class FFTAnalyser(QtCore.QThread):
             if not amps.size:
                 point_samples.append(0)
             else:
-                point_samples.append(amps.max()*((1+self.sensitivity/10+(self.sensitivity-1)/10)**(n/50)))
+                point_samples.append(
+                    amps.max()
+                    * (
+                        (1 + self.sensitivity / 10 + (self.sensitivity - 1) / 10)
+                        ** (n / 50)
+                    )
+                )
 
         # Add the point_samples to the self.points array, the reason we have a separate
         # array (self.bars) is so that we can fade out the previous amplitudes from
         # the past
         for n, amp in enumerate(point_samples):
-
             amp *= 2
 
-            if (self.points[n] > 0 and amp < self.points[n] or
-                    self.player.state() in (self.player.PausedState, self.player.StoppedState)):
+            if (
+                self.points[n] > 0
+                and amp < self.points[n]
+                or self.player.state()
+                in (self.player.PausedState, self.player.StoppedState)
+            ):
                 self.points[n] -= self.points[n] / 10  # fade out
             elif abs(self.points[n] - amp) > self.visual_delta_threshold:
                 self.points[n] = amp
