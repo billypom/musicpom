@@ -4,8 +4,8 @@ import sys
 from subprocess import run
 import qdarktheme
 from pyqtgraph import mkBrush
-from mutagen.id3 import ID3, APIC, error
-from mutagen.mp3 import MP3
+from mutagen.id3 import ID3
+from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 import DBA
 from ui import Ui_MainWindow
@@ -18,9 +18,9 @@ from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
     QMessageBox,
 )
-from PyQt5.QtCore import QUrl, QTimer, QEvent, Qt, QModelIndex
+from PyQt5.QtCore import QUrl, QTimer, Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
-from PyQt5.QtGui import QPixmap, QStandardItemModel
+from PyQt5.QtGui import QCloseEvent, QPixmap
 from utils import scan_for_music
 from utils import delete_and_create_library_database
 from components import PreferencesWindow, AudioVisualizer
@@ -130,7 +130,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setStretchLastSection(False)
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, a0: QCloseEvent | None) -> None:
         """Save settings when closing the application"""
         # MusicTable/tableView column widths
         list_of_column_widths = []
@@ -142,7 +142,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Save the config
         with open("config.ini", "w") as configfile:
             self.config.write(configfile)
-        super().closeEvent(event)
+        super().closeEvent(a0)
 
     def play_audio_file(self) -> None:
         """Start playback of tableView.current_song_filepath track & moves playback slider"""
@@ -159,18 +159,17 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.move_slider()  # mover
 
         # assign metadata
-        # FIXME when i change tinytag to something else
         artist = (
-            self.current_song_metadata["artist"][0]
+            self.current_song_metadata["TPE1"][0]
             if "artist" in self.current_song_metadata
             else None
         )
         album = (
-            self.current_song_metadata["album"][0]
+            self.current_song_metadata["TALB"][0]
             if "album" in self.current_song_metadata
             else None
         )
-        title = self.current_song_metadata["title"][0]
+        title = self.current_song_metadata["TIT2"][0]
         # edit labels
         self.artistLabel.setText(artist)
         self.albumLabel.setText(album)
@@ -226,14 +225,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self, song_file_path: str, album_art_path: str
     ) -> None:
         """Updates the ID3 tag APIC (album art) for 1 song"""
-        audio = MP3(song_file_path, ID3=ID3)
+        # audio = MP3(song_file_path, ID3=ID3)
+        audio = ID3(song_file_path)
         # Remove existing APIC Frames (album art)
-        if audio.tags is not None:
-            audio.tags.delall("APIC")
+        audio.delall("APIC")
         # Add the album art
         with open(album_art_path, "rb") as album_art_file:
             if album_art_path.endswith(".jpg") or album_art_path.endswith(".jpeg"):
-                audio.tags.add(
+                audio.add(
                     APIC(
                         encoding=3,  # 3 = utf-8
                         mime="image/jpeg",
@@ -243,7 +242,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                     )
                 )
             elif album_art_path.endswith(".png"):
-                audio.tags.add(
+                audio.add(
                     APIC(
                         encoding=3,  # 3 = utf-8
                         mime="image/png",
@@ -270,9 +269,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def update_audio_visualization(self) -> None:
         """Handles upading points on the pyqtgraph visual"""
         self.clear_audio_visualization()
-        self.y = self.audio_visualizer.get_amplitudes()
-        self.x = [i for i in range(len(self.y))]
-        self.PlotWidget.plot(self.x, self.y, fillLevel=0, fillBrush=mkBrush("b"))
+        y = self.audio_visualizer.get_amplitudes()
+        x = [i for i in range(len(y))]
+        self.PlotWidget.plot(x, y, fillLevel=0, fillBrush=mkBrush("b"))
         self.PlotWidget.show()
 
     def clear_audio_visualization(self) -> None:
@@ -284,7 +283,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             return
         else:
             # Update the slider
-            if self.player.state() == QMediaPlayer.PlayingState:
+            if self.player.state() == QMediaPlayer.State.PlayingState:
                 self.playbackSlider.setMinimum(0)
                 self.playbackSlider.setMaximum(self.player.duration())
                 slider_position = self.player.position()
@@ -310,11 +309,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def on_play_clicked(self) -> None:
         """Updates the Play & Pause buttons when clicked"""
-        if self.player.state() == QMediaPlayer.PlayingState:
+        if self.player.state() == QMediaPlayer.State.PlayingState:
             self.player.pause()
             self.playButton.setText("▶️")
         else:
-            if self.player.state() == QMediaPlayer.PausedState:
+            if self.player.state() == QMediaPlayer.State.PausedState:
                 self.player.play()
                 self.playButton.setText("⏸️")
             else:

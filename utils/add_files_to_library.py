@@ -1,7 +1,6 @@
 import DBA
 from configparser import ConfigParser
-from utils import get_id3_tags
-from utils import safe_get
+from utils import get_id3_tags, id3_timestamp_to_datetime, safe_get
 
 config = ConfigParser()
 config.read("config.ini")
@@ -40,7 +39,7 @@ def add_files_to_library(files):
             except KeyError:
                 genre = ""
             try:
-                date = audio["TDRC"].text[0]
+                date = id3_timestamp_to_datetime(audio["TDRC"].text[0])
             except KeyError:
                 date = ""
             try:
