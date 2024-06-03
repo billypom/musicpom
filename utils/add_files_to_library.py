@@ -1,6 +1,6 @@
 import DBA
 from configparser import ConfigParser
-from utils import get_id3_tags, id3_timestamp_to_datetime, safe_get
+from utils import get_id3_tags, id3_timestamp_to_datetime
 
 config = ConfigParser()
 config.read("config.ini")
