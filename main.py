@@ -384,7 +384,7 @@ if __name__ == "__main__":
             os.makedirs(path_as_string)
             # Create database on first run
             with DBA.DBAccess() as db:
-                with open("utils/delete_and_create_library.sql", "r") as file:
+                with open("utils/init.sql", "r") as file:
                     lines = file.read()
                     for statement in lines.split(";"):
                         print(f"executing [{statement}]")

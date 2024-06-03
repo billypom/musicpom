@@ -64,7 +64,7 @@ def add_files_to_library(files):
             if len(insert_data) >= 1000:
                 with DBA.DBAccess() as db:
                     db.executemany(
-                        "INSERT OR IGNORE INTO library (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT OR IGNORE INTO song (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                         insert_data,
                     )
                 insert_data = []  # Reset the insert_data list
@@ -72,7 +72,7 @@ def add_files_to_library(files):
         if insert_data:
             with DBA.DBAccess() as db:
                 db.executemany(
-                    "INSERT OR IGNORE INTO library (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT OR IGNORE INTO song (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     insert_data,
                 )
     return True

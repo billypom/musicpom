@@ -113,7 +113,7 @@ class MusicTable(QTableView):
             selected_indices = self.get_selected_rows()
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
-                    db.execute("DELETE FROM library WHERE filepath = ?", (file,))
+                    db.execute("DELETE FROM song WHERE filepath = ?", (file,))
             for index in selected_indices:
                 self.model.removeRow(index)
 
@@ -264,7 +264,7 @@ class MusicTable(QTableView):
                     # Update the db
                     with DBA.DBAccess() as db:
                         db.query(
-                            "UPDATE library SET filepath = ? WHERE filepath = ?",
+                            "UPDATE song SET filepath = ? WHERE filepath = ?",
                             (new_path, filepath),
                         )
                     print(f"Moved: {filepath} -> {new_path}")
@@ -296,7 +296,7 @@ class MusicTable(QTableView):
         try:
             with DBA.DBAccess() as db:
                 data = db.query(
-                    "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM library;",
+                    "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM song;",
                     (),
                 )
         except Exception as e:
