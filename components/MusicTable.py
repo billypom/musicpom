@@ -109,13 +109,15 @@ class MusicTable(QTableView):
             QMessageBox.Yes,
         )
         if reply:
+            model = self.model
             selected_filepaths = self.get_selected_songs_filepaths()
             selected_indices = self.get_selected_rows()
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
                     db.execute("DELETE FROM library WHERE filepath = ?", (file,))
             for index in selected_indices:
-                self.model.removeRow(index)
+                model.removeRow(index)
+            self.fetch_library()
 
     def open_directory(self):
         """Opens the currently selected song in the system file manager"""
