@@ -1,6 +1,6 @@
 import DBA
 from configparser import ConfigParser
-from utils import get_id3_tags, id3_timestamp_to_datetime, safe_get
+from utils import get_id3_tags, id3_timestamp_to_datetime
 
 config = ConfigParser()
 config.read("config.ini")
@@ -64,7 +64,7 @@ def add_files_to_library(files):
             if len(insert_data) >= 1000:
                 with DBA.DBAccess() as db:
                     db.executemany(
-                        "INSERT OR IGNORE INTO library (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT OR IGNORE INTO song (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                         insert_data,
                     )
                 insert_data = []  # Reset the insert_data list
@@ -72,7 +72,7 @@ def add_files_to_library(files):
         if insert_data:
             with DBA.DBAccess() as db:
                 db.executemany(
-                    "INSERT OR IGNORE INTO library (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT OR IGNORE INTO song (filepath, title, album, artist, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     insert_data,
                 )
     return True

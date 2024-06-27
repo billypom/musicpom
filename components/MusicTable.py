@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
 from components.LyricsWindow import LyricsWindow
+from components.AddToPlaylistWindow import AddToPlaylistWindow
 from utils import add_files_to_library
 from utils import update_song_in_library
 from utils import get_id3_tags
@@ -81,12 +82,11 @@ class MusicTable(QTableView):
         self.model.layoutChanged.connect(self.restore_scroll_position)
 
     def contextMenuEvent(self, event):
-        """Show a context menu when you right-click a row"""
+        """Right-click context menu for rows in Music Table"""
         menu = QMenu(self)
-        # delete song
-        delete_action = QAction("Delete", self)
-        delete_action.triggered.connect(self.delete_songs)
-        menu.addAction(delete_action)
+        add_to_playlist_action = QAction("Add to playlist", self)
+        add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
+        menu.addAction(add_to_playlist_action)
         # lyrics
         lyrics_menu = QAction("Lyrics (View/Edit)", self)
         lyrics_menu.triggered.connect(self.show_lyrics_menu)
@@ -95,6 +95,10 @@ class MusicTable(QTableView):
         open_containing_folder_action = QAction("Open in system file manager", self)
         open_containing_folder_action.triggered.connect(self.open_directory)
         menu.addAction(open_containing_folder_action)
+        # delete song
+        delete_action = QAction("Delete", self)
+        delete_action.triggered.connect(self.delete_songs)
+        menu.addAction(delete_action)
         # show
         self.set_selected_song_filepath()
         menu.exec_(event.globalPos())
@@ -114,7 +118,7 @@ class MusicTable(QTableView):
             selected_indices = self.get_selected_rows()
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
-                    db.execute("DELETE FROM library WHERE filepath = ?", (file,))
+                    db.execute("DELETE FROM song WHERE filepath = ?", (file,))
             for index in selected_indices:
                 model.removeRow(index)
             self.fetch_library()
@@ -134,6 +138,16 @@ class MusicTable(QTableView):
         filepath.pop()
         path = "/".join(filepath)
         Popen(["xdg-open", path])
+
+    def add_selected_files_to_playlist(self):
+        """Opens a playlist choice menu and adds the currently selected files to the chosen playlist"""
+        playlist_dict = {}
+        with DBA.DBAccess() as db:
+            data = db.query("SELECT id, name from playlist", ())
+        for row in data:
+            playlist_dict[row[0][0]] = row[0][1]
+        playlist_choice_window = AddToPlaylistWindow(playlist_dict)
+        playlist_choice_window.exec_()
 
     def show_lyrics_menu(self):
         """Shows the lyrics for the currently selected song"""
@@ -266,7 +280,7 @@ class MusicTable(QTableView):
                     # Update the db
                     with DBA.DBAccess() as db:
                         db.query(
-                            "UPDATE library SET filepath = ? WHERE filepath = ?",
+                            "UPDATE song SET filepath = ? WHERE filepath = ?",
                             (new_path, filepath),
                         )
                     print(f"Moved: {filepath} -> {new_path}")
@@ -298,7 +312,7 @@ class MusicTable(QTableView):
         try:
             with DBA.DBAccess() as db:
                 data = db.query(
-                    "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM library;",
+                    "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM song;",
                     (),
                 )
         except Exception as e:

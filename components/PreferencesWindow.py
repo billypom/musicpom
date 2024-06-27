@@ -1,4 +1,12 @@
-from PyQt5.QtWidgets import QDialog, QFrame, QVBoxLayout, QLabel, QLineEdit, QPushButton
+from PyQt5.QtWidgets import (
+    QDialog,
+    QFrame,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QDial,
+)
 from PyQt5.QtGui import QFont
 
 
