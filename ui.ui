@@ -274,7 +274,7 @@
      <x>0</x>
      <y>0</y>
      <width>1152</width>
-     <height>21</height>
+     <height>41</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -299,7 +299,8 @@
      <string>Quick-Actions</string>
     </property>
     <addaction name="actionScanLibraries"/>
-    <addaction name="actionClearDatabase"/>
+    <addaction name="actionDeleteLibrary"/>
+    <addaction name="actionDeleteDatabase"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -320,14 +321,19 @@
     <string>Scan libraries</string>
    </property>
   </action>
-  <action name="actionClearDatabase">
+  <action name="actionDeleteLibrary">
    <property name="text">
-    <string>Clear Database</string>
+    <string>Delete Library</string>
    </property>
   </action>
   <action name="actionOpenFiles">
    <property name="text">
     <string>Open file(s)</string>
+   </property>
+  </action>
+  <action name="actionDeleteDatabase">
+   <property name="text">
+    <string>Delete Database</string>
    </property>
   </action>
  </widget>

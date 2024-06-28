@@ -1,4 +1,5 @@
 from .id3_timestamp_to_datetime import id3_timestamp_to_datetime
+from .initialize_db import initialize_db
 from .safe_get import safe_get
 from .get_album_art import get_album_art
 from .get_id3_tags import get_id3_tags

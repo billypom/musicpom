@@ -1,9 +1,9 @@
 import DBA
 
 
-def delete_and_create_library_database():
-    """Clears all songs in database"""
-    with open("utils/delete_and_create_library.sql", "r") as file:
+def initialize_db():
+    """Recreates everything in the database"""
+    with open("utils/init.sql", "r") as file:
         lines = file.read()
         for statement in lines.split(";"):
             print(f"executing [{statement}]")

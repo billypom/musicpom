@@ -21,8 +21,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QUrl, QTimer, Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QCloseEvent, QPixmap
-from utils import scan_for_music
-from utils import delete_and_create_library_database
+from utils import scan_for_music, delete_and_create_library_database, initialize_db
 from components import PreferencesWindow, AudioVisualizer
 
 # Create ui.py file from Qt Designer
@@ -98,10 +97,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.open_preferences
         )  # Open preferences menu
         # QUICK ACTIONS MENU
-        self.actionScanLibraries.triggered.connect(self.scan_libraries)  # Scan library
-        self.actionClearDatabase.triggered.connect(
-            self.clear_database
-        )  # Clear database
+        self.actionScanLibraries.triggered.connect(self.scan_libraries)
+        self.actionDeleteLibrary.triggered.connect(self.clear_database)
+        self.actionDeleteDatabase.triggered.connect(self.delete_database)
         ## tableView triggers
         self.tableView.doubleClicked.connect(
             self.play_audio_file
@@ -362,6 +360,32 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
         if reply:
             delete_and_create_library_database()
+            self.tableView.fetch_library()
+
+    def delete_database(self) -> None:
+        """Deletes the entire database"""
+        reply = QMessageBox.question(
+            self,
+            "Confirmation",
+            "Delete database?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply:
+            initialize_db()
+            self.tableView.fetch_library()
+
+    def reinitialize_database(self) -> None:
+        """Clears all tables in database and recreates"""
+        reply = QMessageBox.question(
+            self,
+            "Confirmation",
+            "Recreate the database?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply:
+            initialize_db()
             self.tableView.fetch_library()
 
     def process_probe(self, buff) -> None:
