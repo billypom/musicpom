@@ -266,13 +266,14 @@ class MusicTable(QTableView):
                     # Read file metadata
                     audio = ID3(filepath)
                     artist = (
-                        audio["TIT2"].text[0] if not "" or None else "Unknown Artist"
+                        audio["TPE1"].text[0] if not "" or None else "Unknown Artist"
                     )
                     album = audio["TALB"].text[0] if not "" or None else "Unknown Album"
                     # Determine the new path that needs to be made
                     new_path = os.path.join(
                         target_dir, artist, album, os.path.basename(filepath)
                     )
+                    print(new_path)
                     # Create the directories if they dont exist
                     os.makedirs(os.path.dirname(new_path), exist_ok=True)
                     # Move the file to the new directory

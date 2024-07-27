@@ -31,4 +31,5 @@ python3 main.py
 - [x] Editable lyrics textbox
 - [ ] Delete songs from library (del key || right-click delete)
 - [ ] .wav, .ogg, .flac convertor
+- [ ] batch metadata changer (red text on fields that have differing info)
 - [ ] Alternatives to Gstreamer?
