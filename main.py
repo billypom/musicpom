@@ -51,8 +51,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         stopped = False
         # Initialization
         self.player = QMediaPlayer()  # Audio player object
+        print(f"QMediaPlayer() = {self.player}")
         self.probe = QAudioProbe()  # Gets audio data
+        print(f"QAudioProbe() = {self.probe}")
         self.timer = QTimer(self)  # Audio timing things
+        print(f"QTimer() = {self.timer}")
         # self.music_table_model = QStandardItemModel(self) # Table library listing
         self.audio_visualizer = AudioVisualizer(self.player)
         self.current_volume = 50

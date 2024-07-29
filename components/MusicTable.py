@@ -108,7 +108,7 @@ class MusicTable(QTableView):
         menu.exec_(event.globalPos())
 
     def delete_songs(self):
-        """Deletes the currently selected songs from the db and table (not the filesystem)"""
+        """Deletes the currently selected songs from the db and music table (not the filesystem)"""
         reply = QMessageBox.question(
             self,
             "Confirmation",
@@ -147,7 +147,10 @@ class MusicTable(QTableView):
         Popen(["xdg-open", path])
 
     def edit_selected_files_metadata(self):
+        # FIXME:
+        """Opens a form with metadata from the selected audio files"""
         files = self.get_selected_songs_filepaths()
+        return
 
     def add_selected_files_to_playlist(self):
         """Opens a playlist choice menu and adds the currently selected files to the chosen playlist"""
