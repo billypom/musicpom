@@ -87,7 +87,11 @@ class MusicTable(QTableView):
         add_to_playlist_action = QAction("Add to playlist", self)
         add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
         menu.addAction(add_to_playlist_action)
-        # lyrics
+        # edit metadata
+        edit_metadata_action = QAction("Edit metadata", self)
+        edit_metadata_action.triggered.connect(self.edit_selected_files_metadata)
+        menu.addAction(edit_metadata_action)
+        # edit lyrics
         lyrics_menu = QAction("Lyrics (View/Edit)", self)
         lyrics_menu.triggered.connect(self.show_lyrics_menu)
         menu.addAction(lyrics_menu)
@@ -120,7 +124,10 @@ class MusicTable(QTableView):
                 with DBA.DBAccess() as db:
                     db.execute("DELETE FROM song WHERE filepath = ?", (file,))
             for index in selected_indices:
-                model.removeRow(index)
+                try:
+                    model.removeRow(index)
+                except Exception as e:
+                    logging.info(f"MusicTable.py delete_songs() failed | {e}")
             self.fetch_library()
 
     def open_directory(self):
@@ -138,6 +145,9 @@ class MusicTable(QTableView):
         filepath.pop()
         path = "/".join(filepath)
         Popen(["xdg-open", path])
+
+    def edit_selected_files_metadata(self):
+        files = self.get_selected_songs_filepaths()
 
     def add_selected_files_to_playlist(self):
         """Opens a playlist choice menu and adds the currently selected files to the chosen playlist"""
@@ -157,6 +167,7 @@ class MusicTable(QTableView):
         current_song = self.get_selected_song_metadata()
         # print(f"MusicTable.py | show_lyrics_menu | current song: {current_song}")
         try:
+            # Have to use USLT::XXX to retrieve
             lyrics = current_song["USLT::XXX"].text
         except Exception as e:
             print(f"MusicTable.py | show_lyrics_menu | could not retrieve lyrics | {e}")

@@ -1,3 +1,4 @@
+import logging
 from components.ErrorDialog import ErrorDialog
 from utils.handle_year_and_date_id3_tag import handle_year_and_date_id3_tag
 from mutagen.id3 import ID3
@@ -102,10 +103,13 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             if tdat_tag:
                 # update TDAT if we have it
                 audio_file.add(tdat_tag)
-        elif tag_name == "lyrics":
+        elif tag_name == "lyrics" or tag_name == "USLT":
             try:
                 audio = ID3(filepath)
-            except:
+            except Exception as e:
+                logging.debug(
+                    f"set_id3_tag.py set_id3_tag() ran into an exception: {e}"
+                )
                 audio = ID3()
             audio.delall("USLT")
             frame = USLT(encoding=3, text=value)

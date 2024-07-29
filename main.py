@@ -1,8 +1,10 @@
 import os
 import configparser
 import sys
+import logging
 from subprocess import run
 import qdarktheme
+
 from pyqtgraph import mkBrush
 from mutagen.id3 import ID3
 from mutagen.id3._frames import APIC
@@ -413,6 +415,8 @@ if __name__ == "__main__":
                     for statement in lines.split(";"):
                         print(f"executing [{statement}]")
                         db.execute(statement, ())
+    # logging setup
+    logging.basicConfig(filename="musicpom.log", encoding="utf-8", level=logging.DEBUG)
     # Allow for dynamic imports of my custom classes and utilities
     project_root = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(project_root)
