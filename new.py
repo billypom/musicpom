@@ -10,7 +10,6 @@ from mutagen.id3 import ID3
 from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 import DBA
-from ui import Ui_MainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import (
     QFileDialog,
@@ -33,34 +32,32 @@ from components import (
 )
 
 
-class MainWindow(QMainWindow, Ui_MainWindow):
+class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         global stopped
         stopped = False
-        # Initialization
+        # Vars
         self.setupUi(self)
         self.setWindowTitle("MusicPom")
-        self.selected_song_filepath = None
-        self.current_song_filepath = None
-        self.current_song_metadata = None
-        self.current_song_album_art = None
-        self.album_art_scene = QGraphicsScene()
-        self.config = configparser.ConfigParser()
+        self.selected_song_filepath: str | None = None
+        self.current_song_filepath: str | None = None
+        self.current_song_metadata: ID3 | dict | None = None
+        self.current_song_album_art: bytes | None = None
+        self.album_art_scene: QGraphicsScene = QGraphicsScene()
+        self.config: ConfigParser = configparser.ConfigParser()
+        self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
+        self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
+        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
+        self.current_volume: int = 50
+        # Initialization
         self.config.read("config.ini")
-        self.player = QMediaPlayer()  # Audio player object
-        self.audio_visualizer = AudioVisualizer(self.player)
-        self.current_volume = 50
         self.player.setVolume(self.current_volume)
-
         # Audio probe for processing audio signal in real time
-        # Provides faster updates than move_slider
-        self.probe = QAudioProbe()  # Gets audio data
         self.probe.setSource(self.player)
         self.probe.audioBufferProbed.connect(self.process_probe)
-
         # Slider Timer (realtime playback feedback horizontal bar)
-        self.timer = QTimer(self)  # Audio timing things
+        self.timer: QTimer = QTimer(self)  # Audio timing things
         self.timer.start(
             150
         )  # 150ms update interval solved problem with drag seeking halting playback
@@ -84,42 +81,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # |_____________|
 
         #  FIXME: moving the slider while playing is happening frequently causes playback to halt - the pyqtgraph is also affected by this
-        # self.playbackSlider.sliderMoved[int].connect(
+        #  so it must be affecting our QMediaPlayer as well
+        #  self.playbackSlider.sliderMoved[int].connect(
         #     lambda: self.player.setPosition(self.playbackSlider.value())
         # )
-        self.playbackSlider.sliderReleased[int].connect(
+        self.playbackSlider.sliderReleased.connect(
             lambda: self.player.setPosition(self.playbackSlider.value())
         )  # maybe sliderReleased works better than sliderMoved
         self.volumeSlider.sliderMoved[int].connect(
             lambda: self.volume_changed()
         )  # Move slider to adjust volume
-        self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
-        self.previousButton.clicked.connect(
-            self.on_previous_clicked
-        )  # Click to previous song
-        self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
+        # Playback controls
+        self.playButton.clicked.connect(self.on_play_clicked)
+        self.prevButton.clicked.connect(self.on_previous_clicked)
+        self.nextButton.clicked.connect(self.on_next_clicked)
         # FILE MENU
         self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
         # EDIT MENU
-        # VIEW MENU
         self.actionPreferences.triggered.connect(
             self.open_preferences
         )  # Open preferences menu
+        # VIEW MENU
         # QUICK ACTIONS MENU
         self.actionScanLibraries.triggered.connect(self.scan_libraries)
         self.actionDeleteLibrary.triggered.connect(self.clear_database)
         self.actionDeleteDatabase.triggered.connect(self.delete_database)
-        ## tableView triggers
-        self.tableView.doubleClicked.connect(
-            self.play_audio_file
-        )  # Listens for the double click event, then plays the song
-        self.tableView.enterKey.connect(
-            self.play_audio_file
-        )  # Listens for the enter key event, then plays the song
-        self.tableView.playPauseSignal.connect(
-            self.on_play_clicked
-        )  # Spacebar toggle play/pause signal
-        # albumGraphicsView
+        ## Music Table | self.tableView triggers
+        # Listens for the double click event, then plays the song
+        self.tableView.doubleClicked.connect(self.play_audio_file)
+        # Listens for the enter key event, then plays the song
+        self.tableView.enterKey.connect(self.play_audio_file)
+        # Spacebar for toggle play/pause
+        self.tableView.playPauseSignal.connect(self.on_play_clicked)
+        # Album Art | self.albumGraphicsView
         self.albumGraphicsView.albumArtDropped.connect(
             self.set_album_art_for_selected_songs
         )
@@ -141,8 +135,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1152, 894)
         MainWindow.setStatusTip("")
+        # Main
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
+        #
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.hLayoutHead = QtWidgets.QHBoxLayout()
@@ -262,12 +258,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.verticalLayout_3.addLayout(self.hLayoutMusicTable)
         self.hLayoutControls = QtWidgets.QHBoxLayout()
         self.hLayoutControls.setObjectName("hLayoutControls")
-        self.previousButton = QtWidgets.QPushButton(self.centralwidget)
+        self.prevButton = QtWidgets.QPushButton(self.centralwidget)
         font = QtGui.QFont()
         font.setPointSize(28)
-        self.previousButton.setFont(font)
-        self.previousButton.setObjectName("previousButton")
-        self.hLayoutControls.addWidget(self.previousButton)
+        self.prevButton.setFont(font)
+        self.prevButton.setObjectName("prevButton")
+        self.hLayoutControls.addWidget(self.prevButton)
         self.playButton = QtWidgets.QPushButton(self.centralwidget)
         font = QtGui.QFont()
         font.setPointSize(28)
@@ -342,7 +338,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.startTimeLabel.setText(_translate("MainWindow", "00:00"))
         self.slashLabel.setText(_translate("MainWindow", "/"))
         self.endTimeLabel.setText(_translate("MainWindow", "00:00"))
-        self.previousButton.setText(_translate("MainWindow", "⏮️"))
+        self.prevButton.setText(_translate("MainWindow", "⏮️"))
         self.playButton.setText(_translate("MainWindow", "▶️"))
         self.nextButton.setText(_translate("MainWindow", "⏭️"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
@@ -371,39 +367,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         with open("config.ini", "w") as configfile:
             self.config.write(configfile)
         super().closeEvent(a0)
-
-    def play_audio_file(self) -> None:
-        """Start playback of tableView.current_song_filepath track & moves playback slider"""
-        self.current_song_metadata = (
-            self.tableView.get_current_song_metadata()
-        )  # get metadata
-        self.current_song_album_art = self.tableView.get_current_song_album_art()
-        url = QUrl.fromLocalFile(
-            self.tableView.get_current_song_filepath()
-        )  # read the file
-        content = QMediaContent(url)  # load the audio content
-        self.player.setMedia(content)  # what content to play
-        self.player.play()  # play
-        self.move_slider()  # mover
-
-        # assign metadata
-        artist = (
-            self.current_song_metadata["TPE1"][0]
-            if "artist" in self.current_song_metadata
-            else None
-        )
-        album = (
-            self.current_song_metadata["TALB"][0]
-            if "album" in self.current_song_metadata
-            else None
-        )
-        title = self.current_song_metadata["TIT2"][0]
-        # edit labels
-        self.artistLabel.setText(artist)
-        self.albumLabel.setText(album)
-        self.titleLabel.setText(title)
-        # set album artwork
-        self.load_album_art(self.current_song_album_art)
 
     def load_album_art(self, album_art_data) -> None:
         """Displays the album art for the currently playing track in the GraphicsView"""
@@ -494,6 +457,56 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             except Exception as e:
                 print(f"Error processing {file}: {e}")
 
+    def play_audio_file(self) -> None:
+        """Start playback of tableView.current_song_filepath track & moves playback slider"""
+        self.current_song_metadata = self.tableView.get_current_song_metadata()
+        self.current_song_album_art = self.tableView.get_current_song_album_art()
+        # read the file
+        url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath())
+        content = QMediaContent(url)  # load the audio content
+        self.player.setMedia(content)  # what content to play
+        self.player.play()  # play
+        self.move_slider()  # mover
+
+        # assign metadata
+        artist = (
+            self.current_song_metadata["TPE1"][0]
+            if "artist" in self.current_song_metadata
+            else None
+        )
+        album = (
+            self.current_song_metadata["TALB"][0]
+            if "album" in self.current_song_metadata
+            else None
+        )
+        title = self.current_song_metadata["TIT2"][0]
+        # edit labels
+        self.artistLabel.setText(artist)
+        self.albumLabel.setText(album)
+        self.titleLabel.setText(title)
+        # set album artwork
+        self.load_album_art(self.current_song_album_art)
+
+    def on_play_clicked(self) -> None:
+        """Updates the Play & Pause buttons when clicked"""
+        if self.player.state() == QMediaPlayer.State.PlayingState:
+            self.player.pause()
+            self.playButton.setText("▶️")
+        else:
+            if self.player.state() == QMediaPlayer.State.PausedState:
+                self.player.play()
+                self.playButton.setText("⏸️")
+            else:
+                self.play_audio_file()
+                self.playButton.setText("⏸️")
+
+    def on_previous_clicked(self) -> None:
+        """"""
+        print("previous")
+
+    def on_next_clicked(self) -> None:
+        print("next")
+
     def update_audio_visualization(self) -> None:
         """Handles upading points on the pyqtgraph visual"""
         self.clear_audio_visualization()
@@ -534,26 +547,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.player.setVolume(self.current_volume)
         except Exception as e:
             print(f"Changing volume error: {e}")
-
-    def on_play_clicked(self) -> None:
-        """Updates the Play & Pause buttons when clicked"""
-        if self.player.state() == QMediaPlayer.State.PlayingState:
-            self.player.pause()
-            self.playButton.setText("▶️")
-        else:
-            if self.player.state() == QMediaPlayer.State.PausedState:
-                self.player.play()
-                self.playButton.setText("⏸️")
-            else:
-                self.play_audio_file()
-                self.playButton.setText("⏸️")
-
-    def on_previous_clicked(self) -> None:
-        """"""
-        print("previous")
-
-    def on_next_clicked(self) -> None:
-        print("next")
 
     def open_files(self) -> None:
         """Opens the open files window"""

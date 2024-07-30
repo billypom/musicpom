@@ -1,5 +1,5 @@
 import logging
-from components.ErrorDialog import ErrorDialog
+from components import ErrorDialog
 from utils.handle_year_and_date_id3_tag import handle_year_and_date_id3_tag
 from mutagen.id3 import ID3
 from mutagen.id3._util import ID3NoHeaderError
