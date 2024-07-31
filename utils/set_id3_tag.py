@@ -87,15 +87,16 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
 
     Returns:
         True / False"""
-    # print(
-    #     f"set_id3_tag.py | filepath: {filepath} | tag_name: {tag_name} | value: {value}"
-    # )
+    print(
+        f"set_id3_tag.py | filepath: {filepath} | tag_name: {tag_name} | value: {value}"
+    )
 
     try:
         try:  # Load existing tags
             audio_file = ID3(filepath)
         except ID3NoHeaderError:  # Create new tags if none exist
             audio_file = ID3()
+        # Date handling - TDRC vs TYER+TDAT
         if tag_name == "album_date":
             tyer_tag, tdat_tag = handle_year_and_date_id3_tag(value)
             # always update TYER
@@ -103,6 +104,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             if tdat_tag:
                 # update TDAT if we have it
                 audio_file.add(tdat_tag)
+        # Lyrics
         elif tag_name == "lyrics" or tag_name == "USLT":
             try:
                 audio = ID3(filepath)
@@ -116,6 +118,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             audio.add(frame)
             audio.save()
             return True
+        # Other
         elif tag_name in id3_tag_mapping:  # Tag accounted for
             tag_class = id3_tag_mapping[tag_name]
             if issubclass(tag_class, Frame):

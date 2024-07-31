@@ -49,6 +49,7 @@ class MusicTable(QTableView):
             "title",
             "artist",
             "album",
+            "track_number",
             "genre",
             "codec",
             "year",
@@ -59,9 +60,10 @@ class MusicTable(QTableView):
             "TIT2",
             "TPE1",
             "TALB",
+            "TRCK",
             "content_type",
             None,
-            None,
+            "TDRC",
             None,
         ]
         # db names of headers
@@ -327,7 +329,7 @@ class MusicTable(QTableView):
         try:
             with DBA.DBAccess() as db:
                 data = db.query(
-                    "SELECT id, title, artist, album, genre, codec, album_date, filepath FROM song;",
+                    "SELECT id, title, artist, album, track_number, genre, codec, album_date, filepath FROM song;",
                     (),
                 )
         except Exception as e:
