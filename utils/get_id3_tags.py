@@ -6,7 +6,6 @@ import os
 def get_id3_tags(file):
     """Get the ID3 tags for an audio file
 
-
     # Parameters
     `file` | str | Fully qualified path to file
 
@@ -28,7 +27,7 @@ def get_id3_tags(file):
             frame = TIT2(encoding=3, text=[title])
             audio["TIT2"] = frame
     except Exception as e:
-        print(f"get_id3_tags.py | Exception: {e}")
+        print(f"get_id3_tags.py | Could not assign file ID3 tag: {e}")
         pass
     try:
         audio.save()  # type: ignore

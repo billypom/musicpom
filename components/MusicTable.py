@@ -338,7 +338,7 @@ class MusicTable(QTableView):
         # Populate the model
         for row_data in data:
             id, *rest_of_data = row_data
-            items = [QStandardItem(str(item)) for item in rest_of_data]
+            items = [QStandardItem(str(item) if item else "") for item in rest_of_data]
             self.model.appendRow(items)
             # store id using setData - useful for later faster db fetching
             # row = self.model.rowCount() - 1

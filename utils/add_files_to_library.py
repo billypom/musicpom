@@ -37,7 +37,7 @@ def add_files_to_library(files):
             try:
                 track_number = audio["TRCK"].text[0]
             except KeyError:
-                track_number = 0
+                track_number = None
             try:
                 genre = audio["TCON"].text[0]
             except KeyError:

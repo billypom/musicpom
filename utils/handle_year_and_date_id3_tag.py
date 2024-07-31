@@ -3,8 +3,10 @@ from mutagen.id3 import TYER, TDAT
 
 
 def handle_year_and_date_id3_tag(date_str):
-    """Handles date formatting on update in music table
-    Date format = YYYY-MM-DD"""
+    """
+    Handles date formatting when updating a date record in the music table
+    Date format = YYYY-MM-DD
+    """
     match = re.match(r"(\d{4})[-/](\d{2})[-/](\d{2})", date_str)
     if not match:
         raise ValueError("Invalid date format")
