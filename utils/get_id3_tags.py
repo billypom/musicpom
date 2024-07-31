@@ -5,11 +5,14 @@ import os
 
 def get_id3_tags(file):
     """Get the ID3 tags for an audio file
+
+
     # Parameters
     `file` | str | Fully qualified path to file
+
     # Returns
     dict of all id3 tags
-    if all tags are empty, at minimum fill in the 'title'
+    at minimum we will get the filename as a title.[ID3:TIT2]
     """
 
     try:
@@ -20,9 +23,10 @@ def get_id3_tags(file):
     # Check if all tags are empty
     # tags_are_empty = all(not values for values in audio.values())
     try:
-        title = os.path.splitext(os.path.basename(file))[0]
-        frame = TIT2(encoding=3, text=[title])
-        audio["TIT2"] = frame
+        if audio["TIT2"] is None:
+            title = os.path.splitext(os.path.basename(file))[0]
+            frame = TIT2(encoding=3, text=[title])
+            audio["TIT2"] = frame
     except Exception as e:
         print(f"get_id3_tags.py | Exception: {e}")
         pass

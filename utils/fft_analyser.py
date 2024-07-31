@@ -1,14 +1,9 @@
 # Credit
 # https://github.com/ravenkls/MilkPlayer/blob/master/audio/fft_analyser.py
 
-# std
 import time
 import os
-
-# qt
 from PyQt5 import QtCore
-
-# other
 from pydub import AudioSegment
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d

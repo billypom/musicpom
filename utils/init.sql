@@ -9,6 +9,7 @@ CREATE TABLE song(
     title varchar(255),
     album varchar(255),
     artist varchar(255),
+    track_number integer,
     genre varchar(255),
     codec varchar(15),
     album_date date,
