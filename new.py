@@ -523,6 +523,9 @@ class MainWindow(QMainWindow):
         if stopped:
             return
         else:
+            if self.playbackSlider.isSliderDown():
+                # Prevents slider from updating when dragging
+                return
             # Update the slider
             if self.player.state() == QMediaPlayer.State.PlayingState:
                 self.playbackSlider.setMinimum(0)
