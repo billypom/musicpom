@@ -5,3 +5,4 @@ from .PreferencesWindow import PreferencesWindow
 from .ErrorDialog import ErrorDialog
 from .LyricsWindow import LyricsWindow
 from .AddToPlaylistWindow import AddToPlaylistWindow
+from .CreatePlaylistWindow import CreatePlaylistWindow
