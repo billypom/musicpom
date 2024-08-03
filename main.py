@@ -13,6 +13,7 @@ import DBA
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import (
     QFileDialog,
+    QInputDialog,
     QMainWindow,
     QApplication,
     QGraphicsScene,
@@ -29,6 +30,7 @@ from components import (
     AudioVisualizer,
     AlbumArtGraphicsView,
     MusicTable,
+    CreatePlaylistWindow,
 )
 
 
@@ -97,6 +99,7 @@ class MainWindow(QMainWindow):
         self.nextButton.clicked.connect(self.on_next_clicked)
         # FILE MENU
         self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
+        self.actionNewPlaylist.triggered.connect(self.create_playlist)
         # EDIT MENU
         self.actionPreferences.triggered.connect(
             self.open_preferences
@@ -314,9 +317,12 @@ class MainWindow(QMainWindow):
         self.actionDeleteLibrary.setObjectName("actionDeleteLibrary")
         self.actionOpenFiles = QtWidgets.QAction(MainWindow)
         self.actionOpenFiles.setObjectName("actionOpenFiles")
+        self.actionNewPlaylist = QtWidgets.QAction(MainWindow)
+        self.actionNewPlaylist.setObjectName("actionNewPlaylist")
         self.actionDeleteDatabase = QtWidgets.QAction(MainWindow)
         self.actionDeleteDatabase.setObjectName("actionDeleteDatabase")
         self.menuFile.addAction(self.actionOpenFiles)
+        self.menuFile.addAction(self.actionNewPlaylist)
         self.menuEdit.addAction(self.actionPreferences)
         self.menuQuick_Actions.addAction(self.actionScanLibraries)
         self.menuQuick_Actions.addAction(self.actionDeleteLibrary)
@@ -352,6 +358,7 @@ class MainWindow(QMainWindow):
         self.actionScanLibraries.setText(_translate("MainWindow", "Scan libraries"))
         self.actionDeleteLibrary.setText(_translate("MainWindow", "Delete Library"))
         self.actionOpenFiles.setText(_translate("MainWindow", "Open file(s)"))
+        self.actionNewPlaylist.setText(_translate("MainWindow", "New playlist"))
         self.actionDeleteDatabase.setText(_translate("MainWindow", "Delete Database"))
 
     def closeEvent(self, a0: QCloseEvent | None) -> None:
@@ -560,9 +567,14 @@ class MainWindow(QMainWindow):
         open_files_window.setFileMode(QFileDialog.ExistingFiles)
         open_files_window.exec_()
         filenames = open_files_window.selectedFiles()
-        print("file names chosen")
+        print("main.py open_files() | file names chosen")
         print(filenames)
         self.tableView.add_files(filenames)
+
+    def create_playlist(self) -> None:
+        """Creates a database record for a playlist, given a name"""
+        create_playlist_window = CreatePlaylistWindow(self)
+        create_playlist_window.exec_()
 
     def open_preferences(self) -> None:
         """Opens the preferences window"""

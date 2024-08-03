@@ -20,7 +20,8 @@ class AddToPlaylistWindow(QDialog):
         listWidget = QListWidget(self)
         for k, v in list_options:
             listWidget.addItem(f"{k} | {v}")
-        #
+
+        # add ui elements to window
         label = QLabel("Playlists")
         label.setFont(QFont("Sans", weight=QFont.Bold))
         layout.addWidget(label)
@@ -34,14 +35,5 @@ class AddToPlaylistWindow(QDialog):
         self.show()
 
     def save(self):
-        # Upcate the config fields
-        for key in self.input_fields:
-            for category in self.config.sections():
-                if key in self.config[category]:
-                    self.config[category][key] = self.input_fields[key].text()
-
-        # Write the config file
-        with open("config.ini", "w") as configfile:
-            self.config.write(configfile)
-
+        print(self.listWidget.selectedItems())
         self.close()
