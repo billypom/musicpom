@@ -65,11 +65,11 @@ class MainWindow(QMainWindow):
 
         # Graphics plot
         self.PlotWidget.setXRange(0, 100, padding=0)  # x axis range
-        self.PlotWidget.setYRange(0, 0.3, padding=0)  # y axis range
+        self.PlotWidget.setYRange(0, 0.8, padding=0)  # y axis range
+        # Remove axis labels and decorations
+        # self.PlotWidget.setLogMode(False, False)
         self.PlotWidget.getAxis("bottom").setTicks([])  # Remove x-axis ticks
         self.PlotWidget.getAxis("bottom").setLabel("")  # Remove x-axis label
-        self.PlotWidget.setLogMode(False, False)
-        # Remove y-axis labels and decorations
         self.PlotWidget.getAxis("left").setTicks([])  # Remove y-axis ticks
         self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
 

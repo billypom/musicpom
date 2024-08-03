@@ -22,13 +22,13 @@ class FFTAnalyser(QtCore.QThread):
 
         self.resolution = 100
         self.visual_delta_threshold = 1000
-        self.sensitivity = 5
+        self.sensitivity = 10
 
     def reset_media(self):
         """Resets the media to the currently playing song."""
         audio_file = self.player.currentMedia().canonicalUrl().path()
-        if os.name == "nt" and audio_file.startswith("/"):
-            audio_file = audio_file[1:]
+        # if os.name == "nt" and audio_file.startswith("/"):
+        #     audio_file = audio_file[1:]
         if audio_file:
             try:
                 self.song = AudioSegment.from_file(audio_file).set_channels(1)
@@ -57,6 +57,7 @@ class FFTAnalyser(QtCore.QThread):
         freq = np.fft.fftfreq(fourier.size, d=0.05)
         amps = 2 / v_sample.size * np.abs(fourier)
         data = np.array([freq, amps]).T
+        print(data)
 
         point_range = 1 / self.resolution
         point_samples = []
@@ -97,7 +98,7 @@ class FFTAnalyser(QtCore.QThread):
                 self.points[n] = 1e-5
 
         # interpolate points
-        rs = gaussian_filter1d(self.points, sigma=2)
+        rs = gaussian_filter1d(self.points, sigma=1)
 
         # Mirror the amplitudes, these are renamed to 'rs' because we are using them
         # for polar plotting, which is plotted in terms of r and theta
