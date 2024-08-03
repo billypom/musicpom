@@ -1,19 +1,45 @@
-from PyQt5.QtWidgets import QInputDialog
+import logging
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout
+import DBA
 
 
-class CreatePlaylistWindow(QInputDialog):
-    def __init__(self, list_options: dict):
+class CreatePlaylistWindow(QDialog):
+    def __init__(self):
         super(CreatePlaylistWindow, self).__init__()
-        self.setWindowTitle("Choose")
-        self.setLabelText("Enter playlist name:")
-        self.exec()
+        self.setWindowTitle("Create new playlist")
+        layout = QVBoxLayout()
+        button_layout = QHBoxLayout()
 
-    def done(self, result: int) -> None:
-        value = self.textValue()
-        if result:
-            print(value)
+        self.input = QLineEdit()
+        layout.addWidget(self.input)
+
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(self.save)
+        button_layout.addWidget(ok_button)
+
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(self.cancel)
+        button_layout.addWidget(cancel_button)
+
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+
+    def save(self) -> None:
+        """Creates a playlist in the database with a specific name"""
+        value = self.input.text()
+        if value == "" or value is None:
+            self.close()
+            return
         else:
-            print("NOPE")
-        # FIXME: dialog box doesn't close on OK or Cancel buttons pressed...
-        # do i have to manually implement the accept and reject when i override the done() func?
+            try:
+                with DBA.DBAccess() as db:
+                    db.execute("INSERT INTO playlist (name) VALUES (?);", (value,))
+            except Exception as e:
+                logging.error(
+                    f"CreatePlaylistWindow.py save() | Could not create playlist: {e}"
+                )
+            self.close()
+
+    def cancel(self) -> None:
         self.close()
+        return

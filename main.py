@@ -573,7 +573,7 @@ class MainWindow(QMainWindow):
 
     def create_playlist(self) -> None:
         """Creates a database record for a playlist, given a name"""
-        create_playlist_window = CreatePlaylistWindow(self)
+        create_playlist_window = CreatePlaylistWindow()
         create_playlist_window.exec_()
 
     def open_preferences(self) -> None:
@@ -651,6 +651,7 @@ if __name__ == "__main__":
                     for statement in lines.split(";"):
                         print(f"executing [{statement}]")
                         db.execute(statement, ())
+
     # logging setup
     logging.basicConfig(filename="musicpom.log", encoding="utf-8", level=logging.DEBUG)
     # Allow for dynamic imports of my custom classes and utilities

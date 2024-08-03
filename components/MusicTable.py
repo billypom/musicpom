@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
+from utils import delete_song_id_from_database
 from utils import add_files_to_library
 from utils import update_song_in_library
 from utils import get_id3_tags
@@ -66,6 +67,8 @@ class MusicTable(QTableView):
             "TDRC",
             None,
         ]
+        # hide the id column
+        self.hideColumn(0)
         # db names of headers
         self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
@@ -124,13 +127,18 @@ class MusicTable(QTableView):
             selected_indices = self.get_selected_rows()
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
-                    db.execute("DELETE FROM song WHERE filepath = ?", (file,))
+                    song_id = db.query(
+                        "SELECT id FROM song WHERE filepath = ?", (file,)
+                    )[0][0]
+                delete_song_id_from_database(song_id)
+            self.model.dataChanged.disconnect(self.on_cell_data_changed)
             for index in selected_indices:
                 try:
                     model.removeRow(index)
                 except Exception as e:
                     logging.info(f"MusicTable.py delete_songs() failed | {e}")
             self.fetch_library()
+            self.model.dataChanged.connect(self.on_cell_data_changed)
 
     def open_directory(self):
         """Opens the currently selected song in the system file manager"""
@@ -157,11 +165,14 @@ class MusicTable(QTableView):
     def add_selected_files_to_playlist(self):
         """Opens a playlist choice menu and adds the currently selected files to the chosen playlist"""
         playlist_dict = {}
+        print(type(playlist_dict))
         with DBA.DBAccess() as db:
-            data = db.query("SELECT id, name from playlist", ())
+            data = db.query("SELECT id, name from playlist;", ())
         for row in data:
-            playlist_dict[row[0][0]] = row[0][1]
-        playlist_choice_window = AddToPlaylistWindow(playlist_dict)
+            playlist_dict[row[0]] = row[1]
+        playlist_choice_window = AddToPlaylistWindow(
+            playlist_dict, self.get_selected_songs_db_ids()
+        )
         playlist_choice_window.exec_()
 
     def show_lyrics_menu(self):
@@ -386,6 +397,23 @@ class MusicTable(QTableView):
     def get_selected_song_metadata(self) -> ID3 | dict:
         """Returns the selected song's ID3 tags"""
         return get_id3_tags(self.selected_song_filepath)
+
+    def get_selected_songs_db_ids(self) -> list:
+        """Returns a list of id's for the selected songs"""
+        indexes = self.selectedIndexes()
+        if not indexes:
+            return []
+        selected_rows = set(index.row() for index in indexes)
+        id_list = [
+            self.model.data(self.model.index(row, 0), Qt.UserRole)
+            for row in selected_rows
+        ]
+        # selected_ids = []
+        # for index in indexes:
+        #     model_item = self.model.item(index.row())
+        #     id_data = model_item.data(Qt.UserRole)
+        #     selected_ids.append(id_data)
+        return id_list
 
     def get_current_song_filepath(self) -> str:
         """Returns the currently playing song filepath"""

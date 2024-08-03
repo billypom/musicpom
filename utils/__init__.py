@@ -5,6 +5,7 @@ from .safe_get import safe_get
 from .get_album_art import get_album_art
 from .get_id3_tags import get_id3_tags
 from .set_id3_tag import set_id3_tag
+from .delete_song_id_from_database import delete_song_id_from_database
 from .delete_and_create_library_database import delete_and_create_library_database
 from .update_song_in_library import update_song_in_library
 from .scan_for_music import scan_for_music
