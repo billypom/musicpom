@@ -20,36 +20,29 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setContentsMargins(-1, -1, 10, -1)
+        self.verticalLayout.setObjectName("verticalLayout")
         self.hLayoutHead = QtWidgets.QHBoxLayout()
         self.hLayoutHead.setObjectName("hLayoutHead")
         self.vlayoutAlbumArt = QtWidgets.QVBoxLayout()
         self.vlayoutAlbumArt.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         self.vlayoutAlbumArt.setObjectName("vlayoutAlbumArt")
         self.albumGraphicsView = AlbumArtGraphicsView(self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(
-            self.albumGraphicsView.sizePolicy().hasHeightForWidth()
-        )
+        sizePolicy.setHeightForWidth(self.albumGraphicsView.sizePolicy().hasHeightForWidth())
         self.albumGraphicsView.setSizePolicy(sizePolicy)
         self.albumGraphicsView.setMinimumSize(QtCore.QSize(200, 200))
         self.albumGraphicsView.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.albumGraphicsView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.albumGraphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.albumGraphicsView.setHorizontalScrollBarPolicy(
-            QtCore.Qt.ScrollBarAlwaysOff
-        )
-        self.albumGraphicsView.setSizeAdjustPolicy(
-            QtWidgets.QAbstractScrollArea.AdjustIgnored
-        )
+        self.albumGraphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.albumGraphicsView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustIgnored)
         self.albumGraphicsView.setInteractive(False)
         self.albumGraphicsView.setResizeAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
-        self.albumGraphicsView.setViewportUpdateMode(
-            QtWidgets.QGraphicsView.FullViewportUpdate
-        )
+        self.albumGraphicsView.setViewportUpdateMode(QtWidgets.QGraphicsView.FullViewportUpdate)
         self.albumGraphicsView.setObjectName("albumGraphicsView")
         self.vlayoutAlbumArt.addWidget(self.albumGraphicsView)
         self.hLayoutHead.addLayout(self.vlayoutAlbumArt)
@@ -104,13 +97,15 @@ class Ui_MainWindow(object):
         self.hLayoutHead.setStretch(0, 1)
         self.hLayoutHead.setStretch(1, 4)
         self.hLayoutHead.setStretch(2, 6)
-        self.verticalLayout_3.addLayout(self.hLayoutHead)
+        self.verticalLayout.addLayout(self.hLayoutHead)
         self.hLayoutMusicTable = QtWidgets.QHBoxLayout()
+        self.hLayoutMusicTable.setContentsMargins(0, -1, 0, -1)
         self.hLayoutMusicTable.setObjectName("hLayoutMusicTable")
+        self.playlistTreeView = LeftPane(self.centralwidget)
+        self.playlistTreeView.setObjectName("playlistTreeView")
+        self.hLayoutMusicTable.addWidget(self.playlistTreeView)
         self.tableView = MusicTable(self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
         sizePolicy.setHeightForWidth(self.tableView.sizePolicy().hasHeightForWidth())
@@ -118,13 +113,8 @@ class Ui_MainWindow(object):
         self.tableView.setMaximumSize(QtCore.QSize(32000, 32000))
         self.tableView.setAcceptDrops(True)
         self.tableView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.tableView.setSizeAdjustPolicy(
-            QtWidgets.QAbstractScrollArea.AdjustToContents
-        )
-        self.tableView.setEditTriggers(
-            QtWidgets.QAbstractItemView.AnyKeyPressed
-            | QtWidgets.QAbstractItemView.EditKeyPressed
-        )
+        self.tableView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.AnyKeyPressed|QtWidgets.QAbstractItemView.EditKeyPressed)
         self.tableView.setAlternatingRowColors(True)
         self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -134,7 +124,10 @@ class Ui_MainWindow(object):
         self.tableView.horizontalHeader().setStretchLastSection(True)
         self.tableView.verticalHeader().setVisible(False)
         self.hLayoutMusicTable.addWidget(self.tableView)
-        self.verticalLayout_3.addLayout(self.hLayoutMusicTable)
+        self.hLayoutMusicTable.setStretch(0, 2)
+        self.hLayoutMusicTable.setStretch(1, 10)
+        self.verticalLayout.addLayout(self.hLayoutMusicTable)
+        self.verticalLayout_3.addLayout(self.verticalLayout)
         self.hLayoutControls = QtWidgets.QHBoxLayout()
         self.hLayoutControls.setObjectName("hLayoutControls")
         self.previousButton = QtWidgets.QPushButton(self.centralwidget)
@@ -165,10 +158,9 @@ class Ui_MainWindow(object):
         self.volumeSlider.setObjectName("volumeSlider")
         self.hLayoutControls2.addWidget(self.volumeSlider)
         self.verticalLayout_3.addLayout(self.hLayoutControls2)
-        self.verticalLayout_3.setStretch(0, 3)
-        self.verticalLayout_3.setStretch(1, 8)
+        self.verticalLayout_3.setStretch(0, 10)
+        self.verticalLayout_3.setStretch(1, 1)
         self.verticalLayout_3.setStretch(2, 1)
-        self.verticalLayout_3.setStretch(3, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1152, 41))
@@ -195,7 +187,10 @@ class Ui_MainWindow(object):
         self.actionOpenFiles.setObjectName("actionOpenFiles")
         self.actionDeleteDatabase = QtWidgets.QAction(MainWindow)
         self.actionDeleteDatabase.setObjectName("actionDeleteDatabase")
+        self.actionNewPlaylist = QtWidgets.QAction(MainWindow)
+        self.actionNewPlaylist.setObjectName("actionNewPlaylist")
         self.menuFile.addAction(self.actionOpenFiles)
+        self.menuFile.addAction(self.actionNewPlaylist)
         self.menuEdit.addAction(self.actionPreferences)
         self.menuQuick_Actions.addAction(self.actionScanLibraries)
         self.menuQuick_Actions.addAction(self.actionDeleteLibrary)
@@ -225,14 +220,11 @@ class Ui_MainWindow(object):
         self.menuView.setTitle(_translate("MainWindow", "View"))
         self.menuQuick_Actions.setTitle(_translate("MainWindow", "Quick-Actions"))
         self.actionPreferences.setText(_translate("MainWindow", "Preferences"))
-        self.actionPreferences.setStatusTip(
-            _translate("MainWindow", "Open preferences")
-        )
+        self.actionPreferences.setStatusTip(_translate("MainWindow", "Open preferences"))
         self.actionScanLibraries.setText(_translate("MainWindow", "Scan libraries"))
         self.actionDeleteLibrary.setText(_translate("MainWindow", "Delete Library"))
         self.actionOpenFiles.setText(_translate("MainWindow", "Open file(s)"))
         self.actionDeleteDatabase.setText(_translate("MainWindow", "Delete Database"))
-
-
-from components import AlbumArtGraphicsView, MusicTable
+        self.actionNewPlaylist.setText(_translate("MainWindow", "New playlist"))
+from components import AlbumArtGraphicsView, LeftPane, MusicTable
 from pyqtgraph import PlotWidget

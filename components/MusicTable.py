@@ -19,11 +19,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
-from utils import delete_song_id_from_database
-from utils import add_files_to_library
-from utils import update_song_in_library
-from utils import get_id3_tags
-from utils import get_album_art
+from utils.delete_song_id_from_database import delete_song_id_from_database
+from utils.add_files_to_library import add_files_to_library
+from utils.update_song_in_library import update_song_in_library
+from utils.get_id3_tags import get_id3_tags
+from utils.get_album_art import get_album_art
 from utils import set_id3_tag
 from subprocess import Popen
 import logging

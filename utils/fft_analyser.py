@@ -57,7 +57,7 @@ class FFTAnalyser(QtCore.QThread):
         freq = np.fft.fftfreq(fourier.size, d=0.05)
         amps = 2 / v_sample.size * np.abs(fourier)
         data = np.array([freq, amps]).T
-        print(data)
+        # print(data)
 
         point_range = 1 / self.resolution
         point_samples = []
