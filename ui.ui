@@ -173,7 +173,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="LeftPane" name="playlistTreeView"/>
+         <widget class="PlaylistsPane" name="playlistTreeView"/>
         </item>
         <item>
          <widget class="MusicTable" name="tableView">
@@ -386,7 +386,7 @@
    <header>components</header>
   </customwidget>
   <customwidget>
-   <class>LeftPane</class>
+   <class>PlaylistsPane</class>
    <extends>QTreeView</extends>
    <header>components</header>
   </customwidget>

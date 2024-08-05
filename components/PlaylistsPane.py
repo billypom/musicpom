@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QListWidget, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtCore import pyqtSignal
 import DBA
 
 
@@ -8,7 +9,9 @@ class PlaylistWidgetItem(QTreeWidgetItem):
         self.id = id
 
 
-class LeftPane(QTreeWidget):
+class PlaylistsPane(QTreeWidget):
+    playlistChoiceSignal = pyqtSignal(int)
+
     def __init__(self: QTreeWidget, parent=None):
         super().__init__(parent)
         library_root = QTreeWidgetItem(["Library"])
@@ -25,10 +28,13 @@ class LeftPane(QTreeWidget):
             playlists_root.addChild(branch)
 
         self.currentItemChanged.connect(self.playlist_clicked)
+        self.playlist_db_id_choice: int | None = None
 
     def playlist_clicked(self, item):
         if isinstance(item, PlaylistWidgetItem):
             print(f"ID: {item.id}, name: {item.text(0)}")
+            self.playlist_db_id_choice = item.id
+            self.playlistChoiceSignal.emit(item.id)
         elif item.text(0).lower() == "all songs":
             self.all_songs_selected()
 

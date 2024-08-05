@@ -585,7 +585,7 @@ class MainWindow(QMainWindow):
         """Scans for new files in the configured library folder
         Refreshes the datagridview"""
         scan_for_music()
-        self.tableView.fetch_library()
+        self.tableView.load_music_table()
 
     def clear_database(self) -> None:
         """Clears all songs from the database"""
@@ -598,7 +598,7 @@ class MainWindow(QMainWindow):
         )
         if reply:
             delete_and_create_library_database()
-            self.tableView.fetch_library()
+            self.tableView.load_music_table()
 
     def delete_database(self) -> None:
         """Deletes the entire database"""
@@ -611,7 +611,7 @@ class MainWindow(QMainWindow):
         )
         if reply:
             initialize_db()
-            self.tableView.fetch_library()
+            self.tableView.load_music_table()
 
     def reinitialize_database(self) -> None:
         """Clears all tables in database and recreates"""
@@ -624,7 +624,7 @@ class MainWindow(QMainWindow):
         )
         if reply:
             initialize_db()
-            self.tableView.fetch_library()
+            self.tableView.load_music_table()
 
     def process_probe(self, buff) -> None:
         buff.startTime()

@@ -81,7 +81,7 @@ class MusicTable(QTableView):
         self.doubleClicked.connect(self.set_current_song_filepath)
         self.enterKey.connect(self.set_current_song_filepath)
         self.deleteKey.connect(self.delete_songs)
-        self.fetch_library()
+        self.load_music_table()
         self.setup_keyboard_shortcuts()
         self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
@@ -137,7 +137,7 @@ class MusicTable(QTableView):
                     model.removeRow(index)
                 except Exception as e:
                     logging.info(f"MusicTable.py delete_songs() failed | {e}")
-            self.fetch_library()
+            self.load_music_table()
             self.model.dataChanged.connect(self.on_cell_data_changed)
 
     def open_directory(self):
@@ -316,7 +316,7 @@ class MusicTable(QTableView):
                     print(f"Error moving file: {filepath} | {e}")
             # Draw the rest of the owl
             self.model.dataChanged.disconnect(self.on_cell_data_changed)
-            self.fetch_library()
+            self.load_music_table()
             self.model.dataChanged.connect(self.on_cell_data_changed)
             QMessageBox.information(
                 self, "Reorganization complete", "Files successfully reorganized"
@@ -328,7 +328,7 @@ class MusicTable(QTableView):
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
 
-    def fetch_library(self):
+    def load_music_table(self, *playlist_id):
         """Initializes the tableview model"""
         self.vertical_scroll_position = (
             self.verticalScrollBar().value()
@@ -336,16 +336,37 @@ class MusicTable(QTableView):
         # temporarily disconnect the datachanged signal to avoid EVERY SONG getting triggered
         self.model.clear()
         self.model.setHorizontalHeaderLabels(self.table_headers)
-        # Fetch library data
-        try:
-            with DBA.DBAccess() as db:
-                data = db.query(
-                    "SELECT id, title, artist, album, track_number, genre, codec, album_date, filepath FROM song;",
-                    (),
+        if playlist_id:
+            playlist_id = playlist_id[0]
+            # Fetch playlist data
+            print(
+                f"MusicTable.py load_music_table() | fetching playlist data, playlist_id: {playlist_id}"
+            )
+            try:
+                with DBA.DBAccess() as db:
+                    data = db.query(
+                        "SELECT s.id, s.title, s.artist, s.album, s.track_number, s.genre, s.codec, s.album_date, s.filepath FROM song s JOIN song_playlist sp ON s.id = sp.id WHERE sp.id = ?",
+                        (playlist_id,),
+                    )
+            except Exception as e:
+                logging.warning(
+                    f"MusicTable.py | load_music_table | Unhandled exception: {e}"
                 )
-        except Exception as e:
-            logging.warning(f"MusicTable.py | fetch_library | Unhandled exception: {e}")
-            return
+                return
+        else:
+            print("MusicTable.py load_music_table() | fetching library data")
+            # Fetch library data
+            try:
+                with DBA.DBAccess() as db:
+                    data = db.query(
+                        "SELECT id, title, artist, album, track_number, genre, codec, album_date, filepath FROM song;",
+                        (),
+                    )
+            except Exception as e:
+                logging.warning(
+                    f"MusicTable.py | load_music_table | Unhandled exception: {e}"
+                )
+                return
         # Populate the model
         for row_data in data:
             id, *rest_of_data = row_data
@@ -373,7 +394,7 @@ class MusicTable(QTableView):
         number_of_files_added = add_files_to_library(files)
         if number_of_files_added:
             self.model.dataChanged.disconnect(self.on_cell_data_changed)
-            self.fetch_library()
+            self.load_music_table()
             self.model.dataChanged.connect(self.on_cell_data_changed)
 
     def get_selected_rows(self) -> list[int]:

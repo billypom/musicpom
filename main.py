@@ -117,6 +117,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
 
+        ## Playlist triggers
+        self.playlistTreeView.playlistChoiceSignal.connect(
+            self.tableView.load_music_table
+        )
+
         # albumGraphicsView
         self.albumGraphicsView.albumArtDropped.connect(
             self.set_album_art_for_selected_songs
@@ -357,7 +362,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Scans for new files in the configured library folder
         Refreshes the datagridview"""
         scan_for_music()
-        self.tableView.fetch_library()
+        self.tableView.load_music_table()
 
     def clear_database(self) -> None:
         """Clears all songs from the database"""
@@ -370,7 +375,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
         if reply:
             delete_and_create_library_database()
-            self.tableView.fetch_library()
+            self.tableView.load_music_table()
 
     def delete_database(self) -> None:
         """Deletes the entire database"""
@@ -383,7 +388,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
         if reply:
             initialize_db()
-            self.tableView.fetch_library()
+            self.tableView.load_music_table()
 
     def reinitialize_database(self) -> None:
         """Clears all tables in database and recreates"""
@@ -396,7 +401,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
         if reply:
             initialize_db()
-            self.tableView.fetch_library()
+            self.tableView.load_music_table()
 
     def process_probe(self, buff) -> None:
         buff.startTime()
