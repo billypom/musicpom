@@ -1,6 +1,6 @@
 # MusicPom
 
-PyQt5 music player inspired by MusicBee & iTunes
+PyQt5 music player for Linux inspired by MusicBee & iTunes
 
 ## Installation:
 clone the repo
@@ -27,9 +27,9 @@ python3 main.py
 
 ## Todo:
 
-- [x] Right-click menu
-- [x] Editable lyrics textbox
-- [ ] Delete songs from library (del key || right-click delete)
+- [x] right-click menu
+- [x] editable lyrics window
+- [ ] playlists
+- [ ] delete songs from library (del key || right-click delete)
 - [ ] .wav, .ogg, .flac convertor
 - [ ] batch metadata changer (red text on fields that have differing info)
-- [ ] Alternatives to Gstreamer?

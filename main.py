@@ -121,6 +121,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.playlistTreeView.playlistChoiceSignal.connect(
             self.tableView.load_music_table
         )
+        self.playlistTreeView.allSongsSignal.connect(self.tableView.load_music_table)
 
         # albumGraphicsView
         self.albumGraphicsView.albumArtDropped.connect(

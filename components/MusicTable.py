@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
 )
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
+from components.ErrorDialog import ErrorDialog
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from utils.delete_song_id_from_database import delete_song_id_from_database
@@ -42,7 +43,9 @@ class MusicTable(QTableView):
         super().__init__(parent)
         # Necessary for actions related to cell values
         self.model = QStandardItemModel(self)
-        self.setModel(self.model)  # Same as above
+        self.setModel(self.model)
+
+        # Config
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
         # gui names of headers
@@ -81,10 +84,11 @@ class MusicTable(QTableView):
         self.doubleClicked.connect(self.set_current_song_filepath)
         self.enterKey.connect(self.set_current_song_filepath)
         self.deleteKey.connect(self.delete_songs)
-        self.load_music_table()
-        self.setup_keyboard_shortcuts()
         self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
+
+        self.load_music_table()
+        self.setup_keyboard_shortcuts()
 
     def contextMenuEvent(self, event):
         """Right-click context menu for rows in Music Table"""
@@ -181,10 +185,12 @@ class MusicTable(QTableView):
         if selected_song_filepath is None:
             return
         current_song = self.get_selected_song_metadata()
-        # print(f"MusicTable.py | show_lyrics_menu | current song: {current_song}")
         try:
-            # Have to use USLT::XXX to retrieve
-            lyrics = current_song["USLT::XXX"].text
+            uslt_tags = [tag for tag in current_song.keys() if tag.startswith("USLT::")]
+            if uslt_tags:
+                lyrics = next((current_song[tag].text for tag in uslt_tags), "")
+            else:
+                raise RuntimeError("No USLT tags found in song metadata")
         except Exception as e:
             print(f"MusicTable.py | show_lyrics_menu | could not retrieve lyrics | {e}")
             lyrics = ""
@@ -292,15 +298,24 @@ class MusicTable(QTableView):
                 try:
                     # Read file metadata
                     audio = ID3(filepath)
-                    artist = (
-                        audio["TPE1"].text[0] if not "" or None else "Unknown Artist"
-                    )
-                    album = audio["TALB"].text[0] if not "" or None else "Unknown Album"
+                    try:
+                        artist = audio["TPE1"].text[0]
+                        if artist == "":
+                            artist = "Unknown Artist"
+                    except KeyError:
+                        artist = "Unknown Artist"
+
+                    try:
+                        album = audio["TALB"].text[0]
+                        if album == "":
+                            album = "Unknown Album"
+                    except KeyError:
+                        album = "Unknown Album"
+
                     # Determine the new path that needs to be made
                     new_path = os.path.join(
                         target_dir, artist, album, os.path.basename(filepath)
                     )
-                    print(new_path)
                     # Create the directories if they dont exist
                     os.makedirs(os.path.dirname(new_path), exist_ok=True)
                     # Move the file to the new directory
@@ -313,11 +328,16 @@ class MusicTable(QTableView):
                         )
                     print(f"Moved: {filepath} -> {new_path}")
                 except Exception as e:
-                    print(f"Error moving file: {filepath} | {e}")
+                    logging.warning(
+                        f"MusicTable.py reorganize_selected_files() |  Error moving file: {filepath} | {e}"
+                    )
+                    print(
+                        f"MusicTable.py reorganize_selected_files() |  Error moving file: {filepath} | {e}"
+                    )
             # Draw the rest of the owl
-            self.model.dataChanged.disconnect(self.on_cell_data_changed)
+            # self.model.dataChanged.disconnect(self.on_cell_data_changed)
             self.load_music_table()
-            self.model.dataChanged.connect(self.on_cell_data_changed)
+            # self.model.dataChanged.connect(self.on_cell_data_changed)
             QMessageBox.information(
                 self, "Reorganization complete", "Files successfully reorganized"
             )
@@ -329,7 +349,21 @@ class MusicTable(QTableView):
         self.playPauseSignal.emit()
 
     def load_music_table(self, *playlist_id):
-        """Initializes the tableview model"""
+        """
+        Loads data into self (QTableView)
+        Default to loading all songs.
+        If playlist_id is given, load songs in a particular playlist
+        """
+        try:
+            # Loading the table also causes cell data to change, technically
+            # so we must disconnect the dataChanged trigger before loading
+            # then re-enable after we are done loading
+            self.model.dataChanged.disconnect(self.on_cell_data_changed)
+        except Exception as e:
+            print(
+                f"MusicTable.py load_music_table() | could not disconnect on_cell_data_changed trigger: {e}"
+            )
+            pass
         self.vertical_scroll_position = (
             self.verticalScrollBar().value()
         )  # Get my scroll position before clearing
@@ -339,9 +373,6 @@ class MusicTable(QTableView):
         if playlist_id:
             playlist_id = playlist_id[0]
             # Fetch playlist data
-            print(
-                f"MusicTable.py load_music_table() | fetching playlist data, playlist_id: {playlist_id}"
-            )
             try:
                 with DBA.DBAccess() as db:
                     data = db.query(
@@ -354,7 +385,6 @@ class MusicTable(QTableView):
                 )
                 return
         else:
-            print("MusicTable.py load_music_table() | fetching library data")
             # Fetch library data
             try:
                 with DBA.DBAccess() as db:
@@ -376,11 +406,15 @@ class MusicTable(QTableView):
             # row = self.model.rowCount() - 1
             for item in items:
                 item.setData(id, Qt.UserRole)
-        # Update the viewport/model
         self.model.layoutChanged.emit()  # emits a signal that the view should be updated
+        try:
+            self.model.dataChanged.connect(self.on_cell_data_changed)
+        except Exception:
+            pass
 
     def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
+        print("restore_scroll_position")
         QTimer.singleShot(
             100,
             lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),

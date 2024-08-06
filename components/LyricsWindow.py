@@ -6,26 +6,20 @@ from PyQt5.QtWidgets import (
     QPushButton,
 )
 from PyQt5.QtGui import QFont
+from components.ErrorDialog import ErrorDialog
 from utils import set_id3_tag
 
 
 class LyricsWindow(QDialog):
-    def __init__(self, song_filepath, lyrics):
+    def __init__(self, song_filepath: str, lyrics: str):
         super(LyricsWindow, self).__init__()
         self.setWindowTitle("Lyrics")
-        self.lyrics = lyrics
-        self.song_filepath = song_filepath
-        self.input_field = "empty"
+        self.setMinimumSize(400, 400)
+        self.lyrics: str = lyrics
+        self.song_filepath: str = song_filepath
         layout = QVBoxLayout()
-        # label = QLabel("Lyrics")
-        # layout.addWidget(label)
 
         # Labels & input fields
-        self.input_fields = {}
-        lyrics_label = QLabel("Lyrics")
-        lyrics_label.setFont(QFont("Sans", weight=QFont.Bold))  # bold category
-        lyrics_label.setStyleSheet("text-transform:uppercase;")  # uppercase category
-        layout.addWidget(lyrics_label)
         self.input_field = QPlainTextEdit(self.lyrics)
         layout.addWidget(self.input_field)
 
@@ -44,6 +38,9 @@ class LyricsWindow(QDialog):
         )
         if success:
             print("success! yay")
+            error_dialog = ErrorDialog("Could not save lyrics :( sad")
+            error_dialog.exec()
         else:
-            print("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
+            error_dialog = ErrorDialog("Could not save lyrics :( sad")
+            error_dialog.exec()
         self.close()

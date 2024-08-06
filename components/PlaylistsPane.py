@@ -11,6 +11,7 @@ class PlaylistWidgetItem(QTreeWidgetItem):
 
 class PlaylistsPane(QTreeWidget):
     playlistChoiceSignal = pyqtSignal(int)
+    allSongsSignal = pyqtSignal()
 
     def __init__(self: QTreeWidget, parent=None):
         super().__init__(parent)
@@ -27,6 +28,9 @@ class PlaylistsPane(QTreeWidget):
             branch = PlaylistWidgetItem(self, playlist[0], playlist[1])
             playlists_root.addChild(branch)
 
+        library_root.setExpanded(True)
+        playlists_root.setExpanded(True)
+
         self.currentItemChanged.connect(self.playlist_clicked)
         self.playlist_db_id_choice: int | None = None
 
@@ -39,4 +43,4 @@ class PlaylistsPane(QTreeWidget):
             self.all_songs_selected()
 
     def all_songs_selected(self):
-        print("all songs")
+        self.allSongsSignal.emit()
