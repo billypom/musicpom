@@ -84,6 +84,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.playbackSlider.sliderReleased.connect(
             lambda: self.player.setPosition(self.playbackSlider.value())
         )  # maybe sliderReleased works better than sliderMoved
+        self
         self.volumeSlider.sliderMoved[int].connect(
             lambda: self.volume_changed()
         )  # Move slider to adjust volume
@@ -293,6 +294,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         if stopped:
             return
         else:
+            if self.playbackSlider.isSliderDown():
+                # Prevents slider from updating when dragging
+                return
             # Update the slider
             if self.player.state() == QMediaPlayer.State.PlayingState:
                 self.playbackSlider.setMinimum(0)

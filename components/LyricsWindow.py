@@ -38,8 +38,6 @@ class LyricsWindow(QDialog):
         )
         if success:
             print("success! yay")
-            error_dialog = ErrorDialog("Could not save lyrics :( sad")
-            error_dialog.exec()
         else:
             error_dialog = ErrorDialog("Could not save lyrics :( sad")
             error_dialog.exec()
