@@ -69,7 +69,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # Graphics plot
         self.PlotWidget.setXRange(0, 100, padding=0)  # x axis range
-        self.PlotWidget.setYRange(0, 0.3, padding=0)  # y axis range
+        self.PlotWidget.setYRange(0, 1, padding=0)  # y axis range
         self.PlotWidget.getAxis("bottom").setTicks([])  # Remove x-axis ticks
         self.PlotWidget.getAxis("bottom").setLabel("")  # Remove x-axis label
         self.PlotWidget.setLogMode(False, False)

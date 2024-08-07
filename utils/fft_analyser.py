@@ -98,7 +98,7 @@ class FFTAnalyser(QtCore.QThread):
                 self.points[n] = 1e-5
 
         # interpolate points
-        rs = gaussian_filter1d(self.points, sigma=1)
+        rs = gaussian_filter1d(self.points, sigma=2)
 
         # Mirror the amplitudes, these are renamed to 'rs' because we are using them
         # for polar plotting, which is plotted in terms of r and theta
