@@ -52,21 +52,28 @@ class MetadataWindow(QDialog):
             # songs_id3_data.append(get_id3_tags(song))
             song_data = get_id3_tags(song)
             for tag in self.id3_tag_mapping:
-                tag_sets[tag] = song[tag]
+                try:
+                    tag_sets[tag] = song_data[tag]
+                except KeyError:
+                    tag_sets[tag] = ""
 
-        for tag, value in tag_sets:
+        for tag, value in tag_sets.items():
             if value == set(value):
                 # Normal field
-                input_field = QLineEdit()
+                label = QLabel(str(self.id3_tag_mapping[tag]))
+                input_field = QLineEdit(str(value))
             else:
-                pass
                 # Danger field
+                label = QLabel(str(self.id3_tag_mapping[tag]))
+                input_field = QLineEdit(str(value))
+            layout.addWidget(label)
+            layout.addWidget(input_field)
 
         # Editable fields
-        label = QLabel("Title")
-        input_field = QLineEdit({songs["TPE1"]})
-        layout.addWidget(label)
-        layout.addWidget(input_field)
+        # label = QLabel("Title")
+        # input_field = QLineEdit({songs["TPE1"]})
+        # layout.addWidget(label)
+        # layout.addWidget(input_field)
 
         # Save button
         save_button = QPushButton("Save")

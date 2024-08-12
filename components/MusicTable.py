@@ -20,6 +20,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
 from components.ErrorDialog import ErrorDialog
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
+from components.MetadataWindow import MetadataWindow
 from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_library import add_files_to_library
 from utils.update_song_in_library import update_song_in_library
@@ -164,7 +165,8 @@ class MusicTable(QTableView):
         # FIXME:
         """Opens a form with metadata from the selected audio files"""
         files = self.get_selected_songs_filepaths()
-        return
+        window = MetadataWindow(files)
+        window.exec_()  # Display the preferences window modally
 
     def add_selected_files_to_playlist(self):
         """Opens a playlist choice menu and adds the currently selected files to the chosen playlist"""
