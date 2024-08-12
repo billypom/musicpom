@@ -15,7 +15,10 @@ from utils.get_id3_tags import get_id3_tags
 class MetadataWindow(QDialog):
     def __init__(self, songs: list):
         """
-        Takes in a list of songs (absolute paths)
+        Window that allows batch editing of metadata for multiple files
+
+        Input: songs
+        - list of strings, absolute paths to mp3 files
         """
         super(MetadataWindow, self).__init__()
         self.id3_tag_mapping = {
@@ -31,38 +34,33 @@ class MetadataWindow(QDialog):
         self.setWindowTitle("Edit metadata")
         # self.setMinimumSize(600, 800)
         layout = QVBoxLayout()
-        # h_separator = QFrame()
-        # h_separator.setFrameShape(QFrame.HLine)
+        h_separator = QFrame()
+        h_separator.setFrameShape(QFrame.HLine)
 
         # Labels and categories and stuff
-        # category_label = QLabel("Edit metadata")
-        # category_label.setFont(QFont("Sans", weight=QFont.Bold))  # bold category
-        # category_label.setStyleSheet("text-transform:uppercase;")  # uppercase category
-        # layout.addWidget(category_label)
-        # layout.addWidget(h_separator)
+        category_label = QLabel("Edit metadata")
+        category_label.setFont(QFont("Sans", weight=QFont.Bold))  # bold category
+        category_label.setStyleSheet("text-transform:uppercase;")  # uppercase category
+        layout.addWidget(category_label)
+        layout.addWidget(h_separator)
 
-        # Editable fields
         tag_sets: dict = {}
-        #  { "TIT2": ["song_title1", "song_title2"], ... }
+        # Get a dict of all tags for all songs
+        # e.g.,  { "TIT2": ["song_title1", "song_title2"], ... }
         for song in songs:
             song_data = get_id3_tags(song)
-            print("song_data")
-            print(song_data)
-
             for tag in self.id3_tag_mapping:
-                # See if the tag exists in the dict
-                # else, create it
                 try:
                     _ = tag_sets[tag]
                 except KeyError:
+                    # If a tag doesn't exist in our dict, create an empty list
                     tag_sets[tag] = []
                 try:
                     tag_sets[tag].append(song_data[tag].text[0])
                 except KeyError:
                     pass
 
-        print(f"tag sets: {tag_sets}")
-
+        # UI Creation
         current_layout = QHBoxLayout()
         for idx, (tag, value) in enumerate(tag_sets.items()):
             # Layout creation
@@ -73,7 +71,7 @@ class MetadataWindow(QDialog):
                 layout.addLayout(current_layout)
                 current_layout = QHBoxLayout()
 
-            print(f"type: {type(value)} | value: {value}")
+            # print(f"type: {type(value)} | value: {value}")
 
             # Field Creation
             if value == list(set(value)):
@@ -85,6 +83,7 @@ class MetadataWindow(QDialog):
             else:
                 # Danger field
                 # this means the metadata differs between the selected items for this tag
+                # so be careful...dangerous
                 field_text = str(value[0]) if value else ""
                 label = QLabel(str(self.id3_tag_mapping[tag]))
                 input_field = QLineEdit(field_text)
