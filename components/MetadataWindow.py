@@ -31,6 +31,8 @@ class MetadataWindow(QDialog):
             "APIC": "album_cover",
             "TCOP": "copyright",
         }
+        # Keep a dictionary of the input fields for save function
+        self.input_fields = {}
         self.setWindowTitle("Edit metadata")
         # self.setMinimumSize(600, 800)
         layout = QVBoxLayout()
@@ -88,6 +90,8 @@ class MetadataWindow(QDialog):
                 label = QLabel(str(self.id3_tag_mapping[tag]))
                 input_field = QLineEdit(field_text)
                 input_field.setStyleSheet("border: 1px solid red")
+            # Save each input field to our dict for saving
+            self.input_fields[tag] = input_field
             current_layout.addWidget(label)
             current_layout.addWidget(input_field)
 
@@ -99,4 +103,6 @@ class MetadataWindow(QDialog):
 
     def save(self):
         """Save changes made to metadata for each song in dict"""
+        for tag, field in self.input_fields.items():
+            print(tag, field)
         self.close()
