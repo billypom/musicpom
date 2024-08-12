@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (
     QDialog,
     QFrame,
+    QHBoxLayout,
     QVBoxLayout,
     QLabel,
     QLineEdit,
@@ -28,52 +29,68 @@ class MetadataWindow(QDialog):
             "TCOP": "copyright",
         }
         self.setWindowTitle("Edit metadata")
-        self.setMinimumSize(600, 800)
+        # self.setMinimumSize(600, 800)
         layout = QVBoxLayout()
-        h_separator = QFrame()
-        h_separator.setFrameShape(QFrame.HLine)
+        # h_separator = QFrame()
+        # h_separator.setFrameShape(QFrame.HLine)
 
         # Labels and categories and stuff
         # category_label = QLabel("Edit metadata")
         # category_label.setFont(QFont("Sans", weight=QFont.Bold))  # bold category
         # category_label.setStyleSheet("text-transform:uppercase;")  # uppercase category
-        layout.addWidget(h_separator)
-
-        # FIXME: dynamically load fields and stuf
-        # Dict of sets
-        # {
-        #   "TIT2": ["song_title1", "song_title2"],
-        #   ...
-        # }
-        tag_sets: dict = {}
-        # List of dictionaries of ID3 tags for each song
-        # songs_id3_data: list = []
-        for song in songs:
-            # songs_id3_data.append(get_id3_tags(song))
-            song_data = get_id3_tags(song)
-            for tag in self.id3_tag_mapping:
-                try:
-                    tag_sets[tag] = song_data[tag]
-                except KeyError:
-                    tag_sets[tag] = ""
-
-        for tag, value in tag_sets.items():
-            if value == set(value):
-                # Normal field
-                label = QLabel(str(self.id3_tag_mapping[tag]))
-                input_field = QLineEdit(str(value))
-            else:
-                # Danger field
-                label = QLabel(str(self.id3_tag_mapping[tag]))
-                input_field = QLineEdit(str(value))
-            layout.addWidget(label)
-            layout.addWidget(input_field)
+        # layout.addWidget(category_label)
+        # layout.addWidget(h_separator)
 
         # Editable fields
-        # label = QLabel("Title")
-        # input_field = QLineEdit({songs["TPE1"]})
-        # layout.addWidget(label)
-        # layout.addWidget(input_field)
+        tag_sets: dict = {}
+        #  { "TIT2": ["song_title1", "song_title2"], ... }
+        for song in songs:
+            song_data = get_id3_tags(song)
+            print("song_data")
+            print(song_data)
+
+            for tag in self.id3_tag_mapping:
+                # See if the tag exists in the dict
+                # else, create it
+                try:
+                    _ = tag_sets[tag]
+                except KeyError:
+                    tag_sets[tag] = []
+                try:
+                    tag_sets[tag].append(song_data[tag].text[0])
+                except KeyError:
+                    pass
+
+        print(f"tag sets: {tag_sets}")
+
+        current_layout = QHBoxLayout()
+        for idx, (tag, value) in enumerate(tag_sets.items()):
+            # Layout creation
+            if idx == 0:
+                pass
+            elif idx % 2 == 0:
+                # Make a new horizontal layout for every 2 items
+                layout.addLayout(current_layout)
+                current_layout = QHBoxLayout()
+
+            print(f"type: {type(value)} | value: {value}")
+
+            # Field Creation
+            if value == list(set(value)):
+                field_text = str(value[0]) if value else ""
+                # Normal field
+                label = QLabel(str(self.id3_tag_mapping[tag]))
+                input_field = QLineEdit(field_text)
+                input_field.setStyleSheet(None)
+            else:
+                # Danger field
+                # this means the metadata differs between the selected items for this tag
+                field_text = str(value[0]) if value else ""
+                label = QLabel(str(self.id3_tag_mapping[tag]))
+                input_field = QLineEdit(field_text)
+                input_field.setStyleSheet("border: 1px solid red")
+            current_layout.addWidget(label)
+            current_layout.addWidget(input_field)
 
         # Save button
         save_button = QPushButton("Save")
@@ -83,5 +100,4 @@ class MetadataWindow(QDialog):
 
     def save(self):
         """Save changes made to metadata for each song in dict"""
-        pass
         self.close()
