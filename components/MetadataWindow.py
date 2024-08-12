@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from mutagen.id3 import ID3
 from utils.get_id3_tags import get_id3_tags
+from utils.set_id3_tag import set_id3_tag
 
 
 class MetadataWindow(QDialog):
@@ -21,6 +22,7 @@ class MetadataWindow(QDialog):
         - list of strings, absolute paths to mp3 files
         """
         super(MetadataWindow, self).__init__()
+        self.songs = songs
         self.id3_tag_mapping = {
             "TIT2": "title",
             "TPE1": "artist",
@@ -49,7 +51,7 @@ class MetadataWindow(QDialog):
         tag_sets: dict = {}
         # Get a dict of all tags for all songs
         # e.g.,  { "TIT2": ["song_title1", "song_title2"], ... }
-        for song in songs:
+        for song in self.songs:
             song_data = get_id3_tags(song)
             for tag in self.id3_tag_mapping:
                 try:
@@ -103,6 +105,7 @@ class MetadataWindow(QDialog):
 
     def save(self):
         """Save changes made to metadata for each song in dict"""
-        for tag, field in self.input_fields.items():
-            print(tag, field)
+        for song in self.songs:
+            for tag, field in self.input_fields.items():
+                set_id3_tag(filepath=song, tag_name=tag, value=field)
         self.close()
