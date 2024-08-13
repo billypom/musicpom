@@ -440,7 +440,7 @@ if __name__ == "__main__":
     sys.path.append(project_root)
     # Start the app
     app = QApplication(sys.argv)
-    print(f"main.py app: {app}")
+    # print(f"main.py app: {app}")
     # Dark theme >:3
     qdarktheme.setup_theme()
     # Show the UI

@@ -40,7 +40,7 @@ from mutagen.id3._frames import (
     WPUB,
 )
 
-id3_tag_mapping = {
+mutagen_id3_tag_mapping = {
     "title": TIT2,  # Title/song name/content description
     "artist": TPE1,  # Lead performer(s)/Soloist(s)
     "album": TALB,  # Album/Movie/Show title
@@ -119,8 +119,8 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             audio.save()
             return True
         # Other
-        elif tag_name in id3_tag_mapping:  # Tag accounted for
-            tag_class = id3_tag_mapping[tag_name]
+        elif tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
+            tag_class = mutagen_id3_tag_mapping[tag_name]
             if issubclass(tag_class, Frame):
                 frame = tag_class(encoding=3, text=[value])
                 audio_file.add(frame)  # Add the tag

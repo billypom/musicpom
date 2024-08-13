@@ -23,7 +23,7 @@ from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_library import add_files_to_library
-from utils.update_song_in_library import update_song_in_library
+from utils.update_song_in_database import update_song_in_database
 from utils.get_id3_tags import get_id3_tags
 from utils.get_album_art import get_album_art
 from utils import set_id3_tag
@@ -38,12 +38,15 @@ class MusicTable(QTableView):
     playPauseSignal = pyqtSignal()
     enterKey = pyqtSignal()
     deleteKey = pyqtSignal()
+    refreshMusicTable = pyqtSignal()
 
     def __init__(self: QTableView, parent=None):
         # QTableView.__init__(self, parent)
         super().__init__(parent)
         # Necessary for actions related to cell values
+        # FIXME: why do these give me pyright errors
         self.model = QStandardItemModel(self)
+        # self.model = QAbstractItemModel(self)
         self.setModel(self.model)
 
         # Config
@@ -165,7 +168,9 @@ class MusicTable(QTableView):
         # FIXME:
         """Opens a form with metadata from the selected audio files"""
         files = self.get_selected_songs_filepaths()
-        window = MetadataWindow(files)
+        song_ids = self.get_selected_songs_db_ids()
+        window = MetadataWindow(self.refreshMusicTable, files, song_ids)
+        window.refreshMusicTableSignal.connect(self.load_music_table)
         window.exec_()  # Display the preferences window modally
 
     def add_selected_files_to_playlist(self):
@@ -231,9 +236,11 @@ class MusicTable(QTableView):
         else:
             e.ignore()
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, e):
         """Press a key. Do a thing"""
-        key = event.key()
+        if not e:
+            return
+        key = e.key()
         if key == Qt.Key_Space:  # Spacebar to play/pause
             self.toggle_play_pause()
         elif key == Qt.Key_Up:  # Arrow key navigation
@@ -254,9 +261,9 @@ class MusicTable(QTableView):
             if self.state() != QAbstractItemView.EditingState:
                 self.enterKey.emit()  # Enter key detected
             else:
-                super().keyPressEvent(event)
+                super().keyPressEvent(e)
         else:  # Default behavior
-            super().keyPressEvent(event)
+            super().keyPressEvent(e)
 
     def setup_keyboard_shortcuts(self):
         """Setup shortcuts here"""
@@ -267,7 +274,7 @@ class MusicTable(QTableView):
         """Handles updating ID3 tags when data changes in a cell"""
         print("on_cell_data_changed")
         id_index = self.model.index(topLeft.row(), 0)  # ID is column 0, always
-        library_id = self.model.data(id_index, Qt.UserRole)
+        song_id = self.model.data(id_index, Qt.UserRole)
         # filepath is always the last column
         filepath_column_idx = self.model.columnCount() - 1
         filepath_index = self.model.index(topLeft.row(), filepath_column_idx)
@@ -280,7 +287,7 @@ class MusicTable(QTableView):
         response = set_id3_tag(filepath, edited_column_name, user_input_data)
         if response:
             # Update the library with new metadata
-            update_song_in_library(library_id, edited_column_name, user_input_data)
+            update_song_in_database(song_id, edited_column_name, user_input_data)
 
     def reorganize_selected_files(self):
         """Ctrl+Shift+R = Reorganize"""
@@ -411,6 +418,7 @@ class MusicTable(QTableView):
         self.model.layoutChanged.emit()  # emits a signal that the view should be updated
         try:
             self.model.dataChanged.connect(self.on_cell_data_changed)
+            self.restore_scroll_position()
         except Exception:
             pass
 
