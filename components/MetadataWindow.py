@@ -17,6 +17,18 @@ from utils.update_song_in_database import update_song_in_database
 from utils.id3_tag_mapping import id3_tag_mapping
 
 
+class ID3LineEdit(QLineEdit):
+    def __init__(self, text: str, tag: str):
+        """ """
+        super(ID3LineEdit, self).__init__()
+        self.setText(text)
+        self._original_text = text
+        self.tag = tag
+
+    def has_changed(self) -> bool:
+        return self.text() != self._original_text
+
+
 class MetadataWindow(QDialog):
     refreshMusicTableSignal = pyqtSignal()
 
@@ -80,7 +92,7 @@ class MetadataWindow(QDialog):
                 field_text = str(value[0]) if value else ""
                 # Normal field
                 label = QLabel(str(self.id3_tag_mapping[tag]))
-                input_field = QLineEdit(field_text)
+                input_field = ID3LineEdit(field_text, tag)
                 input_field.setStyleSheet(None)
             else:
                 # Danger field
@@ -88,7 +100,7 @@ class MetadataWindow(QDialog):
                 # so be careful...dangerous
                 field_text = str(value[0]) if value else ""
                 label = QLabel(str(self.id3_tag_mapping[tag]))
-                input_field = QLineEdit(field_text)
+                input_field = ID3LineEdit(field_text, tag)
                 input_field.setStyleSheet("border: 1px solid red")
             # Save each input field to our dict for saving
             self.input_fields[tag] = input_field
@@ -106,21 +118,23 @@ class MetadataWindow(QDialog):
         for song in self.songs:
             for tag, field in self.input_fields.items():
                 if field.text() is not None and field.text() != "":
-                    # Update the ID3 tag if not blank
-                    success = set_id3_tag(
-                        filepath=song[0], tag_name=tag, value=field.text()
-                    )
-                    if success:
-                        update_song_in_database(
-                            song[1],
-                            edited_column_name=self.id3_tag_mapping[tag],
-                            user_input_data=field.text(),
+                    if field.has_changed():
+                        # Update the ID3 tag if the tag is not blank,
+                        #   and has been edited
+                        success = set_id3_tag(
+                            filepath=song[0], tag_name=tag, value=field.text()
                         )
-                    else:
-                        error_dialog = ErrorDialog(
-                            f"Could not update metadata for {song}. Exiting early"
-                        )
-                        error_dialog.exec()
-                        self.close()
+                        if success:
+                            update_song_in_database(
+                                song[1],
+                                edited_column_name=self.id3_tag_mapping[tag],
+                                user_input_data=field.text(),
+                            )
+                        else:
+                            error_dialog = ErrorDialog(
+                                f"Could not update metadata for {song}. Exiting early"
+                            )
+                            error_dialog.exec()
+                            self.close()
         self.refreshMusicTableSignal.emit()
         self.close()
