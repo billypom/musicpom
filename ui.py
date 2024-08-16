@@ -192,8 +192,11 @@ class Ui_MainWindow(object):
         self.actionDeleteDatabase.setObjectName("actionDeleteDatabase")
         self.actionNewPlaylist = QtWidgets.QAction(MainWindow)
         self.actionNewPlaylist.setObjectName("actionNewPlaylist")
+        self.actionExportPlaylist = QtWidgets.QAction(MainWindow)
+        self.actionExportPlaylist.setObjectName("actionExportPlaylist")
         self.menuFile.addAction(self.actionOpenFiles)
         self.menuFile.addAction(self.actionNewPlaylist)
+        self.menuFile.addAction(self.actionExportPlaylist)
         self.menuEdit.addAction(self.actionPreferences)
         self.menuQuick_Actions.addAction(self.actionScanLibraries)
         self.menuQuick_Actions.addAction(self.actionDeleteLibrary)
@@ -229,5 +232,6 @@ class Ui_MainWindow(object):
         self.actionOpenFiles.setText(_translate("MainWindow", "Open file(s)"))
         self.actionDeleteDatabase.setText(_translate("MainWindow", "Delete Database"))
         self.actionNewPlaylist.setText(_translate("MainWindow", "New playlist"))
+        self.actionExportPlaylist.setText(_translate("MainWindow", "Export playlist"))
 from components import AlbumArtGraphicsView, MusicTable, PlaylistsPane
 from pyqtgraph import PlotWidget

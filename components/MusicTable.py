@@ -175,15 +175,7 @@ class MusicTable(QTableView):
 
     def add_selected_files_to_playlist(self):
         """Opens a playlist choice menu and adds the currently selected files to the chosen playlist"""
-        playlist_dict = {}
-        print(type(playlist_dict))
-        with DBA.DBAccess() as db:
-            data = db.query("SELECT id, name from playlist;", ())
-        for row in data:
-            playlist_dict[row[0]] = row[1]
-        playlist_choice_window = AddToPlaylistWindow(
-            playlist_dict, self.get_selected_songs_db_ids()
-        )
+        playlist_choice_window = AddToPlaylistWindow(self.get_selected_songs_db_ids())
         playlist_choice_window.exec_()
 
     def show_lyrics_menu(self):

@@ -15,16 +15,22 @@ import logging
 
 
 class AddToPlaylistWindow(QDialog):
-    def __init__(self, list_options: dict, song_db_ids: list):
+    def __init__(self, song_db_ids: list):
         super(AddToPlaylistWindow, self).__init__()
         self.song_db_ids = song_db_ids
         self.setWindowTitle("Add songs to playlist:")
-        self.setMinimumSize(400, 400)
+        # self.setMinimumSize(400, 400)
         layout = QVBoxLayout()
+
+        playlist_dict: dict = {}
+        with DBA.DBAccess() as db:
+            data = db.query("SELECT id, name from playlist;", ())
+        for row in data:
+            playlist_dict[row[0]] = row[1]
 
         self.item_dict = {}
         self.listWidget = QListWidget(self)
-        for i, (k, v) in enumerate(list_options.items()):
+        for i, (k, v) in enumerate(playlist_dict.items()):
             item_text = f"{i} | {v}"
             item = QListWidgetItem(item_text)
             self.listWidget.addItem(item)

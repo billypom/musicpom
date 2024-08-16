@@ -7,3 +7,4 @@ from .LyricsWindow import LyricsWindow
 from .AddToPlaylistWindow import AddToPlaylistWindow
 from .CreatePlaylistWindow import CreatePlaylistWindow
 from .PlaylistsPane import PlaylistsPane
+from .ExportPlaylistWindow import ExportPlaylistWindow

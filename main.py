@@ -28,6 +28,7 @@ from components import (
     PreferencesWindow,
     AudioVisualizer,
     CreatePlaylistWindow,
+    ExportPlaylistWindow,
 )
 
 # Create ui.py file from Qt Designer
@@ -97,6 +98,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # FILE MENU
         self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
         self.actionNewPlaylist.triggered.connect(self.create_playlist)
+        self.actionExportPlaylist.triggered.connect(self.export_playlist)
         # EDIT MENU
         # VIEW MENU
         self.actionPreferences.triggered.connect(
@@ -357,6 +359,21 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Creates a database record for a playlist, given a name"""
         create_playlist_window = CreatePlaylistWindow()
         create_playlist_window.exec_()
+
+    def import_playlist(self) -> None:
+        """
+        Imports a .m3u file, given a base path attempts to match playlist files to
+        database records that currently exist
+        """
+        pass
+
+    def export_playlist(self) -> None:
+        """
+        Export playlist window
+        Takes a certain database playlist and turns it into a .m3u file
+        """
+        export_playlist_window = ExportPlaylistWindow()
+        export_playlist_window.exec_()
 
     def open_preferences(self) -> None:
         """Opens the preferences window"""

@@ -308,6 +308,7 @@
     </property>
     <addaction name="actionOpenFiles"/>
     <addaction name="actionNewPlaylist"/>
+    <addaction name="actionExportPlaylist"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -365,6 +366,11 @@
   <action name="actionNewPlaylist">
    <property name="text">
     <string>New playlist</string>
+   </property>
+  </action>
+  <action name="actionExportPlaylist">
+   <property name="text">
+    <string>Export playlist</string>
    </property>
   </action>
  </widget>
