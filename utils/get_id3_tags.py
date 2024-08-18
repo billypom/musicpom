@@ -44,14 +44,13 @@ def get_id3_tags(file):
 
         # If 'TIT2' tag is not set, add it with a default value (title will be the filename without extension)
         title = os.path.splitext(os.path.basename(file))[0]
-        for key in list(audio.keys()):
-            if key == "TIT2":
-                audio[key].text[0] = title
-                break
+        list_of_id3_tags = list(audio.keys())
+        if "TIT2" in list_of_id3_tags:
+            audio.save()
+            return audio
         else:
             tit2_tag = TIT2(encoding=3, text=[title])
             audio["TIT2"] = tit2_tag
-
         # Save the updated tags
         audio.save()
 

@@ -1,6 +1,7 @@
 import DBA
 from configparser import ConfigParser
 from utils import get_id3_tags, id3_timestamp_to_datetime
+import logging
 
 config = ConfigParser()
 config.read("config.ini")
@@ -11,6 +12,7 @@ def add_files_to_library(files):
     files = list() of fully qualified paths to audio file(s)
     Returns a list of dictionaries of metadata
     """
+    print("Running add_files_to_library.py")
     if not files:
         return []
     extensions = config.get("settings", "extensions").split(",")
@@ -19,13 +21,11 @@ def add_files_to_library(files):
         if any(filepath.lower().endswith(ext) for ext in extensions):
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
-            # print("add_files_to_library audio:")
-            # print(audio)
 
-            # Skip if no title is found (but should never happen
-            if "TIT2" not in audio:
-                continue
-            title = audio["TIT2"].text[0]
+            try:
+                title = audio["TIT2"].text[0]
+            except KeyError as e:
+                title = filename
             try:
                 artist = audio["TPE1"].text[0]
             except KeyError:
