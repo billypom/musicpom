@@ -10,4 +10,4 @@ from .delete_and_create_library_database import delete_and_create_library_databa
 from .update_song_in_database import update_song_in_database
 from .scan_for_music import scan_for_music
 from .add_files_to_library import add_files_to_library
-from .handle_year_and_date_id3_tag import handle_year_and_date_id3_tag
+from .convert_date_str_to_tyer_tdat_id3_tag import convert_date_str_to_tyer_tdat_id3_tag

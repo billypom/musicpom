@@ -44,7 +44,7 @@ class MusicTable(QTableView):
         # QTableView.__init__(self, parent)
         super().__init__(parent)
         # Necessary for actions related to cell values
-        # FIXME: why do these give me pyright errors
+        # FIXME: why does this give me pyright errors
         self.model = QStandardItemModel(self)
         # self.model = QAbstractItemModel(self)
         self.setModel(self.model)

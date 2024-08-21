@@ -1,6 +1,8 @@
 import logging
 from components import ErrorDialog
-from utils.handle_year_and_date_id3_tag import handle_year_and_date_id3_tag
+from utils.convert_date_str_to_tyer_tdat_id3_tag import (
+    convert_date_str_to_tyer_tdat_id3_tag,
+)
 from mutagen.id3 import ID3
 from mutagen.id3._util import ID3NoHeaderError
 from mutagen.id3._frames import (
@@ -9,6 +11,7 @@ from mutagen.id3._frames import (
     TPE1,
     TALB,
     TRCK,
+    TDRC,
     # TYER,
     TCON,
     TPOS,
@@ -46,6 +49,7 @@ mutagen_id3_tag_mapping = {
     "album": TALB,  # Album/Movie/Show title
     "album_artist": TPE2,  # Band/orchestra/accompaniment
     "genre": TCON,  # Content type
+    "album_date": TDRC,
     # "year": TYER,  # Year of recording
     # "date": TDAT,  # Date
     "lyrics": USLT,  # Unsynchronized lyric/text transcription
@@ -97,15 +101,15 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
         except ID3NoHeaderError:  # Create new tags if none exist
             audio_file = ID3()
         # Date handling - TDRC vs TYER+TDAT
-        if tag_name == "album_date":
-            tyer_tag, tdat_tag = handle_year_and_date_id3_tag(value)
-            # always update TYER
-            audio_file.add(tyer_tag)
-            if tdat_tag:
-                # update TDAT if we have it
-                audio_file.add(tdat_tag)
+        # if tag_name == "album_date":
+        #     tyer_tag, tdat_tag = convert_date_str_to_tyer_tdat_id3_tag(value)
+        #     # always update TYER
+        #     audio_file.add(tyer_tag)
+        #     if tdat_tag:
+        #         # update TDAT if we have it
+        #         audio_file.add(tdat_tag)
         # Lyrics
-        elif tag_name == "lyrics" or tag_name == "USLT":
+        if tag_name == "lyrics" or tag_name == "USLT":
             try:
                 audio = ID3(filepath)
             except Exception as e:

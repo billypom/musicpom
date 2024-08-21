@@ -15,6 +15,7 @@ from utils.get_id3_tags import get_id3_tags
 from utils.set_id3_tag import set_id3_tag
 from utils.update_song_in_database import update_song_in_database
 from utils.id3_tag_mapping import id3_tag_mapping
+# import re
 
 
 class ID3LineEdit(QLineEdit):
@@ -30,14 +31,14 @@ class ID3LineEdit(QLineEdit):
 
 
 class MetadataWindow(QDialog):
-    refreshMusicTableSignal = pyqtSignal()
-
     def __init__(self, refreshMusicTableSignal, songs: list, ids: list):
         """
         Window that allows batch editing of metadata for multiple files
 
-        Input: songs
+        Input: songs, ids
         - list of strings, absolute paths to mp3 files
+        - list of database song ids
+
         """
         super(MetadataWindow, self).__init__()
         self.refreshMusicTableSignal = refreshMusicTableSignal
@@ -89,12 +90,15 @@ class MetadataWindow(QDialog):
 
             # Field Creation
             if value == list(set(value)):
+                print(value)
+                # If the ID3 tag is the same for every item we're editing
                 field_text = str(value[0]) if value else ""
                 # Normal field
                 label = QLabel(str(self.id3_tag_mapping[tag]))
                 input_field = ID3LineEdit(field_text, tag)
                 input_field.setStyleSheet(None)
             else:
+                print(value)
                 # Danger field
                 # this means the metadata differs between the selected items for this tag
                 # so be careful...dangerous
@@ -106,6 +110,7 @@ class MetadataWindow(QDialog):
             self.input_fields[tag] = input_field
             current_layout.addWidget(label)
             current_layout.addWidget(input_field)
+        layout.addLayout(current_layout)
 
         # Save button
         save_button = QPushButton("Save")
@@ -119,6 +124,20 @@ class MetadataWindow(QDialog):
             for tag, field in self.input_fields.items():
                 if field.text() is not None and field.text() != "":
                     if field.has_changed():
+                        # date crap...
+                        # if tag == "TYER":
+                        #     continue
+                        # if tag == "TDAT":
+                        #     match = re.match(
+                        #         r"(\d{4})[-/](\d{2})[-/](\d{2})", field.text()
+                        #     )
+                        #     if not match:
+                        #         continue
+                        #     year, _, _ = match.groups()
+                        #     _ = set_id3_tag(
+                        #         filepath=song[0], tag_name="TYER", value=str(year)
+                        #     )
+                        # BUSINESS AS USUAL
                         # Update the ID3 tag if the tag is not blank,
                         #   and has been edited
                         success = set_id3_tag(

@@ -5,6 +5,9 @@ id3_tag_mapping = {
     "TPE2": "album_artist",
     "TCON": "genre",
     "TRCK": "track_number",
+    "TDRC": "album_date",
+    # "TYER": "year",
+    # "TDAT": "date",
     # "APIC": "album_cover",
     "TCOP": "copyright",
 }
