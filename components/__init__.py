@@ -4,6 +4,7 @@ from .AudioVisualizer import AudioVisualizer
 from .PreferencesWindow import PreferencesWindow
 from .ErrorDialog import ErrorDialog
 from .LyricsWindow import LyricsWindow
+from .DebugWindow import DebugWindow
 from .AddToPlaylistWindow import AddToPlaylistWindow
 from .CreatePlaylistWindow import CreatePlaylistWindow
 from .PlaylistsPane import PlaylistsPane

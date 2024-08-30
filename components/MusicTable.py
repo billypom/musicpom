@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
 )
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
+from components.DebugWindow import DebugWindow
 from components.ErrorDialog import ErrorDialog
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
@@ -112,6 +113,10 @@ class MusicTable(QTableView):
         open_containing_folder_action = QAction("Open in system file manager", self)
         open_containing_folder_action.triggered.connect(self.open_directory)
         menu.addAction(open_containing_folder_action)
+        # view id3 tags (debug)
+        view_id3_tags_debug = QAction("View ID3 tags (debug)", self)
+        view_id3_tags_debug.triggered.connect(self.show_id3_tags_debug_menu)
+        menu.addAction(view_id3_tags_debug)
         # delete song
         delete_action = QAction("Delete", self)
         delete_action.triggered.connect(self.delete_songs)
@@ -119,6 +124,15 @@ class MusicTable(QTableView):
         # show
         self.set_selected_song_filepath()
         menu.exec_(event.globalPos())
+
+    def show_id3_tags_debug_menu(self):
+        """Shows ID3 tags for a specific .mp3 file"""
+        selected_song_filepath = self.get_selected_song_filepath()
+        if selected_song_filepath is None:
+            return
+        current_song = self.get_selected_song_metadata()
+        lyrics_window = DebugWindow(selected_song_filepath, str(current_song))
+        lyrics_window.exec_()
 
     def delete_songs(self):
         """Deletes the currently selected songs from the db and music table (not the filesystem)"""

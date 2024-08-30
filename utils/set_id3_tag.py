@@ -1,5 +1,6 @@
 import logging
 from components import ErrorDialog
+from utils.id3_tag_mapping import id3_tag_mapping
 from utils.convert_date_str_to_tyer_tdat_id3_tag import (
     convert_date_str_to_tyer_tdat_id3_tag,
 )
@@ -122,8 +123,12 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             audio.add(frame)
             audio.save()
             return True
-        # Other
-        elif tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
+        # Convert any tag (as string or name, or whatever) into the Mutagen Frame object
+        if tag_name in id3_tag_mapping:
+            tag_name = id3_tag_mapping[tag_name]
+            # Other
+        if tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
+            print(f"set_id3_tag.py | tag_name = {tag_name}")
             tag_class = mutagen_id3_tag_mapping[tag_name]
             if issubclass(tag_class, Frame):
                 frame = tag_class(encoding=3, text=[value])
