@@ -9,8 +9,7 @@ git clone https://github.com/billypom/musicpom
 ```
 install system packages
 ```
-sudo apt install ffmpeg
-sudo apt install python3-pyqt5
+sudo apt install ffmpeg, python3-pyqt5
 ```
 create environment
 ```
