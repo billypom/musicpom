@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
 )
 from PyQt5.QtGui import QFont
+from configparser import ConfigParser
 import DBA
 
 
@@ -17,6 +18,9 @@ class ExportPlaylistWindow(QDialog):
     def __init__(self):
         super(ExportPlaylistWindow, self).__init__()
         self.setWindowTitle("Export playlist")
+        config = ConfigParser()
+        config.read("config.ini")
+        self.export_path = config.get("directories", "playlist_export_path")
         layout = QVBoxLayout()
         # button_layout = QHBoxLayout()
 
@@ -40,6 +44,15 @@ class ExportPlaylistWindow(QDialog):
         layout.addWidget(label)
         layout.addWidget(self.listWidget)
 
+        # Export path label
+        label = QLabel("Export path")
+        label.setFont(QFont("Sans", weight=QFont.Bold))  # bold category
+        label.setStyleSheet("text-transform:lowercase;")  # uppercase category
+
+        # Export path
+        self.input = QLineEdit(self.export_path)
+        layout.addWidget(self.input)
+
         # Save button
         save_button = QPushButton("Export")
         save_button.clicked.connect(self.save)
@@ -49,19 +62,28 @@ class ExportPlaylistWindow(QDialog):
 
     def save(self) -> None:
         """Exports the chosen database playlist to a .m3u file"""
+        selected_items = [item.text() for item in self.listWidget.selectedItems()]
+        selected_db_ids = [self.item_dict[item] for item in selected_items]
         value = self.input.text()
         if value == "" or value is None:
             self.close()
             return
-        else:
+        for playlist in selected_db_ids:
+            print(type(playlist))
+            print(playlist)
             try:
                 with DBA.DBAccess() as db:
-                    db.execute("INSERT INTO playlist (name) VALUES (?);", (value,))
+                    selected_song_paths = db.query(
+                        "SELECT s.filepath FROM song_playlist as sp JOIN song as s ON s.id = sp.song_id WHERE sp.playlist_id = ?;",
+                        (playlist,),
+                    )
             except Exception as e:
                 logging.error(
-                    f"CreatePlaylistWindow.py save() | Could not create playlist: {e}"
+                    f"ExportPlaylistWindow.py save() | could not retrieve playlist songs: {e}"
                 )
-            self.close()
+        # FIXME: make this write to a .m3u file, also
+        # need to consider relative paths + config for that
+        self.close()
 
     def cancel(self) -> None:
         self.close()

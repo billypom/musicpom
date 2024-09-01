@@ -50,10 +50,12 @@ class AddToPlaylistWindow(QDialog):
         self.show()
 
     def save(self):
-        selected_items = [item.text() for item in self.listWidget.selectedItems()]
-        selected_db_ids = [self.item_dict[item] for item in selected_items]
-        for song in self.song_db_ids:
-            for playlist in selected_db_ids:
+        selected_playlists = [item.text() for item in self.listWidget.selectedItems()]
+        selected_playlists_db_ids = [
+            self.item_dict[item] for item in selected_playlists
+        ]
+        for playlist in selected_playlists_db_ids:
+            for song in self.song_db_ids:
                 try:
                     with DBA.DBAccess() as db:
                         db.execute(
@@ -62,7 +64,7 @@ class AddToPlaylistWindow(QDialog):
                         )
                 except Exception as e:
                     logging.error(
-                        "AddToPlaylistWindow.py save() | could not insert song into playlist: {e}"
+                        f"AddToPlaylistWindow.py save() | could not insert song into playlist: {e}"
                     )
 
         self.close()

@@ -38,7 +38,7 @@ class PlaylistsPane(QTreeWidget):
         if isinstance(item, PlaylistWidgetItem):
             print(f"ID: {item.id}, name: {item.text(0)}")
             self.playlist_db_id_choice = item.id
-            self.playlistChoiceSignal.emit(item.id)
+            self.playlistChoiceSignal.emit(int(item.id))
         elif item.text(0).lower() == "all songs":
             self.all_songs_selected()
 

@@ -367,6 +367,7 @@ class MusicTable(QTableView):
         Loads data into self (QTableView)
         Default to loading all songs.
         If playlist_id is given, load songs in a particular playlist
+        playlist_id is emitted from PlaylistsPane as a tuple (1,)
         """
         try:
             # Loading the table also causes cell data to change, technically
@@ -385,18 +386,20 @@ class MusicTable(QTableView):
         self.model.clear()
         self.model.setHorizontalHeaderLabels(self.table_headers)
         if playlist_id:
-            playlist_id = playlist_id[0]
+            selected_playlist_id = playlist_id[0]
+            print(f"selected_playlist_id: {selected_playlist_id}")
             # Fetch playlist data
             try:
                 with DBA.DBAccess() as db:
                     data = db.query(
-                        "SELECT s.id, s.title, s.artist, s.album, s.track_number, s.genre, s.codec, s.album_date, s.filepath FROM song s JOIN song_playlist sp ON s.id = sp.id WHERE sp.id = ?",
-                        (playlist_id,),
+                        "SELECT s.id, s.title, s.artist, s.album, s.track_number, s.genre, s.codec, s.album_date, s.filepath FROM song s JOIN song_playlist sp ON s.id = sp.song_id WHERE sp.playlist_id = ?",
+                        (selected_playlist_id,),
                     )
             except Exception as e:
                 logging.warning(
                     f"MusicTable.py | load_music_table | Unhandled exception: {e}"
                 )
+                print(f"MusicTable.py | load_music_table | Unhandled exception: {e}")
                 return
         else:
             # Fetch library data
