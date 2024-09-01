@@ -20,16 +20,16 @@ class PlaylistsPane(QTreeWidget):
         all_songs_branch = QTreeWidgetItem(["All Songs"])
         library_root.addChild(all_songs_branch)
 
-        playlists_root = QTreeWidgetItem(["Playlists"])
-        self.addTopLevelItem(playlists_root)
+        self.playlists_root = QTreeWidgetItem(["Playlists"])
+        self.addTopLevelItem(self.playlists_root)
         with DBA.DBAccess() as db:
             playlists = db.query("SELECT id, name FROM playlist;", ())
         for playlist in playlists:
             branch = PlaylistWidgetItem(self, playlist[0], playlist[1])
-            playlists_root.addChild(branch)
+            self.playlists_root.addChild(branch)
 
         library_root.setExpanded(True)
-        playlists_root.setExpanded(True)
+        self.playlists_root.setExpanded(True)
 
         self.currentItemChanged.connect(self.playlist_clicked)
         self.playlist_db_id_choice: int | None = None
@@ -44,3 +44,11 @@ class PlaylistsPane(QTreeWidget):
 
     def all_songs_selected(self):
         self.allSongsSignal.emit()
+
+    def add_latest_playlist_to_tree(self):
+        with DBA.DBAccess() as db:
+            playlist = db.query(
+                "SELECT id, name FROM playlist ORDER BY date_created DESC LIMIT 1;", ()
+            )[0]
+        branch = PlaylistWidgetItem(self, playlist[0], playlist[1])
+        self.playlists_root.addChild(branch)

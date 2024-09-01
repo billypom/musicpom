@@ -179,7 +179,6 @@ class MusicTable(QTableView):
         Popen(["xdg-open", path])
 
     def edit_selected_files_metadata(self):
-        # FIXME:
         """Opens a form with metadata from the selected audio files"""
         files = self.get_selected_songs_filepaths()
         song_ids = self.get_selected_songs_db_ids()

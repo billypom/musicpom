@@ -1,11 +1,13 @@
 import logging
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout
+from PyQt5.QtCore import pyqtSignal
 import DBA
 
 
 class CreatePlaylistWindow(QDialog):
-    def __init__(self):
+    def __init__(self, playlistCreatedSignal):
         super(CreatePlaylistWindow, self).__init__()
+        self.playlistCreatedSignal = playlistCreatedSignal
         self.setWindowTitle("Create new playlist")
         layout = QVBoxLayout()
         button_layout = QHBoxLayout()
@@ -38,6 +40,7 @@ class CreatePlaylistWindow(QDialog):
                 logging.error(
                     f"CreatePlaylistWindow.py save() | Could not create playlist: {e}"
                 )
+            self.playlistCreatedSignal.emit()
             self.close()
 
     def cancel(self) -> None:

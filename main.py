@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
     QMessageBox,
 )
-from PyQt5.QtCore import QUrl, QTimer, Qt
+from PyQt5.QtCore import QUrl, QTimer, Qt, pyqtSignal
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QCloseEvent, QPixmap
 from utils import scan_for_music, delete_and_create_library_database, initialize_db
@@ -36,6 +36,8 @@ from components import (
 
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
+    playlistCreatedSignal = pyqtSignal()
+
     def __init__(self, qapp):
         super(ApplicationWindow, self).__init__()
         global stopped
@@ -79,7 +81,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
 
         # Playlist left-pane
-        self.playlistTreeView
+        # self.playlistTreeView
 
         # Connections
         self.playbackSlider.sliderReleased.connect(
@@ -357,8 +359,13 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def create_playlist(self) -> None:
         """Creates a database record for a playlist, given a name"""
-        create_playlist_window = CreatePlaylistWindow()
-        create_playlist_window.exec_()
+        window = CreatePlaylistWindow(self.playlistCreatedSignal)
+        window.playlistCreatedSignal.connect(self.add_latest_playlist_to_tree)
+        window.exec_()
+
+    def add_latest_playlist_to_tree(self) -> None:
+        """Refreshes the playlist tree"""
+        self.playlistTreeView.add_latest_playlist_to_tree()
 
     def import_playlist(self) -> None:
         """
