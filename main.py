@@ -438,7 +438,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
 
 if __name__ == "__main__":
-    print("its main")
     # First run initialization
     if not os.path.exists("config.ini"):
         # Create config file from sample
@@ -449,7 +448,6 @@ if __name__ == "__main__":
     db_path = db_name.split("/")
     db_path.pop()
     db_path_as_string = "/".join(db_path)
-    print(f"db_path_as_string: {db_path_as_string}")
     if not os.path.exists(db_path_as_string):
         os.makedirs(db_path_as_string)
         # Create database on first run
