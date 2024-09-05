@@ -47,6 +47,8 @@ from components import (
 # pyuic5 ui.ui -o ui.py
 
 
+# good help with signals slots in threads
+# https://stackoverflow.com/questions/52993677/how-do-i-setup-signals-and-slots-in-pyqt-with-qthreads-in-both-directions
 class WorkerSignals(QObject):
     """
     How to use signals for a QRunnable class; unlike most cases where signals
