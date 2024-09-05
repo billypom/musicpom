@@ -29,6 +29,6 @@ python3 main.py
 - [x] right-click menu
 - [x] editable lyrics window
 - [x] batch metadata changer (red text on fields that have differing info)
-- [ ] playlists
+- [x] playlists
 - [ ] delete songs from library (del key || right-click delete)
 - [ ] .wav, .ogg, .flac convertor

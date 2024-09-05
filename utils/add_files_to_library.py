@@ -12,7 +12,7 @@ def add_files_to_library(files):
     files = list() of fully qualified paths to audio file(s)
     Returns a list of dictionaries of metadata
     """
-    print("Running add_files_to_library.py")
+    # print("Running add_files_to_library.py")
     if not files:
         return []
     extensions = config.get("settings", "extensions").split(",")
