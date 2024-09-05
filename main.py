@@ -13,16 +13,28 @@ import DBA
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
     QFileDialog,
+    QLabel,
     QMainWindow,
     QApplication,
     QGraphicsScene,
     QHeaderView,
     QGraphicsPixmapItem,
     QMessageBox,
+    QStatusBar,
 )
-from PyQt5.QtCore import QUrl, QTimer, Qt, pyqtSignal
+from PyQt5.QtCore import (
+    QUrl,
+    QTimer,
+    Qt,
+    pyqtSignal,
+    QObject,
+    pyqtSlot,
+    QThreadPool,
+    QRunnable,
+)
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QCloseEvent, QPixmap
+from uuid import uuid4, UUID
 from utils import scan_for_music, delete_and_create_library_database, initialize_db
 from components import (
     PreferencesWindow,
@@ -35,6 +47,51 @@ from components import (
 # pyuic5 ui.ui -o ui.py
 
 
+class WorkerSignals(QObject):
+    """
+    How to use signals for a QRunnable class; unlike most cases where signals
+    are defined as class attributes directly in the class, here we define a
+    class that inherits from QObject and define the signals as class
+    attributes in that class. Then we can instantiate that class and use it
+    as a signal object.
+    """
+
+    # 1)
+    # Use a naming convention for signals that makes it clear that they are signals
+    # and a corresponding naming convention for the slots that handle them.
+    # For example signal_* and handle_*.
+    # 2)
+    # And try to make the signal content as small as possible. DO NOT pass large objects through signals, like
+    # pandas DataFrames or numpy arrays. Instead, pass the minimum amount of information needed
+    # (i.e. lists of filepaths)
+
+    signal_started = pyqtSignal(list)
+    signal_finished = pyqtSignal(UUID)
+    signal_progress = pyqtSignal(str)
+
+
+class WorkerThread(QRunnable):
+    """
+    This is the thread that is going to do the work so that the
+    application doesn't freeze
+    """
+
+    def __init__(self, worker_id: UUID) -> None:
+        super().__init__()
+        # allow for signals to be used
+        self.worker_id = worker_id
+        self.signals: WorkerSignals = WorkerSignals()
+
+    def run(self):
+        """
+        This is where the work is done.
+        MUST be called run() in order for QRunnable to work
+        """
+        self.signals.signal_started.emit("start worker")
+        self.signals.signal_progress.emit("worker progress")
+        self.signals.signal_finished.emit(self.worker_id)
+
+
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     playlistCreatedSignal = pyqtSignal()
 
@@ -42,8 +99,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         super(ApplicationWindow, self).__init__()
         global stopped
         stopped = False
+        # Multithreading stuff...
+        self.workers = dict[UUID, WorkerThread] = {}
+        self.threadpool = QThreadPool()
+        # UI
         self.setupUi(self)
         self.setWindowTitle("MusicPom")
+        self.status_bar = QStatusBar()
+        self.permanent_status_label = QLabel("Status...")
+        self.status_bar.addPermanentWidget(self.permanent_status_label)
+        self.setStatusBar(self.status_bar)
         self.selected_song_filepath: str | None = None
         self.current_song_filepath: str | None = None
         self.current_song_metadata: ID3 | dict | None = None
@@ -146,6 +211,45 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setStretchLastSection(False)
 
+    def start_worker(self):
+        worker_id = uuid4()  # generate an unique id for the worker
+        worker = WorkerThread(worker_id=worker_id)
+
+        # Connect the signals to the slots
+        worker.signals.signal_started.connect(self.handle_started)
+        worker.signals.signal_progress.connect(self.handle_progress)
+        worker.signals.signal_finished.connect(self.handle_finished)
+
+        # Store the worker in a dict so we can keep track of it
+        self.workers[worker_id] = worker
+
+        # Start the worker
+        self.threadpool.start(worker)
+
+    # Slots should have decorators whose arguments match the signals they are connected to
+    @pyqtSlot(list)
+    def handle_files_from_child_window(self, files: list[str]):
+        self.files_to_process = files
+        print(f"Files to process: {self.files_to_process}")
+        self.show_status_bar_message(f"Files to process: {self.files_to_process}")
+
+    @pyqtSlot(int)
+    def handle_progress(self, n):
+        print(f"progress: {n}%")
+        self.show_status_bar_message(f"progress: {n}%")
+
+    @pyqtSlot(UUID)
+    def handle_finished(self, worker_id):
+        print(f"worker {worker_id} finished")
+        self.show_status_bar_message(f"worker {worker_id} finished")
+        # remove the worker from the dict
+        self.workers.pop(worker_id)
+        assert worker_id not in self.workers
+
+    @pyqtSlot(list)
+    def handle_started(self, files: list[str]):
+        print(f"Started processing files: {files}")
+
     def closeEvent(self, a0: QCloseEvent | None) -> None:
         """Save settings when closing the application"""
         # MusicTable/tableView column widths
@@ -159,6 +263,21 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         with open("config.ini", "w") as configfile:
             self.config.write(configfile)
         super().closeEvent(a0)
+
+    def show_status_bar_message(self, message: str, timeout: int | None = None) -> None:
+        """
+        Show a `message` in the status bar for a length of time - `timeout` in ms
+        """
+        if timeout:
+            self.status_bar.showMessage(message, timeout)
+        else:
+            self.status_bar.showMessage(message)
+
+    def set_permanent_status_bar_message(self, message: str) -> None:
+        """
+        Sets the permanent message label in the status bar
+        """
+        self.permanent_status_label.setText(message)
 
     def play_audio_file(self) -> None:
         """Start playback of tableView.current_song_filepath track & moves playback slider"""
@@ -346,6 +465,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def on_next_clicked(self) -> None:
         print("next")
 
+    def add_latest_playlist_to_tree(self) -> None:
+        """Refreshes the playlist tree"""
+        self.playlistTreeView.add_latest_playlist_to_tree()
+
     def open_files(self) -> None:
         """Opens the open files window"""
         open_files_window = QFileDialog(
@@ -357,15 +480,13 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         filenames = open_files_window.selectedFiles()
         self.tableView.add_files(filenames)
 
+    # File
+
     def create_playlist(self) -> None:
         """Creates a database record for a playlist, given a name"""
         window = CreatePlaylistWindow(self.playlistCreatedSignal)
         window.playlistCreatedSignal.connect(self.add_latest_playlist_to_tree)
         window.exec_()
-
-    def add_latest_playlist_to_tree(self) -> None:
-        """Refreshes the playlist tree"""
-        self.playlistTreeView.add_latest_playlist_to_tree()
 
     def import_playlist(self) -> None:
         """
@@ -382,14 +503,20 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         export_playlist_window = ExportPlaylistWindow()
         export_playlist_window.exec_()
 
+    # Edit
+
     def open_preferences(self) -> None:
         """Opens the preferences window"""
         preferences_window = PreferencesWindow(self.config)
         preferences_window.exec_()  # Display the preferences window modally
 
+    # Quick Actions
+
     def scan_libraries(self) -> None:
-        """Scans for new files in the configured library folder
-        Refreshes the datagridview"""
+        """
+        Scans for new files in the configured library folder
+        Refreshes the datagridview
+        """
         scan_for_music()
         self.tableView.load_music_table()
 

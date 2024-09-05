@@ -103,7 +103,7 @@ class ExportPlaylistWindow(QDialog):
         self.chosen_list_widget_item: QListWidgetItem | None = (
             self.playlist_listWidget.currentItem()
         )
-        # We don't care if its None
+        # We don't care if nothing is chosen
         if self.chosen_list_widget_item is None:
             return
 
@@ -146,6 +146,7 @@ class ExportPlaylistWindow(QDialog):
             )
             error_dialog.exec()
             self.close()
+            return
 
         # Gather playlist song paths
         write_paths = []
@@ -167,7 +168,9 @@ class ExportPlaylistWindow(QDialog):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "w") as f:
             f.writelines(write_paths)
+
         self.close()
+        return
 
     def cancel(self) -> None:
         self.close()

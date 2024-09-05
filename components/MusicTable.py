@@ -24,6 +24,7 @@ from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_library import add_files_to_library
+from utils.get_reorganize_vars import get_reorganize_vars
 from utils.update_song_in_database import update_song_in_database
 from utils.get_id3_tags import get_id3_tags
 from utils.get_album_art import get_album_art
@@ -311,21 +312,7 @@ class MusicTable(QTableView):
             for filepath in filepaths:
                 try:
                     # Read file metadata
-                    audio = ID3(filepath)
-                    try:
-                        artist = audio["TPE1"].text[0]
-                        if artist == "":
-                            artist = "Unknown Artist"
-                    except KeyError:
-                        artist = "Unknown Artist"
-
-                    try:
-                        album = audio["TALB"].text[0]
-                        if album == "":
-                            album = "Unknown Album"
-                    except KeyError:
-                        album = "Unknown Album"
-
+                    artist, album = get_reorganize_vars(filepath)
                     # Determine the new path that needs to be made
                     new_path = os.path.join(
                         target_dir, artist, album, os.path.basename(filepath)

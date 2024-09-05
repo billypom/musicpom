@@ -2,6 +2,7 @@ import DBA
 from configparser import ConfigParser
 from utils import get_id3_tags, id3_timestamp_to_datetime
 import logging
+from PyQt5.QtCore import pyqtSignal
 
 config = ConfigParser()
 config.read("config.ini")
@@ -12,6 +13,7 @@ def add_files_to_library(files):
     files = list() of fully qualified paths to audio file(s)
     Returns a list of dictionaries of metadata
     """
+
     # print("Running add_files_to_library.py")
     if not files:
         return []

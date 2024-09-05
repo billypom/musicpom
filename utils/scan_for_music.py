@@ -1,6 +1,7 @@
 import os
 from configparser import ConfigParser
 
+from PyQt5.QtCore import pyqtSignal
 from utils.add_files_to_library import add_files_to_library
 
 config = ConfigParser()
