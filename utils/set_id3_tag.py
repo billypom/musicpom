@@ -92,9 +92,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
 
     Returns:
         True / False"""
-    print(
-        f"set_id3_tag.py | filepath: {filepath} | tag_name: {tag_name} | value: {value}"
-    )
+    logging.info(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
 
     try:
         try:  # Load existing tags
@@ -114,9 +112,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             try:
                 audio = ID3(filepath)
             except Exception as e:
-                logging.debug(
-                    f"set_id3_tag.py set_id3_tag() ran into an exception: {e}"
-                )
+                logging.error(f"ran into an exception: {e}")
                 audio = ID3()
             audio.delall("USLT")
             frame = USLT(encoding=3, text=value)
@@ -128,7 +124,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             tag_name = id3_tag_mapping[tag_name]
             # Other
         if tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
-            print(f"set_id3_tag.py | tag_name = {tag_name}")
+            logging.info(f"tag_name = {tag_name}")
             tag_class = mutagen_id3_tag_mapping[tag_name]
             if issubclass(tag_class, Frame):
                 frame = tag_class(encoding=3, text=[value])

@@ -2,6 +2,7 @@
 /references
 /db
 config.ini
+log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

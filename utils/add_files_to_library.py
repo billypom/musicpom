@@ -8,19 +8,20 @@ config = ConfigParser()
 config.read("config.ini")
 
 
-def add_files_to_library(files):
+def add_files_to_library(files, progress_callback):
     """Adds audio file(s) to the sqllite db
     files = list() of fully qualified paths to audio file(s)
     Returns a list of dictionaries of metadata
     """
-
-    # print("Running add_files_to_library.py")
+    logging.info("started function")
     if not files:
         return []
     extensions = config.get("settings", "extensions").split(",")
     insert_data = []  # To store data for batch insert
     for filepath in files:
         if any(filepath.lower().endswith(ext) for ext in extensions):
+            if progress_callback:
+                progress_callback.emit(filepath)
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
 

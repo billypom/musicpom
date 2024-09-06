@@ -31,6 +31,7 @@ from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 
 # from main import WorkerThread
+from main import Worker
 from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_library import add_files_to_library
 from utils.get_reorganize_vars import get_reorganize_vars
@@ -43,29 +44,6 @@ import logging
 import configparser
 import os
 import shutil
-
-
-class DropAddFilesThread(QThread):
-    signalStarted = pyqtSignal()
-    signalProgress = pyqtSignal(str)
-    signalFinished = pyqtSignal()
-
-    def __init__(self, files, parent=None):
-        QThread.__init__(self, parent)
-        self.files = files
-
-    def run(self) -> None:
-        self.add_files()
-        return
-
-    def add_files(self) -> None:
-        """When song(s) added to the library, update the tableview model
-        - Drag & Drop song(s) on tableView
-        - File > Open > List of song(s)
-        """
-        add_files_to_library(self.files)
-        self.signalFinished.emit()
-        return
 
 
 class MusicTable(QTableView):
@@ -191,7 +169,7 @@ class MusicTable(QTableView):
                 try:
                     model.removeRow(index)
                 except Exception as e:
-                    logging.info(f"MusicTable.py delete_songs() failed | {e}")
+                    logging.info(f" delete_songs() failed | {e}")
             self.load_music_table()
             self.model.dataChanged.connect(self.on_cell_data_changed)
 
@@ -237,7 +215,7 @@ class MusicTable(QTableView):
             else:
                 raise RuntimeError("No USLT tags found in song metadata")
         except Exception as e:
-            print(f"MusicTable.py | show_lyrics_menu | could not retrieve lyrics | {e}")
+            logging.error(f"show_lyrics_menu() | could not retrieve lyrics | {e}")
             lyrics = ""
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
@@ -261,6 +239,7 @@ class MusicTable(QTableView):
             e.ignore()
 
     def dropEvent(self, e: QDropEvent | None):
+        self.model.dataChanged.disconnect(self.on_cell_data_changed)
         if e is None:
             return
         data = e.mimeData()
@@ -270,14 +249,13 @@ class MusicTable(QTableView):
                 if url.isLocalFile():
                     files.append(url.path())
             e.accept()
-            self.worker = DropAddFilesThread(files=files)
-            # self.model.dataChanged.disconnect(self.on_cell_data_changed)
-            # self.model.dataChanged.connect(self.on_cell_data_changed)
-            self.worker.signalFinished.connect(self.load_music_table)
-            self.worker.start()
-            # self.add_files(files)
+            worker = Worker(add_files_to_library, files)
+            worker.signals.signal_progress.connect(self.handle_progress)
+            worker.signals.signal_finished.connect(self.load_music_table)
+            self.threadpool.start(worker)
         else:
             e.ignore()
+        self.model.dataChanged.connect(self.on_cell_data_changed)
 
     def keyPressEvent(self, e):
         """Press a key. Do a thing"""
@@ -315,7 +293,7 @@ class MusicTable(QTableView):
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
-        print("on_cell_data_changed")
+        logging.info("on_cell_data_changed")
         id_index = self.model.index(topLeft.row(), 0)  # ID is column 0, always
         song_id = self.model.data(id_index, Qt.UserRole)
         # filepath is always the last column
@@ -326,7 +304,7 @@ class MusicTable(QTableView):
         # update the ID3 information
         user_input_data = topLeft.data()
         edited_column_name = self.database_columns[topLeft.column()]
-        print(f"edited column name: {edited_column_name}")
+        logging.info(f"edited column name: {edited_column_name}")
         response = set_id3_tag(filepath, edited_column_name, user_input_data)
         if response:
             # Update the library with new metadata
@@ -366,13 +344,12 @@ class MusicTable(QTableView):
                             "UPDATE song SET filepath = ? WHERE filepath = ?",
                             (new_path, filepath),
                         )
-                    print(f"Moved: {filepath} -> {new_path}")
+                    logging.info(
+                        f"reorganize_selected_files() | Moved: {filepath} -> {new_path}"
+                    )
                 except Exception as e:
                     logging.warning(
-                        f"MusicTable.py reorganize_selected_files() |  Error moving file: {filepath} | {e}"
-                    )
-                    print(
-                        f"MusicTable.py reorganize_selected_files() |  Error moving file: {filepath} | {e}"
+                        f"reorganize_selected_files() |  Error moving file: {filepath} | {e}"
                     )
             # Draw the rest of the owl
             # self.model.dataChanged.disconnect(self.on_cell_data_changed)
@@ -388,6 +365,14 @@ class MusicTable(QTableView):
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
 
+    def add_files(self, files, progress_callback) -> None:
+        """When song(s) added to the library, update the tableview model
+        - Drag & Drop song(s) on tableView
+        - File > Open > List of song(s)
+        """
+        add_files_to_library(files, progress_callback)
+        return
+
     def load_music_table(self, *playlist_id):
         """
         Loads data into self (QTableView)
@@ -401,8 +386,8 @@ class MusicTable(QTableView):
             # then re-enable after we are done loading
             self.model.dataChanged.disconnect(self.on_cell_data_changed)
         except Exception as e:
-            print(
-                f"MusicTable.py load_music_table() | could not disconnect on_cell_data_changed trigger: {e}"
+            logging.info(
+                f"load_music_table() | could not disconnect on_cell_data_changed trigger: {e}"
             )
             pass
         self.vertical_scroll_position = (
@@ -413,7 +398,9 @@ class MusicTable(QTableView):
         self.model.setHorizontalHeaderLabels(self.table_headers)
         if playlist_id:
             selected_playlist_id = playlist_id[0]
-            print(f"selected_playlist_id: {selected_playlist_id}")
+            logging.info(
+                f"load_music_table() | selected_playlist_id: {selected_playlist_id}"
+            )
             # Fetch playlist data
             try:
                 with DBA.DBAccess() as db:
@@ -422,10 +409,7 @@ class MusicTable(QTableView):
                         (selected_playlist_id,),
                     )
             except Exception as e:
-                logging.warning(
-                    f"MusicTable.py | load_music_table | Unhandled exception: {e}"
-                )
-                print(f"MusicTable.py | load_music_table | Unhandled exception: {e}")
+                logging.warning(f"load_music_table() | Unhandled exception: {e}")
                 return
         else:
             # Fetch library data
@@ -436,9 +420,7 @@ class MusicTable(QTableView):
                         (),
                     )
             except Exception as e:
-                logging.warning(
-                    f"MusicTable.py | load_music_table | Unhandled exception: {e}"
-                )
+                logging.warning(f"load_music_table() | Unhandled exception: {e}")
                 return
         # Populate the model
         for row_data in data:
@@ -458,7 +440,7 @@ class MusicTable(QTableView):
 
     def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
-        print("restore_scroll_position")
+        logging.info("restore_scroll_position")
         QTimer.singleShot(
             100,
             lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),
@@ -520,7 +502,7 @@ class MusicTable(QTableView):
         self.selected_song_filepath = (
             self.currentIndex().siblingAtColumn(self.table_headers.index("path")).data()
         )
-        print(self.selected_song_filepath)
+        logging.info(self.selected_song_filepath)
 
     def set_current_song_filepath(self) -> None:
         """Sets the filepath of the currently playing song"""

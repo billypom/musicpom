@@ -1,6 +1,7 @@
 import sys
 from mutagen.id3 import ID3, APIC
 import os
+import logging
 
 
 def print_id3_tags(file_path):
