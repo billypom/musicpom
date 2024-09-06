@@ -50,14 +50,12 @@ class MusicTable(QTableView):
     deleteKey = pyqtSignal()
     refreshMusicTable = pyqtSignal()
 
-    def __init__(self: QTableView, parent=None):
-        # QTableView.__init__(self, parent)
+    def __init__(self, parent):
         super().__init__(parent)
-        # Necessary for actions related to cell values
         # FIXME: why does this give me pyright errors
-        self.model = QStandardItemModel(self)
-        # self.model = QAbstractItemModel(self)
+        self.model = QStandardItemModel()
         self.setModel(self.model)
+        # self.model: QAbstractItemModel | None = QAbstractItemModel(self)
 
         # Config
         self.config = configparser.ConfigParser()
@@ -153,7 +151,6 @@ class MusicTable(QTableView):
             QMessageBox.Yes,
         )
         if reply:
-            model = self.model
             selected_filepaths = self.get_selected_songs_filepaths()
             selected_indices = self.get_selected_rows()
             for file in selected_filepaths:
@@ -165,7 +162,7 @@ class MusicTable(QTableView):
             self.model.dataChanged.disconnect(self.on_cell_data_changed)
             for index in selected_indices:
                 try:
-                    model.removeRow(index)
+                    self.model.removeRow(index)
                 except Exception as e:
                     logging.info(f" delete_songs() failed | {e}")
             self.load_music_table()
@@ -237,7 +234,6 @@ class MusicTable(QTableView):
             e.ignore()
 
     def dropEvent(self, e: QDropEvent | None):
-        self.model.dataChanged.disconnect(self.on_cell_data_changed)
         if e is None:
             return
         data = e.mimeData()
@@ -253,7 +249,6 @@ class MusicTable(QTableView):
             self.threadpool.start(worker)
         else:
             e.ignore()
-        self.model.dataChanged.connect(self.on_cell_data_changed)
 
     def keyPressEvent(self, e):
         """Press a key. Do a thing"""
@@ -287,7 +282,7 @@ class MusicTable(QTableView):
     def setup_keyboard_shortcuts(self):
         """Setup shortcuts here"""
         shortcut = QShortcut(QKeySequence("Ctrl+Shift+R"), self)
-        shortcut.activated.connect(self.reorganize_selected_files)
+        shortcut.activated.connect(self.handle_reorganize_selected_files)
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
@@ -308,7 +303,13 @@ class MusicTable(QTableView):
             # Update the library with new metadata
             update_song_in_database(song_id, edited_column_name, user_input_data)
 
-    def reorganize_selected_files(self):
+    def handle_reorganize_selected_files(self):
+        """"""
+        worker = Worker(self.reorganize_selected_files)
+        worker.signals.signal_progress.connect(self.qapp.handle_progress)
+        self.threadpool.start(worker)
+
+    def reorganize_selected_files(self, progress_callback):
         """Ctrl+Shift+R = Reorganize"""
         filepaths = self.get_selected_songs_filepaths()
         # Confirmation screen (yes, no)
@@ -326,6 +327,7 @@ class MusicTable(QTableView):
                 if str(filepath).startswith((target_dir)):
                     continue
                 try:
+                    progress_callback.emit(filepath)
                     # Read file metadata
                     artist, album = get_reorganize_vars(filepath)
                     # Determine the new path that needs to be made
@@ -382,6 +384,7 @@ class MusicTable(QTableView):
             # Loading the table also causes cell data to change, technically
             # so we must disconnect the dataChanged trigger before loading
             # then re-enable after we are done loading
+            pass
             self.model.dataChanged.disconnect(self.on_cell_data_changed)
         except Exception as e:
             logging.info(
@@ -431,7 +434,7 @@ class MusicTable(QTableView):
                 item.setData(id, Qt.UserRole)
         self.model.layoutChanged.emit()  # emits a signal that the view should be updated
         try:
-            self.model.dataChanged.connect(self.on_cell_data_changed)
+            # self.model.dataChanged.connect(self.on_cell_data_changed)
             self.restore_scroll_position()
         except Exception:
             pass
@@ -476,11 +479,6 @@ class MusicTable(QTableView):
             self.model.data(self.model.index(row, 0), Qt.UserRole)
             for row in selected_rows
         ]
-        # selected_ids = []
-        # for index in indexes:
-        #     model_item = self.model.item(index.row())
-        #     id_data = model_item.data(Qt.UserRole)
-        #     selected_ids.append(id_data)
         return id_list
 
     def get_current_song_filepath(self) -> str:

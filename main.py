@@ -79,6 +79,7 @@ class WorkerSignals(QObject):
 
     signal_started = pyqtSignal()
     signal_finished = pyqtSignal()
+    signal_result = pyqtSignal(object)
     signal_progress = pyqtSignal(str)
 
 
@@ -133,7 +134,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         global stopped
         stopped = False
         # Multithreading stuff...
-        # self.workers = dict[UUID, WorkerThread] = {}
         self.threadpool = QThreadPool()
         # UI
         self.setupUi(self)
@@ -481,18 +481,24 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         filenames = open_files_window.selectedFiles()
         # Adds files to the library in a new thread
         worker = Worker(add_files_to_library, filenames)
-        worker.signals.signal_progress.connect(self.handle_progress)
-        worker.signals.signal_started.connect(
-            lambda: self.tableView.model.dataChanged.disconnect(
-                self.tableView.on_cell_data_changed
-            )
-        )
         worker.signals.signal_finished.connect(self.tableView.load_music_table)
-        worker.signals.signal_finished.connect(
-            lambda: self.tableView.model.dataChanged.connect(
-                self.tableView.on_cell_data_changed
-            )
-        )
+        worker.signals.signal_progress.connect(self.handle_progress)
+        # try:
+        #     worker.signals.signal_started.connect(
+        #         lambda: self.tableView.model.dataChanged.disconnect(
+        #             self.tableView.on_cell_data_changed
+        #         )
+        #     )
+        # except:
+        #     pass
+        # try:
+        #     worker.signals.signal_finished.connect(
+        #         lambda: self.tableView.model.dataChanged.connect(
+        #             self.tableView.on_cell_data_changed
+        #         )
+        #     )
+        # except:
+        #     pass
         self.threadpool.start(worker)
 
     def handle_progress(self, data):
