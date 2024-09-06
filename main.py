@@ -102,7 +102,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         global stopped
         stopped = False
         # Multithreading stuff...
-        self.workers = dict[UUID, WorkerThread] = {}
+        # self.workers = dict[UUID, WorkerThread] = {}
         self.threadpool = QThreadPool()
         # UI
         self.setupUi(self)

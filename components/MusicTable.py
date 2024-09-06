@@ -16,12 +16,21 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QAbstractItemView,
 )
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSignal, QTimer
+from PyQt5.QtCore import (
+    QAbstractItemModel,
+    QModelIndex,
+    QThread,
+    Qt,
+    pyqtSignal,
+    QTimer,
+)
 from components.DebugWindow import DebugWindow
 from components.ErrorDialog import ErrorDialog
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
+
+# from main import WorkerThread
 from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_library import add_files_to_library
 from utils.get_reorganize_vars import get_reorganize_vars
@@ -34,6 +43,29 @@ import logging
 import configparser
 import os
 import shutil
+
+
+class DropAddFilesThread(QThread):
+    signalStarted = pyqtSignal()
+    signalProgress = pyqtSignal(str)
+    signalFinished = pyqtSignal()
+
+    def __init__(self, files, parent=None):
+        QThread.__init__(self, parent)
+        self.files = files
+
+    def run(self) -> None:
+        self.add_files()
+        return
+
+    def add_files(self) -> None:
+        """When song(s) added to the library, update the tableview model
+        - Drag & Drop song(s) on tableView
+        - File > Open > List of song(s)
+        """
+        add_files_to_library(self.files)
+        self.signalFinished.emit()
+        return
 
 
 class MusicTable(QTableView):
@@ -237,8 +269,13 @@ class MusicTable(QTableView):
             for url in data.urls():
                 if url.isLocalFile():
                     files.append(url.path())
-            self.add_files(files)
             e.accept()
+            self.worker = DropAddFilesThread(files=files)
+            # self.model.dataChanged.disconnect(self.on_cell_data_changed)
+            # self.model.dataChanged.connect(self.on_cell_data_changed)
+            self.worker.signalFinished.connect(self.load_music_table)
+            self.worker.start()
+            # self.add_files(files)
         else:
             e.ignore()
 
@@ -310,6 +347,8 @@ class MusicTable(QTableView):
             # Get target directory
             target_dir = str(self.config["directories"]["reorganize_destination"])
             for filepath in filepaths:
+                if str(filepath).startswith((target_dir)):
+                    continue
                 try:
                     # Read file metadata
                     artist, album = get_reorganize_vars(filepath)
@@ -344,7 +383,7 @@ class MusicTable(QTableView):
             )
 
     def toggle_play_pause(self):
-        """Toggles the currently playing song by emitting a signal"""
+        """Toggles the currently playing song by emitting a Signal"""
         if not self.current_song_filepath:
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
@@ -424,17 +463,6 @@ class MusicTable(QTableView):
             100,
             lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),
         )
-
-    def add_files(self, files) -> None:
-        """When song(s) added to the library, update the tableview model
-        - Drag & Drop song(s) on tableView
-        - File > Open > List of song(s)
-        """
-        number_of_files_added = add_files_to_library(files)
-        if number_of_files_added:
-            self.model.dataChanged.disconnect(self.on_cell_data_changed)
-            self.load_music_table()
-            self.model.dataChanged.connect(self.on_cell_data_changed)
 
     def get_selected_rows(self) -> list[int]:
         """Returns a list of indexes for every selected row"""
