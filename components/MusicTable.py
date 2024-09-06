@@ -19,7 +19,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import (
     QAbstractItemModel,
     QModelIndex,
-    QThread,
     Qt,
     pyqtSignal,
     QTimer,
@@ -30,7 +29,6 @@ from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 
-# from main import WorkerThread
 from main import Worker
 from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_library import add_files_to_library

@@ -68,16 +68,22 @@ def add_files_to_library(files, progress_callback):
                     bitrate,
                 )
             )
+            logging.info("insert data appended")
             # Check if batch size is reached
             if len(insert_data) >= 1000:
+                logging.info(f"inserting a LOT of songs: {len(insert_data)}")
                 with DBA.DBAccess() as db:
                     db.executemany(
                         "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         insert_data,
                     )
                 insert_data = []  # Reset the insert_data list
+            else:
+                # continue adding files if we havent reached big length
+                continue
         # Insert any remaining data
         if insert_data:
+            logging.info(f"inserting some songs: {len(insert_data)}")
             with DBA.DBAccess() as db:
                 db.executemany(
                     "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",

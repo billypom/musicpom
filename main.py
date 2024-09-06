@@ -29,14 +29,12 @@ from PyQt5.QtCore import (
     Qt,
     pyqtSignal,
     QObject,
-    QThread,
     pyqtSlot,
     QThreadPool,
     QRunnable,
 )
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QCloseEvent, QPixmap
-from uuid import uuid4, UUID
 from utils import (
     scan_for_music,
     delete_and_create_library_database,
@@ -199,11 +197,13 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
         self.actionNewPlaylist.triggered.connect(self.create_playlist)
         self.actionExportPlaylist.triggered.connect(self.export_playlist)
+
         # EDIT MENU
         # VIEW MENU
         self.actionPreferences.triggered.connect(
             self.open_preferences
         )  # Open preferences menu
+
         # QUICK ACTIONS MENU
         self.actionScanLibraries.triggered.connect(self.scan_libraries)
         self.actionDeleteLibrary.triggered.connect(self.clear_database)
@@ -396,7 +396,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                     audio.save()
             except Exception as e:
                 logging.error(
-                    f"main.py delete_album_art_for_selected_songs() | Error processing {file}: {e}"
+                    f"delete_album_art_for_selected_songs() | Error processing {file}: {e}"
                 )
 
     def update_audio_visualization(self) -> None:
@@ -482,7 +482,17 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Adds files to the library in a new thread
         worker = Worker(add_files_to_library, filenames)
         worker.signals.signal_progress.connect(self.handle_progress)
+        worker.signals.signal_started.connect(
+            lambda: self.tableView.model.dataChanged.disconnect(
+                self.tableView.on_cell_data_changed
+            )
+        )
         worker.signals.signal_finished.connect(self.tableView.load_music_table)
+        worker.signals.signal_finished.connect(
+            lambda: self.tableView.model.dataChanged.connect(
+                self.tableView.on_cell_data_changed
+            )
+        )
         self.threadpool.start(worker)
 
     def handle_progress(self, data):
@@ -601,7 +611,7 @@ if __name__ == "__main__":
     handlers = [file_handler, stdout_handler]
     # logging.basicConfig(filename="log", encoding="utf-8", level=logging.DEBUG)
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
         handlers=handlers,
     )
