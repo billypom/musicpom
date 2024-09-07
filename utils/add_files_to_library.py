@@ -68,7 +68,6 @@ def add_files_to_library(files, progress_callback=None):
                     bitrate,
                 )
             )
-            logging.info("insert data appended")
             # Check if batch size is reached
             if len(insert_data) >= 1000:
                 logging.info(f"inserting a LOT of songs: {len(insert_data)}")
@@ -79,7 +78,6 @@ def add_files_to_library(files, progress_callback=None):
                     )
                 insert_data = []  # Reset the insert_data list
             else:
-                logging.info("continuing...")
                 # continue adding files if we havent reached big length
                 continue
     # Insert any remaining data

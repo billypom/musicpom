@@ -162,12 +162,15 @@ class MusicTable(QTableView):
                 pass
             selected_filepaths = self.get_selected_songs_filepaths()
             selected_indices = self.get_selected_rows()
+            # FIXME: this should be batch delete with a worker thread
+            # probably pass selected_filepaths to a worker thread
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
                     song_id = db.query(
                         "SELECT id FROM song WHERE filepath = ?", (file,)
                     )[0][0]
                 delete_song_id_from_database(song_id)
+            # This part cannot be thread...i think? bcus its Q stuff happening
             for index in selected_indices:
                 try:
                     self.model.removeRow(index)
