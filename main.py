@@ -78,8 +78,8 @@ class WorkerSignals(QObject):
     # (i.e. lists of filepaths)
 
     signal_started = pyqtSignal()
-    signal_finished = pyqtSignal()
     signal_result = pyqtSignal(object)
+    signal_finished = pyqtSignal()
     signal_progress = pyqtSignal(str)
 
 
@@ -117,13 +117,17 @@ class Worker(QRunnable):
         """
         self.signals.signal_started.emit()
         try:
-            self.fn(*self.args, **self.kwargs)
+            result = self.fn(*self.args, **self.kwargs)
         except Exception as e:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.signal_finished.emit((exctype, value, traceback.format_exc()))
-        finally:
-            self.signals.signal_finished.emit()
+        else:
+            if result:
+                self.signals.signal_finished.emit()
+                self.signals.signal_result.emit(result)
+            else:
+                self.signals.signal_finished.emit()
 
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
@@ -153,8 +157,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
         self.current_volume: int = 50
         self.qapp = qapp
-        self.tableView.load_qapp(self.qapp)
-        self.albumGraphicsView.load_qapp(self.qapp)
+        self.tableView.load_qapp(self)
+        self.albumGraphicsView.load_qapp(self)
         self.config.read("config.ini")
         # Initialization
         self.timer = QTimer(self)  # Audio timing things
@@ -209,7 +213,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionDeleteLibrary.triggered.connect(self.clear_database)
         self.actionDeleteDatabase.triggered.connect(self.delete_database)
 
-        ## tableView triggers
+        ## CONNECTIONS
+        # tableView
         self.tableView.doubleClicked.connect(
             self.play_audio_file
         )  # Listens for the double click event, then plays the song
@@ -220,7 +225,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
 
-        ## Playlist triggers
+        # playlistTreeView
         self.playlistTreeView.playlistChoiceSignal.connect(
             self.tableView.load_music_table
         )
@@ -233,9 +238,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.albumGraphicsView.albumArtDeleted.connect(
             self.delete_album_art_for_selected_songs
         )
+        # multithreading
+        # whatever
         self.tableView.viewport().installEventFilter(
             self
         )  # for drag & drop functionality
+        self.tableView.handleProgressSignal.connect(self.handle_progress)
         # set column widths
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
         for i in range(self.tableView.model.columnCount()):
@@ -243,6 +251,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             # dont extend last column past table view border
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setStretchLastSection(False)
+
+    def reload_config(self) -> None:
+        """does what it says"""
+        self.config.read("config.ini")
+
+    def get_thread_pool(self) -> QThreadPool:
+        """Returns the threadpool instance"""
+        return self.threadpool
 
     def closeEvent(self, a0: QCloseEvent | None) -> None:
         """Save settings when closing the application"""
@@ -483,22 +499,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         worker = Worker(add_files_to_library, filenames)
         worker.signals.signal_finished.connect(self.tableView.load_music_table)
         worker.signals.signal_progress.connect(self.handle_progress)
-        # try:
-        #     worker.signals.signal_started.connect(
-        #         lambda: self.tableView.model.dataChanged.disconnect(
-        #             self.tableView.on_cell_data_changed
-        #         )
-        #     )
-        # except:
-        #     pass
-        # try:
-        #     worker.signals.signal_finished.connect(
-        #         lambda: self.tableView.model.dataChanged.connect(
-        #             self.tableView.on_cell_data_changed
-        #         )
-        #     )
-        # except:
-        #     pass
         self.threadpool.start(worker)
 
     def handle_progress(self, data):

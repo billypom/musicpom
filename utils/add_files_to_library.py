@@ -8,7 +8,7 @@ config = ConfigParser()
 config.read("config.ini")
 
 
-def add_files_to_library(files, progress_callback):
+def add_files_to_library(files, progress_callback=None):
     """Adds audio file(s) to the sqllite db
     files = list() of fully qualified paths to audio file(s)
     Returns a list of dictionaries of metadata
