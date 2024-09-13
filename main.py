@@ -249,8 +249,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         for i in range(self.tableView.model.columnCount()):
             self.tableView.setColumnWidth(i, int(table_view_column_widths[i]))
             # dont extend last column past table view border
-        self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.tableView.horizontalHeader().setStretchLastSection(False)
+        # self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # self.tableView.horizontalHeader().setStretchLastSection(False)
 
     def reload_config(self) -> None:
         """does what it says"""

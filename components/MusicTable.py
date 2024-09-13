@@ -7,9 +7,11 @@ from PyQt5.QtGui import (
     QKeySequence,
     QDragEnterEvent,
     QDropEvent,
+    QResizeEvent,
 )
 from PyQt5.QtWidgets import (
     QAction,
+    QHeaderView,
     QMenu,
     QTableView,
     QShortcut,
@@ -43,6 +45,7 @@ import logging
 import configparser
 import os
 import shutil
+import typing
 
 
 class MusicTable(QTableView):
@@ -105,6 +108,10 @@ class MusicTable(QTableView):
         self.model.layoutChanged.connect(self.restore_scroll_position)
         self.load_music_table()
         self.setup_keyboard_shortcuts()
+
+    def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
+        assert e is not None
+        return super().resizeEvent(e)
 
     def contextMenuEvent(self, a0):
         """Right-click context menu for rows in Music Table"""

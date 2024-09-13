@@ -177,26 +177,11 @@
         </item>
         <item>
          <widget class="MusicTable" name="tableView">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>32000</width>
-            <height>32000</height>
-           </size>
-          </property>
           <property name="acceptDrops">
            <bool>true</bool>
           </property>
           <property name="horizontalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
-          </property>
-          <property name="sizeAdjustPolicy">
-           <enum>QAbstractScrollArea::AdjustToContents</enum>
           </property>
           <property name="editTriggers">
            <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::EditKeyPressed</set>
@@ -213,9 +198,6 @@
           <property name="sortingEnabled">
            <bool>true</bool>
           </property>
-          <attribute name="horizontalHeaderCascadingSectionResizes">
-           <bool>true</bool>
-          </attribute>
           <attribute name="horizontalHeaderStretchLastSection">
            <bool>true</bool>
           </attribute>
@@ -299,7 +281,7 @@
      <x>0</x>
      <y>0</y>
      <width>1152</width>
-     <height>41</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
