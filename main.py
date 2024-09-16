@@ -61,11 +61,11 @@ from components import (
 
 class WorkerSignals(QObject):
     """
-    How to use signals for a QRunnable class; unlike most cases where signals
-    are defined as class attributes directly in the class, here we define a
-    class that inherits from QObject and define the signals as class
-    attributes in that class. Then we can instantiate that class and use it
-    as a signal object.
+    How to use signals for a QRunnable class;
+    Unlike most cases where signals are defined as class attributes directly in the class,
+    here we define a class that inherits from QObject
+    and define the signals as class attributes in that class.
+    Then we can instantiate that class and use it as a signal object.
     """
 
     # 1)

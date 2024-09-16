@@ -7,6 +7,7 @@ from .get_id3_tags import get_id3_tags
 from .get_reorganize_vars import get_reorganize_vars
 from .set_id3_tag import set_id3_tag
 from .delete_song_id_from_database import delete_song_id_from_database
+from .batch_delete_filepaths_from_database import batch_delete_filepaths_from_database
 from .delete_and_create_library_database import delete_and_create_library_database
 from .update_song_in_database import update_song_in_database
 from .scan_for_music import scan_for_music

@@ -33,6 +33,9 @@ from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 
 from main import Worker
+from utils.batch_delete_filepaths_from_database import (
+    batch_delete_filepaths_from_database,
+)
 from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_library import add_files_to_library
 from utils.get_reorganize_vars import get_reorganize_vars
@@ -163,32 +166,31 @@ class MusicTable(QTableView):
             QMessageBox.Yes,
         )
         if reply:
-            try:
-                self.model.dataChanged.disconnect(self.on_cell_data_changed)
-            except Exception:
-                pass
             selected_filepaths = self.get_selected_songs_filepaths()
-            selected_indices = self.get_selected_rows()
-            # FIXME: this should be batch delete with a worker thread
-            # probably pass selected_filepaths to a worker thread
+            worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
+            worker.signals.signal_progress.connect(self.qapp.handle_progress)
+            worker.signals.signal_finished.connect(self.remove_selected_row_indices)
+            worker.signals.signal_finished.connect(self.load_music_table)
+            if self.qapp:
+                threadpool = self.qapp.threadpool
+                threadpool.start(worker)
 
-            for file in selected_filepaths:
-                with DBA.DBAccess() as db:
-                    song_id = db.query(
-                        "SELECT id FROM song WHERE filepath = ?", (file,)
-                    )[0][0]
-                delete_song_id_from_database(song_id)
-            # This part cannot be thread...i think? bcus its Q stuff happening
-            for index in selected_indices:
-                try:
-                    self.model.removeRow(index)
-                except Exception as e:
-                    logging.info(f" delete_songs() failed | {e}")
+    def remove_selected_row_indices(self):
+        """Removes rows from the QTableView based on a list of indices"""
+        selected_indices = self.get_selected_rows()
+        try:
+            self.model.dataChanged.disconnect(self.on_cell_data_changed)
+        except Exception:
+            pass
+        for index in selected_indices:
             try:
-                self.model.dataChanged.connect(self.on_cell_data_changed)
-            except Exception:
-                pass
-            self.load_music_table()
+                self.model.removeRow(index)
+            except Exception as e:
+                logging.info(f" delete_songs() failed | {e}")
+        try:
+            self.model.dataChanged.connect(self.on_cell_data_changed)
+        except Exception:
+            pass
 
     def open_directory(self):
         """Opens the currently selected song in the system file manager"""
@@ -358,7 +360,7 @@ class MusicTable(QTableView):
         worker.signals.signal_progress.connect(self.qapp.handle_progress)
         self.qapp.threadpool.start(worker)
 
-    def reorganize_selected_files(self, progress_callback):
+    def reorganize_selected_files(self, progress_callback=None):
         """Ctrl+Shift+R = Reorganize"""
         filepaths = self.get_selected_songs_filepaths()
         # Confirmation screen (yes, no)
@@ -376,7 +378,8 @@ class MusicTable(QTableView):
                 if str(filepath).startswith((target_dir)):
                     continue
                 try:
-                    progress_callback.emit(filepath)
+                    if progress_callback:
+                        progress_callback.emit(f"Organizing: {filepath}")
                     # Read file metadata
                     artist, album = get_reorganize_vars(filepath)
                     # Determine the new path that needs to be made
