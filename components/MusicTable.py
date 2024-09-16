@@ -165,12 +165,13 @@ class MusicTable(QTableView):
         if reply:
             try:
                 self.model.dataChanged.disconnect(self.on_cell_data_changed)
-            except Exception as e:
+            except Exception:
                 pass
             selected_filepaths = self.get_selected_songs_filepaths()
             selected_indices = self.get_selected_rows()
             # FIXME: this should be batch delete with a worker thread
             # probably pass selected_filepaths to a worker thread
+
             for file in selected_filepaths:
                 with DBA.DBAccess() as db:
                     song_id = db.query(
@@ -276,7 +277,8 @@ class MusicTable(QTableView):
             print(f"files: {files}")
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
-                worker.signals.signal_progress.connect(self.handle_progress)
+                # worker.signals.signal_progress.connect(self.handle_progress)
+                worker.signals.signal_progress.connect(self.qapp.handle_progress)
                 worker.signals.signal_result.connect(self.on_recursive_search_finished)
                 worker.signals.signal_finished.connect(self.load_music_table)
                 if self.qapp:
@@ -292,9 +294,9 @@ class MusicTable(QTableView):
         if result:
             self.add_files(result)
 
-    def handle_progress(self, data):
-        """Emits data to main"""
-        self.handleProgressSignal.emit(data)
+    # def handle_progress(self, data):
+    #     """Emits data to main"""
+    #     self.handleProgressSignal.emit(data)
 
     def keyPressEvent(self, e):
         """Press a key. Do a thing"""
@@ -417,7 +419,7 @@ class MusicTable(QTableView):
         """
         logging.info(f"add files, files: {files}")
         worker = Worker(add_files_to_library, files)
-        worker.signals.signal_progress.connect(self.handle_progress)
+        worker.signals.signal_progress.connect(self.qapp.handle_progress)
         worker.signals.signal_finished.connect(self.load_music_table)
         if self.qapp:
             threadpool = self.qapp.threadpool
@@ -512,7 +514,7 @@ class MusicTable(QTableView):
                     if any(file.lower().endswith(ext) for ext in extensions):
                         audio_files.append(os.path.join(root, file))
                         if progress_callback:
-                            progress_callback.emit(file)
+                            progress_callback.emit(f"Scanning {file}")
         return audio_files
 
     def get_selected_rows(self) -> list[int]:

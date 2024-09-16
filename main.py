@@ -133,7 +133,7 @@ class Worker(QRunnable):
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     playlistCreatedSignal = pyqtSignal()
 
-    def __init__(self, qapp):
+    def __init__(self):
         super(ApplicationWindow, self).__init__()
         global stopped
         stopped = False
@@ -156,7 +156,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
         self.current_volume: int = 50
-        self.qapp = qapp
+        # self.qapp = qapp
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
         self.config.read("config.ini")
@@ -629,6 +629,6 @@ if __name__ == "__main__":
     # Dark theme >:3
     qdarktheme.setup_theme()
     # Show the UI
-    ui = ApplicationWindow(app)
+    ui = ApplicationWindow()
     ui.show()
     sys.exit(app.exec_())
