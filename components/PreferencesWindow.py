@@ -14,7 +14,7 @@ class PreferencesWindow(QDialog):
     def __init__(self, config):
         super(PreferencesWindow, self).__init__()
         self.setWindowTitle("Preferences")
-        self.setMinimumSize(400, 400)
+        self.setMinimumSize(400, 800)
         self.config = config
         layout = QVBoxLayout()
 

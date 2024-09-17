@@ -19,7 +19,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="10,1,1">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="1,10">
       <property name="spacing">
        <number>6</number>
       </property>
@@ -281,7 +281,7 @@
      <x>0</x>
      <y>0</y>
      <width>1152</width>
-     <height>21</height>
+     <height>41</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

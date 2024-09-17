@@ -2,10 +2,20 @@ import os
 import tempfile
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QAction
 from PyQt5.QtCore import QEvent, Qt, pyqtSignal, QUrl, QPoint
-from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QClipboard, QPixmap
+from PyQt5.QtGui import (
+    QDragEnterEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QClipboard,
+    QPixmap,
+)
 
 
 class AlbumArtGraphicsView(QGraphicsView):
+    """
+    Displays the album art of the currently playing song
+    """
+
     albumArtDropped = pyqtSignal(str)
     albumArtDeleted = pyqtSignal(str)
 
@@ -15,21 +25,22 @@ class AlbumArtGraphicsView(QGraphicsView):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.scene = QGraphicsScene
         self.customContextMenuRequested.connect(self.showContextMenu)
-        self.qapp = None
 
-    def dragEnterEvent(self, event):
+    def dragEnterEvent(self, event: QDragEnterEvent | None):
+        if not event:
+            return
         if event.mimeData().hasUrls():
             event.accept()
         else:
             event.ignore()
 
-    def dragMoveEvent(self, event):
+    def dragMoveEvent(self, event: QDragMoveEvent | None):
         if event.mimeData().hasUrls():
             event.accept()
         else:
             event.ignore()
 
-    def dropEvent(self, event):
+    def dropEvent(self, event: QDropEvent | None):
         """Handles drag and drop pic onto view to add album art to songs"""
         urls = event.mimeData().urls()
         if urls:

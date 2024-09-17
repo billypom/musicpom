@@ -1,4 +1,5 @@
 import DBA
+import logging
 from components.ErrorDialog import ErrorDialog
 
 
@@ -8,6 +9,10 @@ def batch_delete_filepaths_from_database(
     """
     Handles deleting many songs from the database by filepath
     Accounts for playlists and other song-linked tables
+    Args:
+        files: a list of absolute filepaths to songs
+        chunk_size: how many files to process at once in DB
+        progress_callback: emit this signal for user feedback
 
     Returns True on success
     False on failure/error
@@ -20,6 +25,9 @@ def batch_delete_filepaths_from_database(
             result = db.query(query, files)
             song_ids = [item[0] for item in result]
     except Exception as e:
+        logging.error(
+            f"batch_delete_filepaths_from_database.py | An error occurred during retrieval of song_ids: {e}"
+        )
         dialog = ErrorDialog(
             f"batch_delete_filepaths_from_database.py | An error occurred during retrieval of song_ids: {e}"
         )
@@ -42,6 +50,9 @@ def batch_delete_filepaths_from_database(
                 if progress_callback:
                     progress_callback.emit(f"Deleting songs: {i}")
     except Exception as e:
+        logging.error(
+            f"batch_delete_filepaths_from_database.py | An error occurred during batch processing: {e}"
+        )
         dialog = ErrorDialog(
             f"batch_delete_filepaths_from_database.py | An error occurred during batch processing: {e}"
         )

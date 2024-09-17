@@ -15,6 +15,10 @@ import logging
 
 
 class AddToPlaylistWindow(QDialog):
+    """
+    Dialog box to choose what playlist to add the selected files to
+    """
+
     def __init__(self, song_db_ids: list):
         super(AddToPlaylistWindow, self).__init__()
         self.song_db_ids = song_db_ids
