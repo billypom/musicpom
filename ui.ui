@@ -166,6 +166,9 @@
       </item>
       <item>
        <layout class="QHBoxLayout" name="hLayoutMusicTable" stretch="2,10">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetMaximumSize</enum>
+        </property>
         <property name="leftMargin">
          <number>0</number>
         </property>

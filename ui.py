@@ -100,6 +100,7 @@ class Ui_MainWindow(object):
         self.hLayoutHead.setStretch(2, 6)
         self.verticalLayout.addLayout(self.hLayoutHead)
         self.hLayoutMusicTable = QtWidgets.QHBoxLayout()
+        self.hLayoutMusicTable.setSizeConstraint(QtWidgets.QLayout.SetMaximumSize)
         self.hLayoutMusicTable.setContentsMargins(0, -1, 0, -1)
         self.hLayoutMusicTable.setObjectName("hLayoutMusicTable")
         self.playlistTreeView = PlaylistsPane(self.centralwidget)

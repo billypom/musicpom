@@ -8,19 +8,14 @@ class ResizableHeaderView(QHeaderView):
         super().__init__(orientation, parent)
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
+        self.parent = parent
         # FIXME: last column needs to not leave the screen when other columns become big...
         # howwww
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
         for i in range(parent.model.columnCount() - 1):
             self.setColumnWidth(i, int(table_view_column_widths[i]))
-        self.setSectionsMovable(True)
-        self.setSectionResizeMode(QHeaderView.Interactive)
         self.setStretchLastSection(True)
-        self.min_section_size = 50
-        self.default_column_proportions = [1, 1, 1, 1, 1, 1, 1, 1]
-
-    def set_default_column_proportions(self, proportions):
-        self.default_column_proportions = proportions
+        self.setSectionResizeMode(QHeaderView.Interactive)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
@@ -31,25 +26,12 @@ class ResizableHeaderView(QHeaderView):
         self.adjust_section_sizes()
 
     def adjust_section_sizes(self):
-        total_width = self.width()
         column_count = self.count()
+        total_width = 0
+
+        for i in range(self.parent.model.columnCount()):
+            total_width += self.parent.model.columnWidth(i)
+        print(f"total_width = {total_width}")
+
         if not self.default_column_proportions:
             self.default_column_proportions = [1] * column_count
-
-        # Calculate the total proportion
-        total_proportion = sum(self.default_column_proportions)
-
-        # Calculate sizes based on proportions
-        sizes = [
-            max(self.min_section_size, int(total_width * prop / total_proportion))
-            for prop in self.default_column_proportions
-        ]
-
-        # Adjust sizes to fit exactly
-        extra = total_width - sum(sizes)
-        for i in range(abs(extra)):
-            sizes[i % column_count] += 1 if extra > 0 else -1
-
-        # Apply sizes
-        for i in range(column_count):
-            self.resizeSection(i, sizes[i])

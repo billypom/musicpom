@@ -4,7 +4,7 @@ import sys
 import logging
 from subprocess import run
 import qdarktheme
-
+import typing
 from pyqtgraph import mkBrush
 from mutagen.id3 import ID3
 from mutagen.id3._frames import APIC
@@ -34,7 +34,7 @@ from PyQt5.QtCore import (
     QRunnable,
 )
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
-from PyQt5.QtGui import QCloseEvent, QPixmap
+from PyQt5.QtGui import QCloseEvent, QPixmap, QResizeEvent
 from utils import (
     scan_for_music,
     delete_and_create_library_database,
@@ -254,6 +254,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def get_thread_pool(self) -> QThreadPool:
         """Returns the threadpool instance"""
         return self.threadpool
+
+    def resizeEvent(self, a0: typing.Optional[QResizeEvent]) -> None:
+        """Do something when the window resizes"""
+        if a0 is not None:
+            return super().resizeEvent(a0)
 
     def closeEvent(self, a0: QCloseEvent | None) -> None:
         """Save settings when closing the application"""

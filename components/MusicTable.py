@@ -13,16 +13,17 @@ from PyQt5.QtWidgets import (
     QAction,
     QHeaderView,
     QMenu,
+    QSizePolicy,
     QTableView,
     QShortcut,
     QMessageBox,
     QAbstractItemView,
 )
 from PyQt5.QtCore import (
+    Qt,
     QAbstractItemModel,
     QModelIndex,
     QThreadPool,
-    Qt,
     pyqtSignal,
     QTimer,
 )
@@ -95,8 +96,8 @@ class MusicTable(QTableView):
             None,
         ]
         # Header stuff...
-        header = ResizableHeaderView(Qt.Horizontal, self)
-        self.setHorizontalHeader(header)
+        # header = ResizableHeaderView(Qt.Horizontal, self)
+        # self.setHorizontalHeader(header)
         # hide the id column
         self.hideColumn(0)
         # db names of headers
@@ -105,21 +106,42 @@ class MusicTable(QTableView):
         self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
-        # self.tableView.resizeColumnsToContents()
+        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
+        for i in range(self.model.columnCount() - 1):
+            self.setColumnWidth(i, int(table_view_column_widths[i]))
+        self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.horizontalHeader().setCascadingSectionResizes(True)
+        # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
-        # doubleClicked is a built in event for QTableView - we listen for this event and run set_current_song_filepath
         self.doubleClicked.connect(self.set_current_song_filepath)
         self.enterKey.connect(self.set_current_song_filepath)
         self.deleteKey.connect(self.delete_songs)
         self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
+        self.horizontalHeader().sectionResized.connect(self.header_was_resized)
+        # Final actions
         self.load_music_table()
         self.setup_keyboard_shortcuts()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
+        print(f"QTableView size: {self.size().width()}")
         if e is None:
             raise Exception
         super().resizeEvent(e)
+        self.setMaximumSize(self.size().width(), self.size().height())
+
+    def header_was_resized(self, logicalIndex, oldSize, newSize):
+        # super().sectionResized(logicalIndex, oldSize, newSize)
+        self.adjust_section_sizes()
+
+    def adjust_section_sizes(self):
+        column_count = self.model.columnCount()
+        total_width = 0
+
+        for i in range(self.model.columnCount()):
+            total_width += self.columnWidth(i)
+        print(f"total_width = {total_width}")
 
     def contextMenuEvent(self, a0):
         """Right-click context menu for rows in Music Table"""
