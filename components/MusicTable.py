@@ -96,8 +96,8 @@ class MusicTable(QTableView):
             None,
         ]
         # Header stuff...
-        # header = ResizableHeaderView(Qt.Horizontal, self)
-        # self.setHorizontalHeader(header)
+        header = ResizableHeaderView(Qt.Horizontal, self)
+        self.setHorizontalHeader(header)
         # hide the id column
         self.hideColumn(0)
         # db names of headers
@@ -106,12 +106,12 @@ class MusicTable(QTableView):
         self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
-        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.model.columnCount() - 1):
-            self.setColumnWidth(i, int(table_view_column_widths[i]))
-        self.horizontalHeader().setStretchLastSection(True)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.horizontalHeader().setCascadingSectionResizes(True)
+        # table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
+        # for i in range(self.model.columnCount() - 1):
+        #     self.setColumnWidth(i, int(table_view_column_widths[i]))
+        # self.horizontalHeader().setStretchLastSection(True)
+        # self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        # self.horizontalHeader().setCascadingSectionResizes(True)
         # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
         self.doubleClicked.connect(self.set_current_song_filepath)
@@ -119,33 +119,38 @@ class MusicTable(QTableView):
         self.deleteKey.connect(self.delete_songs)
         self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
-        self.horizontalHeader().sectionResized.connect(self.header_was_resized)
+        # self.horizontalHeader().sectionResized.connect(self.header_was_resized)
         # Final actions
         self.load_music_table()
         self.setup_keyboard_shortcuts()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
-        print(f"QTableView size: {self.size().width()}")
+        print(f"QTableView width: {self.size().width()}")
         if e is None:
             raise Exception
         super().resizeEvent(e)
-        self.setMaximumSize(self.size().width(), self.size().height())
 
     def header_was_resized(self, logicalIndex, oldSize, newSize):
-        # super().sectionResized(logicalIndex, oldSize, newSize)
-        self.adjust_section_sizes()
+        self.adjust_section_sizes(logicalIndex, oldSize, newSize)
 
-    def adjust_section_sizes(self):
-        column_count = self.model.columnCount()
-        total_width = 0
+    def adjust_section_sizes(self, logicalIndex, oldSize, newSize):
+        header_width = 0
+        current_width = self.size().width()
 
         for i in range(self.model.columnCount()):
-            total_width += self.columnWidth(i)
-        print(f"total_width = {total_width}")
+            header_width += self.columnWidth(i)
+        if header_width > current_width:
+            # we pushing headers too far
+            newSize = oldSize
+            print("NOOO")
+        print(f"total_width = {header_width}")
+        print(f"logical index = {logicalIndex}")
+        print(f"old size = {oldSize}")
+        print(f"new size = {newSize}")
+        # super().sectionResized(logicalIndex, oldSize, newSize)
 
     def contextMenuEvent(self, a0):
         """Right-click context menu for rows in Music Table"""
-        assert a0 is not None
         menu = QMenu(self)
         add_to_playlist_action = QAction("Add to playlist", self)
         add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
@@ -172,7 +177,8 @@ class MusicTable(QTableView):
         menu.addAction(delete_action)
         # show
         self.set_selected_song_filepath()
-        menu.exec_(a0.globalPos())
+        if a0 is not None:
+            menu.exec_(a0.globalPos())
 
     def show_id3_tags_debug_menu(self):
         """Shows ID3 tags for a specific .mp3 file"""
