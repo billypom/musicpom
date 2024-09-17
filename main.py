@@ -46,6 +46,7 @@ from components import (
     AudioVisualizer,
     CreatePlaylistWindow,
     ExportPlaylistWindow,
+    ResizableHeaderView,
 )
 
 # Create ui.py file from Qt Designer
@@ -237,7 +238,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
         # FIXME: this should delete the album art for the current song - not all selected songs
         # move functionality to remove album for selected songs to the batch metadata editor
-
         # self.albumGraphicsView.albumArtDeleted.connect(
         #     self.delete_album_art_for_selected_songs
         # )
@@ -246,15 +246,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self
         )  # for drag & drop functionality
         self.tableView.handleProgressSignal.connect(self.handle_progress)
-        # set column widths
-        # FIXME: last column needs to not leave the screen when other columns become big...
-        # howwww
-        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.tableView.model.columnCount() - 1):
-            self.tableView.setColumnWidth(i, int(table_view_column_widths[i]))
-        # dont extend last column past table view border
-        self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.tableView.horizontalHeader().setStretchLastSection(True)
 
     def reload_config(self) -> None:
         """does what it says"""
@@ -276,7 +267,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Save the config
         with open("config.ini", "w") as configfile:
             self.config.write(configfile)
-        super().closeEvent(a0)
+        if a0 is not None:
+            super().closeEvent(a0)
 
     def show_status_bar_message(self, message: str, timeout: int | None = None) -> None:
         """

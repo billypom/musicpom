@@ -32,6 +32,7 @@ from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 
+from components.ResizableHeaderView import ResizableHeaderView
 from main import Worker
 from utils.batch_delete_filepaths_from_database import (
     batch_delete_filepaths_from_database,
@@ -93,6 +94,9 @@ class MusicTable(QTableView):
             "TDRC",
             None,
         ]
+        # Header stuff...
+        header = ResizableHeaderView(Qt.Horizontal, self)
+        self.setHorizontalHeader(header)
         # hide the id column
         self.hideColumn(0)
         # db names of headers
@@ -113,8 +117,9 @@ class MusicTable(QTableView):
         self.setup_keyboard_shortcuts()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
-        assert e is not None
-        return super().resizeEvent(e)
+        if e is None:
+            raise Exception
+        super().resizeEvent(e)
 
     def contextMenuEvent(self, a0):
         """Right-click context menu for rows in Music Table"""
