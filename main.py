@@ -235,22 +235,26 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.albumGraphicsView.albumArtDropped.connect(
             self.set_album_art_for_selected_songs
         )
-        self.albumGraphicsView.albumArtDeleted.connect(
-            self.delete_album_art_for_selected_songs
-        )
-        # multithreading
-        # whatever
+        # FIXME: this should delete the album art for the current song - not all selected songs
+        # move functionality to remove album for selected songs to the batch metadata editor
+
+        # self.albumGraphicsView.albumArtDeleted.connect(
+        #     self.delete_album_art_for_selected_songs
+        # )
+
         self.tableView.viewport().installEventFilter(
             self
         )  # for drag & drop functionality
         self.tableView.handleProgressSignal.connect(self.handle_progress)
         # set column widths
+        # FIXME: last column needs to not leave the screen when other columns become big...
+        # howwww
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.tableView.model.columnCount()):
+        for i in range(self.tableView.model.columnCount() - 1):
             self.tableView.setColumnWidth(i, int(table_view_column_widths[i]))
-            # dont extend last column past table view border
-        # self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        # self.tableView.horizontalHeader().setStretchLastSection(False)
+        # dont extend last column past table view border
+        self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tableView.horizontalHeader().setStretchLastSection(True)
 
     def reload_config(self) -> None:
         """does what it says"""
