@@ -137,7 +137,7 @@ class MusicTable(QTableView):
 
         if sum != qtableview_width:
             # if not the last header
-            if logicalIndex < col_count:
+            if logicalIndex < (col_count - 1):
                 next_header_size = self.horizontalHeader().sectionSize(logicalIndex + 1)
                 # If it should shrink
                 if next_header_size > (sum_of_cols - qtableview_width):
@@ -149,9 +149,6 @@ class MusicTable(QTableView):
                 else:
                     # block the resize
                     self.horizontalHeader().resizeSection(logicalIndex, oldSize)
-            # else:
-            #     if newSize > self.horizontalHeader().minimumSectionSize():
-            #         self.horizontalHeader().resizeSection(logicalIndex, oldSize)
 
     def contextMenuEvent(self, a0):
         """Right-click context menu for rows in Music Table"""
