@@ -95,9 +95,9 @@ class MusicTable(QTableView):
             "TDRC",
             None,
         ]
-        # Header stuff...
-        header = ResizableHeaderView(Qt.Horizontal, self)
-        self.setHorizontalHeader(header)
+        #
+        # header = ResizableHeaderView(Qt.Horizontal, self)
+        # self.setHorizontalHeader(header)
         # hide the id column
         self.hideColumn(0)
         # db names of headers
@@ -106,11 +106,12 @@ class MusicTable(QTableView):
         self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
-        # table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        # for i in range(self.model.columnCount() - 1):
-        #     self.setColumnWidth(i, int(table_view_column_widths[i]))
-        # self.horizontalHeader().setStretchLastSection(True)
-        # self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
+        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
+        for i in range(self.model.columnCount() - 1):
+            self.setColumnWidth(i, int(table_view_column_widths[i]))
+        self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         # self.horizontalHeader().setCascadingSectionResizes(True)
         # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
@@ -119,35 +120,41 @@ class MusicTable(QTableView):
         self.deleteKey.connect(self.delete_songs)
         self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model.layoutChanged.connect(self.restore_scroll_position)
-        # self.horizontalHeader().sectionResized.connect(self.header_was_resized)
+        self.horizontalHeader().sectionResized.connect(self.header_was_resized)
         # Final actions
         self.load_music_table()
         self.setup_keyboard_shortcuts()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
-        print(f"QTableView width: {self.size().width()}")
+        """Do something when the QTableView is resized"""
         if e is None:
             raise Exception
         super().resizeEvent(e)
 
     def header_was_resized(self, logicalIndex, oldSize, newSize):
-        self.adjust_section_sizes(logicalIndex, oldSize, newSize)
+        """Handles keeping headers inside the viewport"""
+        # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
+        col_count = self.model.columnCount()
+        qtableview_width = self.size().width()
+        sum_of_cols = self.horizontalHeader().length()
 
-    def adjust_section_sizes(self, logicalIndex, oldSize, newSize):
-        header_width = 0
-        current_width = self.size().width()
-
-        for i in range(self.model.columnCount()):
-            header_width += self.columnWidth(i)
-        if header_width > current_width:
-            # we pushing headers too far
-            newSize = oldSize
-            print("NOOO")
-        print(f"total_width = {header_width}")
-        print(f"logical index = {logicalIndex}")
-        print(f"old size = {oldSize}")
-        print(f"new size = {newSize}")
-        # super().sectionResized(logicalIndex, oldSize, newSize)
+        if sum != qtableview_width:
+            # if not the last header
+            if logicalIndex < col_count:
+                next_header_size = self.horizontalHeader().sectionSize(logicalIndex + 1)
+                # If it should shrink
+                if next_header_size > (sum_of_cols - qtableview_width):
+                    # shrink it
+                    self.horizontalHeader().resizeSection(
+                        logicalIndex + 1,
+                        next_header_size - (sum_of_cols - qtableview_width),
+                    )
+                else:
+                    # block the resize
+                    self.horizontalHeader().resizeSection(logicalIndex, oldSize)
+            # else:
+            #     if newSize > self.horizontalHeader().minimumSectionSize():
+            #         self.horizontalHeader().resizeSection(logicalIndex, oldSize)
 
     def contextMenuEvent(self, a0):
         """Right-click context menu for rows in Music Table"""

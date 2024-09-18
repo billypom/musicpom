@@ -157,7 +157,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
         self.current_volume: int = 50
-        # self.qapp = qapp
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
         self.config.read("config.ini")
@@ -214,6 +213,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionDeleteLibrary.triggered.connect(self.clear_database)
         self.actionDeleteDatabase.triggered.connect(self.delete_database)
 
+        # QTableView
+        self.tableView.viewport().installEventFilter(
+            self
+        )  # for drag & drop functionality
+
         ## CONNECTIONS
         # tableView
         self.tableView.doubleClicked.connect(
@@ -225,6 +229,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
+        self.tableView.handleProgressSignal.connect(self.handle_progress)
 
         # playlistTreeView
         self.playlistTreeView.playlistChoiceSignal.connect(
@@ -237,15 +242,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.set_album_art_for_selected_songs
         )
         # FIXME: this should delete the album art for the current song - not all selected songs
-        # move functionality to remove album for selected songs to the batch metadata editor
+        # Move functionality to remove album for selected songs to the batch metadata editor
         # self.albumGraphicsView.albumArtDeleted.connect(
         #     self.delete_album_art_for_selected_songs
         # )
-
-        self.tableView.viewport().installEventFilter(
-            self
-        )  # for drag & drop functionality
-        self.tableView.handleProgressSignal.connect(self.handle_progress)
 
     def reload_config(self) -> None:
         """does what it says"""
