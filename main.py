@@ -46,7 +46,6 @@ from components import (
     AudioVisualizer,
     CreatePlaylistWindow,
     ExportPlaylistWindow,
-    ResizableHeaderView,
 )
 
 # Create ui.py file from Qt Designer

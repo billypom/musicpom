@@ -33,7 +33,6 @@ from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 
-from components.ResizableHeaderView import ResizableHeaderView
 from main import Worker
 from utils.batch_delete_filepaths_from_database import (
     batch_delete_filepaths_from_database,
@@ -96,8 +95,6 @@ class MusicTable(QTableView):
             None,
         ]
         #
-        # header = ResizableHeaderView(Qt.Horizontal, self)
-        # self.setHorizontalHeader(header)
         # hide the id column
         self.hideColumn(0)
         # db names of headers
