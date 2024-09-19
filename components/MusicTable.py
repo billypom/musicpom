@@ -103,10 +103,6 @@ class MusicTable(QTableView):
         self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
-
-        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.model.columnCount() - 1):
-            self.setColumnWidth(i, int(table_view_column_widths[i]))
         self.horizontalHeader().setStretchLastSection(True)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         # self.horizontalHeader().setCascadingSectionResizes(True)
@@ -121,6 +117,20 @@ class MusicTable(QTableView):
         # Final actions
         self.load_music_table()
         self.setup_keyboard_shortcuts()
+        # Load the column widths from last save
+        # This doesn't work inside its own function for some reason
+        # self.load_header_widths()
+        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
+        for i in range(self.model.columnCount() - 1):
+            self.setColumnWidth(i, int(table_view_column_widths[i]))
+
+    def load_header_widths(self):
+        """
+        Loads the header widths from the last application close.
+        """
+        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
+        for i in range(self.model.columnCount() - 1):
+            self.setColumnWidth(i, int(table_view_column_widths[i]))
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
         """Do something when the QTableView is resized"""
@@ -137,7 +147,7 @@ class MusicTable(QTableView):
 
         if sum != qtableview_width:
             # if not the last header
-            if logicalIndex < (col_count - 1):
+            if logicalIndex < (col_count):
                 next_header_size = self.horizontalHeader().sectionSize(logicalIndex + 1)
                 # If it should shrink
                 if next_header_size > (sum_of_cols - qtableview_width):
@@ -313,8 +323,8 @@ class MusicTable(QTableView):
             print(f"files: {files}")
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
-                # worker.signals.signal_progress.connect(self.handle_progress)
-                worker.signals.signal_progress.connect(self.qapp.handle_progress)
+                worker.signals.signal_progress.connect(self.handle_progress)
+                # worker.signals.signal_progress.connect(self.qapp.handle_progress)
                 worker.signals.signal_result.connect(self.on_recursive_search_finished)
                 worker.signals.signal_finished.connect(self.load_music_table)
                 if self.qapp:
@@ -329,10 +339,6 @@ class MusicTable(QTableView):
         """file search completion handler"""
         if result:
             self.add_files(result)
-
-    # def handle_progress(self, data):
-    #     """Emits data to main"""
-    #     self.handleProgressSignal.emit(data)
 
     def keyPressEvent(self, e):
         """Press a key. Do a thing"""
@@ -366,7 +372,7 @@ class MusicTable(QTableView):
     def setup_keyboard_shortcuts(self):
         """Setup shortcuts here"""
         shortcut = QShortcut(QKeySequence("Ctrl+Shift+R"), self)
-        shortcut.activated.connect(self.handle_reorganize_selected_files)
+        shortcut.activated.connect(self.confirm_reorganize_files)
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
@@ -388,14 +394,16 @@ class MusicTable(QTableView):
                 # Update the library with new metadata
                 update_song_in_database(song_id, edited_column_name, user_input_data)
 
-    def handle_reorganize_selected_files(self):
-        """"""
-        worker = Worker(self.reorganize_selected_files)
-        worker.signals.signal_progress.connect(self.qapp.handle_progress)
-        self.qapp.threadpool.start(worker)
+    def handle_progress(self, data):
+        """Emits data to main"""
+        self.handleProgressSignal.emit(data)
 
-    def reorganize_selected_files(self, progress_callback=None):
-        """Ctrl+Shift+R = Reorganize"""
+    def confirm_reorganize_files(self) -> None:
+        """
+        Ctrl+Shift+R = Reorganize
+        Asks user to confirm reorganizing files,
+        then starts a new thread to do the work
+        """
         filepaths = self.get_selected_songs_filepaths()
         # Confirmation screen (yes, no)
         reply = QMessageBox.question(
@@ -405,43 +413,52 @@ class MusicTable(QTableView):
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
-        if reply:
-            # Get target directory
-            target_dir = str(self.config["directories"]["reorganize_destination"])
-            for filepath in filepaths:
-                if str(filepath).startswith((target_dir)):
-                    continue
-                try:
-                    if progress_callback:
-                        progress_callback.emit(f"Organizing: {filepath}")
-                    # Read file metadata
-                    artist, album = get_reorganize_vars(filepath)
-                    # Determine the new path that needs to be made
-                    new_path = os.path.join(
-                        target_dir, artist, album, os.path.basename(filepath)
+        if reply == QMessageBox.Yes:
+            worker = Worker(self.reorganize_files, filepaths)
+            worker.signals.signal_progress.connect(self.handle_progress)
+            worker.signals.signal_finished.connect(self.load_music_table)
+            self.qapp.threadpool.start(worker)
+
+    def reorganize_files(self, filepaths, progress_callback=None):
+        """
+        Reorganizes files into Artist/Album/Song,
+        based on the directories->reorganize_destination config
+        """
+        # Get target directory
+        target_dir = str(self.config["directories"]["reorganize_destination"])
+        for filepath in filepaths:
+            if str(filepath).startswith((target_dir)):
+                continue
+            try:
+                if progress_callback:
+                    progress_callback.emit(f"Organizing: {filepath}")
+                # Read file metadata
+                artist, album = get_reorganize_vars(filepath)
+                # Determine the new path that needs to be made
+                new_path = os.path.join(
+                    target_dir, artist, album, os.path.basename(filepath)
+                )
+                # Create the directories if they dont exist
+                os.makedirs(os.path.dirname(new_path), exist_ok=True)
+                # Move the file to the new directory
+                shutil.move(filepath, new_path)
+                # Update the db
+                with DBA.DBAccess() as db:
+                    db.query(
+                        "UPDATE song SET filepath = ? WHERE filepath = ?",
+                        (new_path, filepath),
                     )
-                    # Create the directories if they dont exist
-                    os.makedirs(os.path.dirname(new_path), exist_ok=True)
-                    # Move the file to the new directory
-                    shutil.move(filepath, new_path)
-                    # Update the db
-                    with DBA.DBAccess() as db:
-                        db.query(
-                            "UPDATE song SET filepath = ? WHERE filepath = ?",
-                            (new_path, filepath),
-                        )
-                    logging.info(
-                        f"reorganize_selected_files() | Moved: {filepath} -> {new_path}"
-                    )
-                except Exception as e:
-                    logging.warning(
-                        f"reorganize_selected_files() |  Error moving file: {filepath} | {e}"
-                    )
-            # Draw the rest of the owl
-            self.load_music_table()
-            QMessageBox.information(
-                self, "Reorganization complete", "Files successfully reorganized"
-            )
+                logging.info(
+                    f"reorganize_selected_files() | Moved: {filepath} -> {new_path}"
+                )
+            except Exception as e:
+                logging.warning(
+                    f"reorganize_selected_files() |  Error moving file: {filepath} | {e}"
+                )
+        # Draw the rest of the owl
+        QMessageBox.information(
+            self, "Reorganization complete", "Files successfully reorganized"
+        )
 
     def toggle_play_pause(self):
         """Toggles the currently playing song by emitting a Signal"""
