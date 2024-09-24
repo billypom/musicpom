@@ -211,6 +211,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionScanLibraries.triggered.connect(self.scan_libraries)
         self.actionDeleteLibrary.triggered.connect(self.clear_database)
         self.actionDeleteDatabase.triggered.connect(self.delete_database)
+        self.actionSortColumns.triggered.connect(
+            self.tableView.sort_table_by_multiple_columns
+        )
 
         # QTableView
         self.tableView.viewport().installEventFilter(

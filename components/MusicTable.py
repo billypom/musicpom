@@ -105,6 +105,7 @@ class MusicTable(QTableView):
         self.current_song_filepath = ""
         self.horizontalHeader().setStretchLastSection(True)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.setSortingEnabled(False)
         # self.horizontalHeader().setCascadingSectionResizes(True)
         # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
@@ -131,6 +132,35 @@ class MusicTable(QTableView):
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
         for i in range(self.model.columnCount() - 1):
             self.setColumnWidth(i, int(table_view_column_widths[i]))
+
+    def sort_table_by_multiple_columns(self):
+        """
+        Sorts the data in QTableView (self) by multiple columns
+        as defined in config.ini
+        """
+        self.setSortingEnabled(False)
+        self.setSortingEnabled(True)
+        sort_orders = []
+        config_sort_orders: list[int] = [
+            int(x) for x in self.config["table"]["sort_orders"].split(",")
+        ]
+        print(f"config sort orders = {config_sort_orders}")
+        for order in config_sort_orders:
+            if order == 0:
+                sort_orders.append(None)
+            elif order == 1:
+                sort_orders.append(Qt.SortOrder.AscendingOrder)
+            elif order == 2:
+                sort_orders.append(Qt.SortOrder.DescendingOrder)
+
+        print(f"sort_orders = {sort_orders}")
+        for i, order in enumerate(sort_orders):
+            print(f"i = {i}, order = {order}")
+            if order is not None:
+                print(f"sorting column {i} by {order}")
+                self.sortByColumn(i, order)
+
+        self.model.layoutChanged.emit()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
         """Do something when the QTableView is resized"""
