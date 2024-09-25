@@ -13,7 +13,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QHeaderView,
     QMenu,
-    QSizePolicy,
     QTableView,
     QShortcut,
     QMessageBox,
@@ -21,7 +20,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import (
     Qt,
-    QAbstractItemModel,
     QModelIndex,
     QThreadPool,
     pyqtSignal,
@@ -63,10 +61,8 @@ class MusicTable(QTableView):
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
         self.application_window = application_window
-
-        # FIXME: why does this give me pyright errors
-        self.model = QStandardItemModel()
-        self.setModel(self.model)
+        self.model2: QStandardItemModel = QStandardItemModel()
+        self.setModel(self.model2)
 
         # Config
         self.config = configparser.ConfigParser()
@@ -106,14 +102,13 @@ class MusicTable(QTableView):
         self.horizontalHeader().setStretchLastSection(True)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.setSortingEnabled(False)
-        # self.horizontalHeader().setCascadingSectionResizes(True)
         # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
         self.doubleClicked.connect(self.set_current_song_filepath)
         self.enterKey.connect(self.set_current_song_filepath)
         self.deleteKey.connect(self.delete_songs)
-        self.model.dataChanged.connect(self.on_cell_data_changed)  # editing cells
-        self.model.layoutChanged.connect(self.restore_scroll_position)
+        self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
+        self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontalHeader().sectionResized.connect(self.header_was_resized)
         # Final actions
         self.load_music_table()
@@ -122,7 +117,7 @@ class MusicTable(QTableView):
         # This doesn't work inside its own function for some reason
         # self.load_header_widths()
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.model.columnCount() - 1):
+        for i in range(self.model2.columnCount() - 1):
             self.setColumnWidth(i, int(table_view_column_widths[i]))
 
     def load_header_widths(self):
@@ -130,7 +125,7 @@ class MusicTable(QTableView):
         Loads the header widths from the last application close.
         """
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.model.columnCount() - 1):
+        for i in range(self.model2.columnCount() - 1):
             self.setColumnWidth(i, int(table_view_column_widths[i]))
 
     def sort_table_by_multiple_columns(self):
@@ -138,13 +133,13 @@ class MusicTable(QTableView):
         Sorts the data in QTableView (self) by multiple columns
         as defined in config.ini
         """
-        self.setSortingEnabled(False)
-        self.setSortingEnabled(True)
+        # Disconnect these signals to prevent unnecessary loads
+        self.disconnect_data_changed()
+        self.disconnect_layout_changed()
         sort_orders = []
         config_sort_orders: list[int] = [
             int(x) for x in self.config["table"]["sort_orders"].split(",")
         ]
-        print(f"config sort orders = {config_sort_orders}")
         for order in config_sort_orders:
             if order == 0:
                 sort_orders.append(None)
@@ -153,14 +148,18 @@ class MusicTable(QTableView):
             elif order == 2:
                 sort_orders.append(Qt.SortOrder.DescendingOrder)
 
-        print(f"sort_orders = {sort_orders}")
-        for i, order in enumerate(sort_orders):
-            print(f"i = {i}, order = {order}")
-            if order is not None:
-                print(f"sorting column {i} by {order}")
-                self.sortByColumn(i, order)
+        # NOTE:
+        # this is bad because sortByColumn calls a SELECT statement,
+        # and will do this for as many sorts that are needed
+        # maybe not a huge deal for a small music application...
+        for i in reversed(range(len(sort_orders))):
+            if sort_orders[i] is not None:
+                logging.info(f"sorting column {i} by {sort_orders[i]}")
+                self.sortByColumn(i, sort_orders[i])
 
-        self.model.layoutChanged.emit()
+        self.connect_data_changed()
+        self.connect_layout_changed()
+        self.model2.layoutChanged.emit()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
         """Do something when the QTableView is resized"""
@@ -171,7 +170,7 @@ class MusicTable(QTableView):
     def header_was_resized(self, logicalIndex, oldSize, newSize):
         """Handles keeping headers inside the viewport"""
         # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
-        col_count = self.model.columnCount()
+        col_count = self.model2.columnCount()
         qtableview_width = self.size().width()
         sum_of_cols = self.horizontalHeader().length()
 
@@ -221,6 +220,34 @@ class MusicTable(QTableView):
         if a0 is not None:
             menu.exec_(a0.globalPos())
 
+    def disconnect_data_changed(self):
+        """Disconnects the dataChanged signal from QTableView.model"""
+        try:
+            self.model2.dataChanged.disconnect(self.on_cell_data_changed)
+        except Exception:
+            pass
+
+    def connect_data_changed(self):
+        """Connects the dataChanged signal from QTableView.model"""
+        try:
+            self.model2.dataChanged.connect(self.on_cell_data_changed)
+        except Exception:
+            pass
+
+    def disconnect_layout_changed(self):
+        """Disconnects the layoutChanged signal from QTableView.model"""
+        try:
+            self.model2.layoutChanged.disconnect(self.restore_scroll_position)
+        except Exception:
+            pass
+
+    def connect_layout_changed(self):
+        """Connects the layoutChanged signal from QTableView.model"""
+        try:
+            self.model2.layoutChanged.connect(self.restore_scroll_position)
+        except Exception:
+            pass
+
     def show_id3_tags_debug_menu(self):
         """Shows ID3 tags for a specific .mp3 file"""
         selected_song_filepath = self.get_selected_song_filepath()
@@ -252,19 +279,13 @@ class MusicTable(QTableView):
     def remove_selected_row_indices(self):
         """Removes rows from the QTableView based on a list of indices"""
         selected_indices = self.get_selected_rows()
-        try:
-            self.model.dataChanged.disconnect(self.on_cell_data_changed)
-        except Exception:
-            pass
+        self.disconnect_data_changed()
         for index in selected_indices:
             try:
-                self.model.removeRow(index)
+                self.model2.removeRow(index)
             except Exception as e:
                 logging.info(f" delete_songs() failed | {e}")
-        try:
-            self.model.dataChanged.connect(self.on_cell_data_changed)
-        except Exception:
-            pass
+        self.connect_data_changed()
 
     def open_directory(self):
         """Opens the currently selected song in the system file manager"""
@@ -375,23 +396,23 @@ class MusicTable(QTableView):
         if not e:
             return
         key = e.key()
-        if key == Qt.Key_Space:  # Spacebar to play/pause
+        if key == Qt.Key.Key_Space:  # Spacebar to play/pause
             self.toggle_play_pause()
-        elif key == Qt.Key_Up:  # Arrow key navigation
+        elif key == Qt.Key.Key_Up:  # Arrow key navigation
             current_index = self.currentIndex()
-            new_index = self.model.index(
+            new_index = self.model2.index(
                 current_index.row() - 1, current_index.column()
             )
             if new_index.isValid():
                 self.setCurrentIndex(new_index)
-        elif key == Qt.Key_Down:  # Arrow key navigation
+        elif key == Qt.Key.Key_Down:  # Arrow key navigation
             current_index = self.currentIndex()
-            new_index = self.model.index(
+            new_index = self.model2.index(
                 current_index.row() + 1, current_index.column()
             )
             if new_index.isValid():
                 self.setCurrentIndex(new_index)
-        elif key in (Qt.Key_Return, Qt.Key_Enter):
+        elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             if self.state() != QAbstractItemView.EditingState:
                 self.enterKey.emit()  # Enter key detected
             else:
@@ -407,14 +428,14 @@ class MusicTable(QTableView):
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
         logging.info("on_cell_data_changed")
-        if isinstance(self.model, QStandardItemModel):
-            id_index = self.model.index(topLeft.row(), 0)  # ID is column 0, always
-            song_id = self.model.data(id_index, Qt.UserRole)
+        if isinstance(self.model2, QStandardItemModel):
+            id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
+            song_id = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
             # filepath is always the last column
-            filepath_column_idx = self.model.columnCount() - 1
-            filepath_index = self.model.index(topLeft.row(), filepath_column_idx)
+            filepath_column_idx = self.model2.columnCount() - 1
             # exact index of the edited cell in 2d space
-            filepath = self.model.data(filepath_index)  # filepath
+            filepath_index = self.model2.index(topLeft.row(), filepath_column_idx)
+            filepath = self.model2.data(filepath_index)  # filepath
             # update the ID3 information
             user_input_data = topLeft.data()
             edited_column_name = self.database_columns[topLeft.column()]
@@ -520,21 +541,12 @@ class MusicTable(QTableView):
         If playlist_id is given, load songs in a particular playlist
         playlist_id is emitted from PlaylistsPane as a tuple (1,)
         """
-        try:
-            # Loading the table also causes cell data to change, technically
-            # so we must disconnect the dataChanged trigger before loading
-            # then re-enable after we are done loading
-            self.model.dataChanged.disconnect(self.on_cell_data_changed)
-        except Exception as e:
-            logging.info(
-                f"load_music_table() | could not disconnect on_cell_data_changed trigger: {e}"
-            )
-            pass
+        self.disconnect_data_changed()
         self.vertical_scroll_position = (
             self.verticalScrollBar().value()
         )  # Get my scroll position before clearing
-        self.model.clear()
-        self.model.setHorizontalHeaderLabels(self.table_headers)
+        self.model2.clear()
+        self.model2.setHorizontalHeaderLabels(self.table_headers)
         if playlist_id:
             selected_playlist_id = playlist_id[0]
             logging.info(
@@ -563,22 +575,29 @@ class MusicTable(QTableView):
                 return
         # Populate the model
         for row_data in data:
+            print(f"row_data: {row_data}")
             id, *rest_of_data = row_data
-            items = [QStandardItem(str(item) if item else "") for item in rest_of_data]
-            self.model.appendRow(items)
+            # handle different datatypes
+            items = []
+            for item in rest_of_data:
+                if isinstance(item, int):
+                    std_item = QStandardItem()
+                    std_item.setData(item, Qt.ItemDataRole.DisplayRole)
+                    std_item.setData(item, Qt.ItemDataRole.EditRole)
+                else:
+                    std_item = QStandardItem(str(item) if item else "")
+                items.append(std_item)
+
+            self.model2.appendRow(items)
             # store id using setData - useful for later faster db fetching
-            # row = self.model.rowCount() - 1
             for item in items:
-                item.setData(id, Qt.UserRole)
-        self.model.layoutChanged.emit()  # emits a signal that the view should be updated
+                item.setData(id, Qt.ItemDataRole.UserRole)
+        self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
         try:
             self.restore_scroll_position()
         except Exception:
             pass
-        try:
-            self.model.dataChanged.connect(self.on_cell_data_changed)
-        except Exception:
-            pass
+        self.connect_data_changed()
 
     def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
@@ -611,7 +630,7 @@ class MusicTable(QTableView):
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
-            idx = self.model.index(row, self.table_headers.index("path"))
+            idx = self.model2.index(row, self.table_headers.index("path"))
             filepaths.append(idx.data())
         return filepaths
 
@@ -630,7 +649,7 @@ class MusicTable(QTableView):
             return []
         selected_rows = set(index.row() for index in indexes)
         id_list = [
-            self.model.data(self.model.index(row, 0), Qt.UserRole)
+            self.model2.data(self.model2.index(row, 0), Qt.ItemDataRole.UserRole)
             for row in selected_rows
         ]
         return id_list
@@ -665,3 +684,28 @@ class MusicTable(QTableView):
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""
         self.qapp = qapp
+
+
+# QT Roles
+
+# In Qt, roles are used to specify different aspects or types of data associated with each item in a model. The roles are defined in the Qt.ItemDataRole enum. The three roles you asked about - DisplayRole, EditRole, and UserRole - are particularly important. Let's break them down:
+#
+# Qt.ItemDataRole.DisplayRole:
+# This is the default role for displaying data in views. It determines how the data appears visually in the view.
+#
+# Purpose: To provide the text or image that will be shown in the view.
+# Example: In a table view, this is typically the text you see in each cell.
+#
+#
+# Qt.ItemDataRole.EditRole:
+# This role is used when the item's data is being edited.
+#
+# Purpose: To provide the data in a format suitable for editing.
+# Example: For a date field, DisplayRole might show "Jan 1, 2023", but EditRole could contain a QDate object or an ISO format string "2023-01-01".
+#
+#
+# Qt.ItemDataRole.UserRole:
+# This is a special role that serves as a starting point for custom roles defined by the user.
+#
+# Purpose: To store additional, custom data associated with an item that doesn't fit into the predefined roles.
+# Example: Storing a unique identifier, additional metadata, or any other custom data you want to associate with the item.

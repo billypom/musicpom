@@ -266,7 +266,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Save settings when closing the application"""
         # MusicTable/tableView column widths
         list_of_column_widths = []
-        for i in range(self.tableView.model.columnCount()):
+        for i in range(self.tableView.model2.columnCount()):
             list_of_column_widths.append(str(self.tableView.columnWidth(i)))
         column_widths_as_string = ",".join(list_of_column_widths)
         self.config["table"]["column_widths"] = column_widths_as_string
