@@ -575,7 +575,6 @@ class MusicTable(QTableView):
                 return
         # Populate the model
         for row_data in data:
-            print(f"row_data: {row_data}")
             id, *rest_of_data = row_data
             # handle different datatypes
             items = []

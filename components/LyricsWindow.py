@@ -37,7 +37,7 @@ class LyricsWindow(QDialog):
             value=self.input_field.toPlainText(),
         )
         if success:
-            print("success! yay")
+            print("lyrical success! yay")
         else:
             error_dialog = ErrorDialog("Could not save lyrics :( sad")
             error_dialog.exec()

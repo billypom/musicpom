@@ -539,6 +539,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Opens the preferences window"""
         preferences_window = PreferencesWindow(self.config)
         preferences_window.exec_()  # Display the preferences window modally
+        self.reload_config()
 
     # Quick Actions
 
