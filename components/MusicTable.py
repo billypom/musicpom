@@ -266,7 +266,7 @@ class MusicTable(QTableView):
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
-        if reply:
+        if reply == QMessageBox.Yes:
             selected_filepaths = self.get_selected_songs_filepaths()
             worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
             worker.signals.signal_progress.connect(self.qapp.handle_progress)

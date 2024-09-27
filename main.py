@@ -339,28 +339,28 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             pixmap = QPixmap()
             pixmap.loadFromData(album_art_data)
             # Create a QGraphicsPixmapItem for more control over pic
-            pixmapItem = QGraphicsPixmapItem(pixmap)
-            pixmapItem.setTransformationMode(
-                Qt.SmoothTransformation
+            pixmap_item = QGraphicsPixmapItem(pixmap)
+            pixmap_item.setTransformationMode(
+                Qt.TransformationMode.SmoothTransformation
             )  # For better quality scaling
             # Add pixmap item to the scene
-            self.album_art_scene.addItem(pixmapItem)
+            self.album_art_scene.addItem(pixmap_item)
             # Set the scene
             self.albumGraphicsView.setScene(self.album_art_scene)
             # Adjust the album art scaling
-            self.adjustPixmapScaling(pixmapItem)
+            self.adjust_pixmap_scaling(pixmap_item)
 
-    def adjustPixmapScaling(self, pixmapItem) -> None:
+    def adjust_pixmap_scaling(self, pixmap_item) -> None:
         """Adjust the scaling of the pixmap item to fit the QGraphicsView, maintaining aspect ratio"""
         viewWidth = self.albumGraphicsView.width()
         viewHeight = self.albumGraphicsView.height()
-        pixmapSize = pixmapItem.pixmap().size()
+        pixmapSize = pixmap_item.pixmap().size()
         # Calculate scaling factor while maintaining aspect ratio
         scaleX = viewWidth / pixmapSize.width()
         scaleY = viewHeight / pixmapSize.height()
         scaleFactor = min(scaleX, scaleY)
         # Apply scaling to the pixmap item
-        pixmapItem.setScale(scaleFactor)
+        pixmap_item.setScale(scaleFactor)
 
     def set_album_art_for_selected_songs(self, album_art_path: str) -> None:
         """Sets the ID3 tag APIC (album art) for all selected song filepaths"""
