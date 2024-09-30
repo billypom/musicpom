@@ -111,8 +111,7 @@ class AlbumArtGraphicsView(QGraphicsView):
             )  # emit signal that album art was pasted
 
     def delete_album_art(self):
-        """Emits a signal for the album art to be deleted"""
-        # Signal emits and ID3 tag is updated
+        """Emits a signal for the album art of the current song to be deleted"""
         self.albumArtDeleted.emit()
 
     def load_qapp(self, qapp):

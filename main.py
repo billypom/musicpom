@@ -1,5 +1,4 @@
 import os
-import configparser
 import sys
 import logging
 from subprocess import run
@@ -18,7 +17,6 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QApplication,
     QGraphicsScene,
-    QHeaderView,
     QGraphicsPixmapItem,
     QMessageBox,
     QStatusBar,
@@ -154,7 +152,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.current_song_metadata: ID3 | dict | None = None
         self.current_song_album_art: bytes | None = None
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
-        self.config: ConfigParser = configparser.ConfigParser()
+        self.config: ConfigParser = ConfigParser()
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
@@ -168,7 +166,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Audio probe for processing audio signal in real time
         self.probe.setSource(self.player)
         self.probe.audioBufferProbed.connect(self.process_probe)
-
         # Slider Timer (realtime playback feedback horizontal bar)
         self.timer.start(100)
         self.timer.timeout.connect(self.move_slider)
@@ -183,20 +180,13 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.PlotWidget.getAxis("left").setTicks([])  # Remove y-axis ticks
         self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
 
-        # Playlist left-pane
-        # self.playlistTreeView
-
         # Connections
         self.playbackSlider.sliderReleased.connect(
             lambda: self.player.setPosition(self.playbackSlider.value())
-        )  # maybe sliderReleased works better than sliderMoved
-        self.volumeSlider.sliderMoved[int].connect(
-            lambda: self.volume_changed()
-        )  # Move slider to adjust volume
+        )  # sliderReleased works better than sliderMoved
+        self.volumeSlider.sliderMoved[int].connect(lambda: self.volume_changed())
         self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
-        self.previousButton.clicked.connect(
-            self.on_previous_clicked
-        )  # Click to previous song
+        self.previousButton.clicked.connect(self.on_previous_clicked)
         self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
 
         # FILE MENU
@@ -219,9 +209,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
 
         # QTableView
-        self.tableView.viewport().installEventFilter(
-            self
-        )  # for drag & drop functionality
+        # for drag & drop functionality
+        self.tableView.viewport().installEventFilter(self)
 
         ## CONNECTIONS
         # tableView
@@ -246,11 +235,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.albumGraphicsView.albumArtDropped.connect(
             self.set_album_art_for_selected_songs
         )
-        # FIXME: this should delete the album art for the current song - not all selected songs
-        # Move functionality to remove album for selected songs to the batch metadata editor
-        # self.albumGraphicsView.albumArtDeleted.connect(
-        #     self.delete_album_art_for_selected_songs
-        # )
+        self.albumGraphicsView.albumArtDeleted.connect(
+            self.delete_album_art_for_current_song
+        )
 
     def reload_config(self) -> None:
         """does what it says"""
@@ -297,36 +284,38 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def play_audio_file(self) -> None:
         """Start playback of tableView.current_song_filepath track & moves playback slider"""
-        self.current_song_metadata = (
-            self.tableView.get_current_song_metadata()
-        )  # get metadata
+        # get metadata
+        self.current_song_metadata = self.tableView.get_current_song_metadata()
+        logging.info("current song metadata: %s", self.current_song_metadata)
         self.current_song_album_art = self.tableView.get_current_song_album_art()
-        url = QUrl.fromLocalFile(
-            self.tableView.get_current_song_filepath()
-        )  # read the file
-        content = QMediaContent(url)  # load the audio content
-        self.player.setMedia(content)  # what content to play
+        # read the file
+        url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath())
+        # load the audio content
+        content = QMediaContent(url)
+        # set the player to play the content
+        self.player.setMedia(content)
         self.player.play()  # play
         self.move_slider()  # mover
 
         # assign metadata
-        artist = (
-            self.current_song_metadata["TPE1"][0]
-            if "artist" in self.current_song_metadata
-            else None
-        )
-        album = (
-            self.current_song_metadata["TALB"][0]
-            if "album" in self.current_song_metadata
-            else None
-        )
-        title = self.current_song_metadata["TIT2"][0]
-        # edit labels
-        self.artistLabel.setText(artist)
-        self.albumLabel.setText(album)
-        self.titleLabel.setText(title)
-        # set album artwork
-        self.load_album_art(self.current_song_album_art)
+        if self.current_song_metadata is not None:
+            artist = (
+                self.current_song_metadata["TPE1"][0]
+                if "artist" in self.current_song_metadata
+                else None
+            )
+            album = (
+                self.current_song_metadata["TALB"][0]
+                if "album" in self.current_song_metadata
+                else None
+            )
+            title = self.current_song_metadata["TIT2"][0]
+            # edit labels
+            self.artistLabel.setText(artist)
+            self.albumLabel.setText(album)
+            self.titleLabel.setText(title)
+            # set album artwork
+            self.load_album_art(self.current_song_album_art)
 
     def load_album_art(self, album_art_data) -> None:
         """Displays the album art for the currently playing track in the GraphicsView"""
@@ -406,20 +395,19 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                 )
         audio.save()
 
-    def delete_album_art_for_selected_songs(self) -> None:
-        """Handles deleting the ID3 tag APIC (album art) for all selected songs"""
-        filepaths = self.tableView.get_selected_songs_filepaths()
-        for file in filepaths:
-            # delete APIC data
-            try:
-                audio = ID3(file)
-                if "APIC:" in audio:
-                    del audio["APIC"]
-                    audio.save()
-            except Exception as e:
-                logging.error(
-                    f"delete_album_art_for_selected_songs() | Error processing {file}: {e}"
-                )
+    def delete_album_art_for_current_song(self) -> None:
+        """Handles deleting the ID3 tag APIC (album art) for current song"""
+        file = self.tableView.get_current_song_filepath()
+        # delete APIC data
+        try:
+            audio = ID3(file)
+            if "APIC:" in audio:
+                del audio["APIC"]
+                audio.save()
+        except Exception as e:
+            logging.error(
+                f"delete_album_art_for_selected_songs() | Error processing {file}: {e}"
+            )
 
     def update_audio_visualization(self) -> None:
         """Handles upading points on the pyqtgraph visual"""
@@ -594,6 +582,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.tableView.load_music_table()
 
     def process_probe(self, buff) -> None:
+        """Audio visualizer buffer processing"""
         buff.startTime()
         self.update_audio_visualization()
 
