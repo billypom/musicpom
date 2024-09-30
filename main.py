@@ -287,7 +287,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # get metadata
         self.current_song_metadata = self.tableView.get_current_song_metadata()
         logging.info("current song metadata: %s", self.current_song_metadata)
-        self.current_song_album_art = self.tableView.get_current_song_album_art()
         # read the file
         url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath())
         # load the audio content
@@ -315,44 +314,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.albumLabel.setText(album)
             self.titleLabel.setText(title)
             # set album artwork
-            self.load_album_art(self.current_song_album_art)
-
-    def load_album_art(self, album_art_data) -> None:
-        """Displays the album art for the currently playing track in the GraphicsView"""
-        if self.current_song_album_art:
-            # Clear the scene
-            try:
-                self.album_art_scene.clear()
-            except Exception:
-                pass
-            # Reset the scene
-            self.albumGraphicsView.setScene(None)
-            # Create pixmap for album art
-            pixmap = QPixmap()
-            pixmap.loadFromData(album_art_data)
-            # Create a QGraphicsPixmapItem for more control over pic
-            pixmap_item = QGraphicsPixmapItem(pixmap)
-            pixmap_item.setTransformationMode(
-                Qt.TransformationMode.SmoothTransformation
-            )  # For better quality scaling
-            # Add pixmap item to the scene
-            self.album_art_scene.addItem(pixmap_item)
-            # Set the scene
-            self.albumGraphicsView.setScene(self.album_art_scene)
-            # Adjust the album art scaling
-            self.adjust_pixmap_scaling(pixmap_item)
-
-    def adjust_pixmap_scaling(self, pixmap_item) -> None:
-        """Adjust the scaling of the pixmap item to fit the QGraphicsView, maintaining aspect ratio"""
-        viewWidth = self.albumGraphicsView.width()
-        viewHeight = self.albumGraphicsView.height()
-        pixmapSize = pixmap_item.pixmap().size()
-        # Calculate scaling factor while maintaining aspect ratio
-        scaleX = viewWidth / pixmapSize.width()
-        scaleY = viewHeight / pixmapSize.height()
-        scaleFactor = min(scaleX, scaleY)
-        # Apply scaling to the pixmap item
-        pixmap_item.setScale(scaleFactor)
+            album_art_data = self.tableView.get_current_song_album_art()
+            self.albumGraphicsView.load_album_art(album_art_data)
 
     def set_album_art_for_selected_songs(self, album_art_path: str) -> None:
         """Sets the ID3 tag APIC (album art) for all selected song filepaths"""

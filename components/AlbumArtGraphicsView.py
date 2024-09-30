@@ -1,6 +1,12 @@
 import os
 import tempfile
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QMenu, QAction
+from PyQt5.QtWidgets import (
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QMenu,
+    QAction,
+)
 from PyQt5.QtCore import QEvent, Qt, pyqtSignal, QUrl, QPoint
 from PyQt5.QtGui import (
     QDragEnterEvent,
@@ -22,8 +28,8 @@ class AlbumArtGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAcceptDrops(True)
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.scene = QGraphicsScene
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.album_art_scene: QGraphicsScene = QGraphicsScene()
         self.customContextMenuRequested.connect(self.showContextMenu)
 
     def dragEnterEvent(self, event: QDragEnterEvent | None):
@@ -35,6 +41,8 @@ class AlbumArtGraphicsView(QGraphicsView):
             event.ignore()
 
     def dragMoveEvent(self, event: QDragMoveEvent | None):
+        if event is None:
+            return
         if event.mimeData().hasUrls():
             event.accept()
         else:
@@ -42,6 +50,8 @@ class AlbumArtGraphicsView(QGraphicsView):
 
     def dropEvent(self, event: QDropEvent | None):
         """Handles drag and drop pic onto view to add album art to songs"""
+        if event is None:
+            return
         urls = event.mimeData().urls()
         if urls:
             first_url = urls[0].toLocalFile()
@@ -74,10 +84,36 @@ class AlbumArtGraphicsView(QGraphicsView):
         # DO
         contextMenu.exec_(self.mapToGlobal(position))  # Show the menu
 
+    def load_album_art(self, album_art_data: bytes) -> None:
+        """Displays the album art for the currently playing track in the GraphicsView"""
+        if album_art_data:
+            # Clear the scene
+            try:
+                self.album_art_scene.clear()
+            except Exception:
+                pass
+            # Reset the scene
+            self.setScene(self.album_art_scene)
+            # Create pixmap for album art
+            pixmap = QPixmap()
+            pixmap.loadFromData(album_art_data)
+            # Create a QGraphicsPixmapItem for more control over pic
+            pixmap_item = QGraphicsPixmapItem(pixmap)
+            pixmap_item.setTransformationMode(
+                Qt.TransformationMode.SmoothTransformation
+            )  # For better quality scaling
+            # Add pixmap item to the scene
+            self.album_art_scene.addItem(pixmap_item)
+            # Set the scene
+            self.setScene(self.album_art_scene)
+            # Adjust the album art scaling
+            self.adjust_pixmap_scaling(pixmap_item)
+
     def copy_album_art_to_clipboard(self):
         """Copies album art to the clipboard"""
         if not self.scene().items():
             return  # dont care if no pic
+        # FIXME: i want types here. what is actually going on...
         clipboard = self.qapp.clipboard()
         pixmap_item = self.scene().items()[0]
         clipboard.setPixmap(pixmap_item.pixmap())
@@ -96,7 +132,7 @@ class AlbumArtGraphicsView(QGraphicsView):
         else:
             pixmap = clipboard.pixmap()
         # Put image on screen and emit signal for ID3 tags to be updated
-        if pixmap != None:  # Add pixmap raw data image
+        if pixmap is not None:  # Add pixmap raw data image
             try:
                 self.scene().clear()
             except Exception:
@@ -113,6 +149,18 @@ class AlbumArtGraphicsView(QGraphicsView):
     def delete_album_art(self):
         """Emits a signal for the album art of the current song to be deleted"""
         self.albumArtDeleted.emit()
+
+    def adjust_pixmap_scaling(self, pixmap_item) -> None:
+        """Adjust the scaling of the pixmap item to fit the QGraphicsView, maintaining aspect ratio"""
+        viewWidth = self.width()
+        viewHeight = self.height()
+        pixmapSize = pixmap_item.pixmap().size()
+        # Calculate scaling factor while maintaining aspect ratio
+        scaleX = viewWidth / pixmapSize.width()
+        scaleY = viewHeight / pixmapSize.height()
+        scaleFactor = min(scaleX, scaleY)
+        # Apply scaling to the pixmap item
+        pixmap_item.setScale(scaleFactor)
 
     def load_qapp(self, qapp):
         """Necessary for talking between components..."""
