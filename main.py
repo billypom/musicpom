@@ -108,7 +108,7 @@ class Worker(QRunnable):
         self.kwargs["progress_callback"] = self.signals.signal_progress
 
     @pyqtSlot()
-    def run(self):
+    def run(self) -> None:  # type: ignore
         """
         This is where the work is done.
         MUST be called run() in order for QRunnable to work
@@ -118,10 +118,13 @@ class Worker(QRunnable):
         self.signals.signal_started.emit()
         try:
             result = self.fn(*self.args, **self.kwargs)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.signal_finished.emit((exctype, value, traceback.format_exc()))
+            logging.error(
+                f"Worker failed: {exctype} | {value} | {traceback.format_exc()}"
+            )
         else:
             if result:
                 self.signals.signal_finished.emit()
