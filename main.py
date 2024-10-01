@@ -294,6 +294,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.player.setMedia(content)
         self.player.play()  # play
         self.move_slider()  # mover
+        # self.player.setPlaybackRate(1.5)
 
         # assign metadata
         if self.current_song_metadata is not None:
