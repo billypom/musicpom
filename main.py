@@ -286,7 +286,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Start playback of tableView.current_song_filepath track & moves playback slider"""
         # get metadata
         self.current_song_metadata = self.tableView.get_current_song_metadata()
-        logging.info("current song metadata: %s", self.current_song_metadata)
         # read the file
         url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath())
         # load the audio content
@@ -364,12 +363,21 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # delete APIC data
         try:
             audio = ID3(file)
+            print("AAAAAAAAAAAAAAAAAAAAA")
+            print(audio)
+            print("AAAAAAAAAAAAAAAAAAAAA")
             if "APIC:" in audio:
-                del audio["APIC"]
+                del audio["APIC:"]
                 audio.save()
-        except Exception as e:
+            else:
+                logging.warning(
+                    "delete_album_art_for_current_song() | no tag called APIC"
+                )
+        except Exception:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
             logging.error(
-                f"delete_album_art_for_selected_songs() | Error processing {file}: {e}"
+                f"delete_album_art_for_current_song() | Error processing this file:\t {file}\n{exctype}\n{value}\n{traceback.format_exc()}"
             )
 
     def update_audio_visualization(self) -> None:

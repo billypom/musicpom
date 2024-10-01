@@ -670,7 +670,6 @@ class MusicTable(QTableView):
         self.selected_song_filepath = (
             self.currentIndex().siblingAtColumn(self.table_headers.index("path")).data()
         )
-        logging.info(self.selected_song_filepath)
 
     def set_current_song_filepath(self) -> None:
         """Sets the filepath of the currently playing song"""

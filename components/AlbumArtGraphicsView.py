@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction,
 )
-from PyQt5.QtCore import QEvent, Qt, pyqtSignal, QUrl, QPoint
+from PyQt5.QtCore import QEvent, QMimeData, Qt, pyqtSignal, QUrl, QPoint
 from PyQt5.QtGui import (
     QDragEnterEvent,
     QDragMoveEvent,
@@ -23,7 +23,7 @@ class AlbumArtGraphicsView(QGraphicsView):
     """
 
     albumArtDropped = pyqtSignal(str)
-    albumArtDeleted = pyqtSignal(str)
+    albumArtDeleted = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -113,10 +113,11 @@ class AlbumArtGraphicsView(QGraphicsView):
         """Copies album art to the clipboard"""
         if not self.scene().items():
             return  # dont care if no pic
-        # FIXME: i want types here. what is actually going on...
+
         clipboard = self.qapp.clipboard()
         pixmap_item = self.scene().items()[0]
-        clipboard.setPixmap(pixmap_item.pixmap())
+        if hasattr(pixmap_item, "pixmap"):
+            clipboard.setPixmap(pixmap_item.pixmap())
 
     def paste_album_art_from_clipboard(self):
         """Handles pasting album art into a song via system clipboard"""

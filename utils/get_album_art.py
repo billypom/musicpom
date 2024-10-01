@@ -1,4 +1,5 @@
-from mutagen.id3 import ID3, APIC
+from mutagen.id3 import ID3
+import logging
 
 
 def get_album_art(file: str) -> bytes:
@@ -6,7 +7,7 @@ def get_album_art(file: str) -> bytes:
     # Parameters
     `file` | str | Fully qualified path to file
     # Returns
-    Data for album art or default file
+    bytes for album art or placeholder artwork
     """
     default_image_path = "./assets/default_album_art.jpg"
     try:
@@ -19,5 +20,5 @@ def get_album_art(file: str) -> bytes:
     except Exception as e:
         print(f"Error retrieving album art: {e}")
     with open(default_image_path, "rb") as f:
-        print(f"album art type: {type(f.read())}")
+        logging.info("loading placeholder album art")
         return f.read()
