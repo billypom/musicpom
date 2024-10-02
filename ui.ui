@@ -17,9 +17,9 @@
    <string/>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_3" stretch="10,1,1">
+   <layout class="QVBoxLayout" name="verticalLayout_3" stretch="20,0,0,0">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="1,10">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="1,2">
       <property name="spacing">
        <number>6</number>
       </property>
@@ -279,6 +279,35 @@
       </item>
      </layout>
     </item>
+    <item>
+     <layout class="QHBoxLayout" name="hLayoutControls3">
+      <item>
+       <widget class="QSlider" name="speedSlider">
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="singleStep">
+         <number>1</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="invertedAppearance">
+         <bool>false</bool>
+        </property>
+        <property name="tickPosition">
+         <enum>QSlider::NoTicks</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -287,7 +316,7 @@
      <x>0</x>
      <y>0</y>
      <width>1152</width>
-     <height>21</height>
+     <height>41</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -315,8 +344,8 @@
     </property>
     <addaction name="actionScanLibraries"/>
     <addaction name="actionDeleteLibrary"/>
-	<addaction name="actionDeleteDatabase"/>
-				<addaction name="actionSortColumns"/>
+    <addaction name="actionDeleteDatabase"/>
+    <addaction name="actionSortColumns"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>

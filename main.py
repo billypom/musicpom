@@ -185,6 +185,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             lambda: self.player.setPosition(self.playbackSlider.value())
         )  # sliderReleased works better than sliderMoved
         self.volumeSlider.sliderMoved[int].connect(lambda: self.volume_changed())
+        self.speedSlider.sliderReleased.connect(
+            lambda: self.speed_changed(self.speedSlider.value())
+        )
         self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
         self.previousButton.clicked.connect(self.on_previous_clicked)
         self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
@@ -424,6 +427,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.player.setVolume(self.current_volume)
         except Exception as e:
             logging.error(f"main.py volume_changed() | Changing volume error: {e}")
+
+    def speed_changed(self, rate: int) -> None:
+        """Handles playback speed changes"""
+        self.player.setPlaybackRate(rate / 50)
 
     def on_play_clicked(self) -> None:
         """Updates the Play & Pause buttons when clicked"""
