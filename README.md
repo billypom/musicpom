@@ -32,3 +32,4 @@ python3 main.py
 - [x] playlists
 - [ ] delete songs from library (del key || right-click delete)
 - [ ] .wav, .ogg, .flac convertor
+- [ ] dbaccess is instantiated for every track being reorganized
