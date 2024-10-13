@@ -99,8 +99,10 @@ class MusicTable(QTableView):
         self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
-        self.horizontalHeader().setStretchLastSection(True)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.horizontal_header: QHeaderView = self.horizontalHeader()
+        assert self.horizontal_header is not None
+        self.horizontal_header.setStretchLastSection(True)
+        self.horizontal_header.setSectionResizeMode(QHeaderView.Interactive)
         self.setSortingEnabled(False)
         # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
@@ -109,31 +111,42 @@ class MusicTable(QTableView):
         self.deleteKey.connect(self.delete_songs)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model2.layoutChanged.connect(self.restore_scroll_position)
-        self.horizontalHeader().sectionResized.connect(self.header_was_resized)
+        self.horizontal_header.sectionResized.connect(self.header_was_resized)
         # Final actions
         self.load_music_table()
         self.setup_keyboard_shortcuts()
+
         # Load the column widths from last save
-        # This doesn't work inside its own function for some reason
-        # self.load_header_widths()
+        # NOTE: Constructor can't call member function i guess?
+        # otherwise i would just use `self.load_header_widths()`
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.model2.columnCount() - 1):
-            self.setColumnWidth(i, int(table_view_column_widths[i]))
+        if not isinstance(table_view_column_widths[0], int) or not isinstance(
+            table_view_column_widths, list
+        ):
+            for i in range(self.model2.columnCount() - 1):
+                self.setColumnWidth(i, int(table_view_column_widths[i]))
 
     def load_header_widths(self):
         """
         Loads the header widths from the last application close.
         """
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        for i in range(self.model2.columnCount() - 1):
-            self.setColumnWidth(i, int(table_view_column_widths[i]))
+        if not isinstance(table_view_column_widths[0], int):
+            return
+        if not isinstance(table_view_column_widths, list):
+            for i in range(self.model2.columnCount() - 1):
+                self.setColumnWidth(i, int(table_view_column_widths[i]))
 
     def sort_table_by_multiple_columns(self):
         """
         Sorts the data in QTableView (self) by multiple columns
         as defined in config.ini
         """
+        # TODO: Rewrite this function to use self.load_music_table() with dynamic SQL queries
+        # in order to sort the data more effectively & have more control over UI refreshes.
+
         # Disconnect these signals to prevent unnecessary loads
+        logging.info("sort_table_by_multiple_columns()")
         self.disconnect_data_changed()
         self.disconnect_layout_changed()
         sort_orders = []
@@ -152,6 +165,7 @@ class MusicTable(QTableView):
         # this is bad because sortByColumn calls a SELECT statement,
         # and will do this for as many sorts that are needed
         # maybe not a huge deal for a small music application...
+        # `len(config_sort_orders)` number of SELECTs
         for i in reversed(range(len(sort_orders))):
             if sort_orders[i] is not None:
                 logging.info(f"sorting column {i} by {sort_orders[i]}")
@@ -159,7 +173,7 @@ class MusicTable(QTableView):
 
         self.connect_data_changed()
         self.connect_layout_changed()
-        self.model2.layoutChanged.emit()
+        # self.model2.layoutChanged.emit()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
         """Do something when the QTableView is resized"""
@@ -172,22 +186,22 @@ class MusicTable(QTableView):
         # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
         col_count = self.model2.columnCount()
         qtableview_width = self.size().width()
-        sum_of_cols = self.horizontalHeader().length()
+        sum_of_cols = self.horizontal_header.length()
 
         if sum != qtableview_width:
             # if not the last header
             if logicalIndex < (col_count):
-                next_header_size = self.horizontalHeader().sectionSize(logicalIndex + 1)
+                next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
                 # If it should shrink
                 if next_header_size > (sum_of_cols - qtableview_width):
                     # shrink it
-                    self.horizontalHeader().resizeSection(
+                    self.horizontal_header.resizeSection(
                         logicalIndex + 1,
                         next_header_size - (sum_of_cols - qtableview_width),
                     )
                 else:
                     # block the resize
-                    self.horizontalHeader().resizeSection(logicalIndex, oldSize)
+                    self.horizontal_header.resizeSection(logicalIndex, oldSize)
 
     def contextMenuEvent(self, a0):
         """Right-click context menu for rows in Music Table"""
@@ -223,7 +237,7 @@ class MusicTable(QTableView):
     def disconnect_data_changed(self):
         """Disconnects the dataChanged signal from QTableView.model"""
         try:
-            self.model2.dataChanged.disconnect(self.on_cell_data_changed)
+            self.model2.dataChanged.disconnect()
         except Exception:
             pass
 
@@ -237,7 +251,7 @@ class MusicTable(QTableView):
     def disconnect_layout_changed(self):
         """Disconnects the layoutChanged signal from QTableView.model"""
         try:
-            self.model2.layoutChanged.disconnect(self.restore_scroll_position)
+            self.model2.layoutChanged.disconnect()
         except Exception:
             pass
 
@@ -429,13 +443,15 @@ class MusicTable(QTableView):
         """Handles updating ID3 tags when data changes in a cell"""
         logging.info("on_cell_data_changed")
         if isinstance(self.model2, QStandardItemModel):
+            # get the ID of the row that was edited
             id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
+            # get the db song_id from the row
             song_id = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
-            # filepath is always the last column
+            # get the filepath through a series of steps...
+            # NOTE: filepath is always the last column
             filepath_column_idx = self.model2.columnCount() - 1
-            # exact index of the edited cell in 2d space
             filepath_index = self.model2.index(topLeft.row(), filepath_column_idx)
-            filepath = self.model2.data(filepath_index)  # filepath
+            filepath = self.model2.data(filepath_index)
             # update the ID3 information
             user_input_data = topLeft.data()
             edited_column_name = self.database_columns[topLeft.column()]
@@ -473,7 +489,7 @@ class MusicTable(QTableView):
     def reorganize_files(self, filepaths, progress_callback=None):
         """
         Reorganizes files into Artist/Album/Song,
-        based on the directories->reorganize_destination config
+        based on self.config['directories'][reorganize_destination']
         """
         # Get target directory
         target_dir = str(self.config["directories"]["reorganize_destination"])
@@ -499,17 +515,15 @@ class MusicTable(QTableView):
                         "UPDATE song SET filepath = ? WHERE filepath = ?",
                         (new_path, filepath),
                     )
-                logging.info(
-                    f"reorganize_selected_files() | Moved: {filepath} -> {new_path}"
-                )
+                logging.info(f"reorganize_files() | Moved: {filepath} -> {new_path}")
             except Exception as e:
                 logging.warning(
-                    f"reorganize_selected_files() |  Error moving file: {filepath} | {e}"
+                    f"reorganize_files() | Error moving file: {filepath} | {e}"
                 )
         # Draw the rest of the owl
-        QMessageBox.information(
-            self, "Reorganization complete", "Files successfully reorganized"
-        )
+        # QMessageBox.information(
+        #     self, "Reorganization complete", "Files successfully reorganized"
+        # )
 
     def toggle_play_pause(self):
         """Toggles the currently playing song by emitting a Signal"""
@@ -537,23 +551,23 @@ class MusicTable(QTableView):
     def load_music_table(self, *playlist_id):
         """
         Loads data into self (QTableView)
-        Default to loading all songs.
-        If playlist_id is given, load songs in a particular playlist
-        playlist_id is emitted from PlaylistsPane as a tuple (1,)
+        Loads all songs in library, by default
+        Loads songs from a  playlist, if `playlist_id` is given
+
+        hint: You can get a playlist_id from a signal emitted from PlaylistsPane as a tuple (1,)
         """
         self.disconnect_data_changed()
-        self.vertical_scroll_position = (
-            self.verticalScrollBar().value()
-        )  # Get my scroll position before clearing
+        self.disconnect_layout_changed()
+        self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
         self.model2.clear()
         self.model2.setHorizontalHeaderLabels(self.table_headers)
-        if playlist_id:
-            selected_playlist_id = playlist_id[0]
-            logging.info(
-                f"load_music_table() | selected_playlist_id: {selected_playlist_id}"
-            )
+        if playlist_id:  # Load a playlist
             # Fetch playlist data
+            selected_playlist_id = playlist_id[0]
             try:
+                logging.info(
+                    f"load_music_table() | selected_playlist_id: {selected_playlist_id}"
+                )
                 with DBA.DBAccess() as db:
                     data = db.query(
                         "SELECT s.id, s.title, s.artist, s.album, s.track_number, s.genre, s.codec, s.album_date, s.filepath FROM song s JOIN song_playlist sp ON s.id = sp.song_id WHERE sp.playlist_id = ?",
@@ -562,8 +576,8 @@ class MusicTable(QTableView):
             except Exception as e:
                 logging.warning(f"load_music_table() | Unhandled exception: {e}")
                 return
-        else:
-            # Fetch library data
+        else:  # Load the library
+            # Fetch playlist data
             try:
                 with DBA.DBAccess() as db:
                     data = db.query(
@@ -592,19 +606,16 @@ class MusicTable(QTableView):
             for item in items:
                 item.setData(id, Qt.ItemDataRole.UserRole)
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
-        try:
-            self.restore_scroll_position()
-        except Exception:
-            pass
         self.connect_data_changed()
+        self.connect_layout_changed()
 
     def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
         logging.info("restore_scroll_position")
-        QTimer.singleShot(
-            100,
-            lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),
-        )
+        # QTimer.singleShot(
+        #     100,
+        #     lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),
+        # )
 
     def get_audio_files_recursively(self, directories, progress_callback=None):
         """Scans a directories for files"""
