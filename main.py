@@ -32,7 +32,7 @@ from PyQt5.QtCore import (
     QRunnable,
 )
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
-from PyQt5.QtGui import QCloseEvent, QPixmap, QResizeEvent
+from PyQt5.QtGui import QClipboard, QCloseEvent, QPixmap, QResizeEvent
 from utils import (
     scan_for_music,
     delete_and_create_library_database,
@@ -134,7 +134,7 @@ class Worker(QRunnable):
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     playlistCreatedSignal = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, clipboard):
         super(ApplicationWindow, self).__init__()
         global stopped
         stopped = False
@@ -157,6 +157,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
         self.current_volume: int = 50
+        self.clipboard = clipboard
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
         self.config.read("config.ini")
@@ -601,9 +602,10 @@ if __name__ == "__main__":
     sys.path.append(project_root)
     # Start the app
     app = QApplication(sys.argv)
+    clipboard = app.clipboard()
     # Dark theme >:3
     qdarktheme.setup_theme()
     # Show the UI
-    ui = ApplicationWindow()
+    ui = ApplicationWindow(clipboard)
     ui.show()
     sys.exit(app.exec_())

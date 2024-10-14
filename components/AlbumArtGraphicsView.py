@@ -114,14 +114,14 @@ class AlbumArtGraphicsView(QGraphicsView):
         if not self.scene().items():
             return  # dont care if no pic
 
-        clipboard = self.qapp.clipboard()
+        clipboard = self.qapp.clipboard
         pixmap_item = self.scene().items()[0]
         if hasattr(pixmap_item, "pixmap"):
             clipboard.setPixmap(pixmap_item.pixmap())
 
     def paste_album_art_from_clipboard(self):
         """Handles pasting album art into a song via system clipboard"""
-        clipboard = self.qapp.clipboard()
+        clipboard = self.qapp.clipboard
         mime_data = clipboard.mimeData()
         # Check if clipboard data is raw data or filepath
         pixmap = None
@@ -134,10 +134,10 @@ class AlbumArtGraphicsView(QGraphicsView):
             pixmap = clipboard.pixmap()
         # Put image on screen and emit signal for ID3 tags to be updated
         if pixmap is not None:  # Add pixmap raw data image
-            try:
-                self.scene().clear()
-            except Exception:
-                pass
+            # try:
+            #     self.scene().clear()
+            # except Exception:
+            #     pass
             self.scene().addPixmap(pixmap)
             # Create temp file for pic
             temp_file, file_path = tempfile.mkstemp(suffix=".jpg")
