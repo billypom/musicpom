@@ -368,11 +368,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # delete APIC data
         try:
             audio = ID3(file)
-            print("AAAAAAAAAAAAAAAAAAAAA")
             print(audio)
-            print("AAAAAAAAAAAAAAAAAAAAA")
             if "APIC:" in audio:
                 del audio["APIC:"]
+                logging.info("Deleting album art")
                 audio.save()
             else:
                 logging.warning(
