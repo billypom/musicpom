@@ -49,6 +49,7 @@ def batch_delete_filepaths_from_database(
                 db.execute(query, chunk)
                 if progress_callback:
                     progress_callback.emit(f"Deleting songs: {i}")
+
     except Exception as e:
         logging.error(
             f"batch_delete_filepaths_from_database.py | An error occurred during batch processing: {e}"

@@ -545,8 +545,6 @@ class MusicTable(QTableView):
             threadpool.start(worker)
         else:
             logging.warning("Application window could not be found")
-        # add_files_to_library(files, progress_callback)
-        return
 
     def load_music_table(self, *playlist_id):
         """

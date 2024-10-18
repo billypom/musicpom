@@ -26,9 +26,8 @@ def create_waveform_from_file(file):
     start_index = 0
     while start_index < len(audio_data):
         end_index = start_index + process_chunk_size
-        signal = audio_data[start_index:end_index].astype(
-            float
-        )  # Get chunk and convert to float
+        # Get chunk and convert to float
+        signal = audio_data[start_index:end_index].astype(float)
 
         # Take mean of absolute values per 0.5 seconds
         sub_waveform = np.nanmean(
