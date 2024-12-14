@@ -287,9 +287,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.permanent_status_label.setText(message)
 
     def play_audio_file(self) -> None:
-        """Start playback of tableView.current_song_filepath track & moves playback slider"""
+        """Start playback of `tableView.current_song_filepath` & moves playback slider"""
         # get metadata
         self.current_song_metadata = self.tableView.get_current_song_metadata()
+        print(f'current_song_metadata: {self.current_song_metadata}')
         # read the file
         url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath())
         # load the audio content
@@ -300,7 +301,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.move_slider()  # mover
         # self.player.setPlaybackRate(1.5)
 
-        # assign metadata
+        # assign "now playing" labels & album artwork
         if self.current_song_metadata is not None:
             artist = (
                 self.current_song_metadata["TPE1"][0]
@@ -313,7 +314,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                 else None
             )
             title = self.current_song_metadata["TIT2"][0]
-            # edit labels
+
             self.artistLabel.setText(artist)
             self.albumLabel.setText(album)
             self.titleLabel.setText(title)

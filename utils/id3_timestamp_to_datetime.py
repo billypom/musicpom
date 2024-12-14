@@ -7,5 +7,8 @@ def id3_timestamp_to_datetime(timestamp: ID3TimeStamp):
     if len(timestamp.text) == 4:  # If only year is provided
         datetime_obj = datetime.datetime.strptime(timestamp.text, '%Y')
     else:
-        datetime_obj = datetime.datetime.strptime(timestamp.text, '%Y-%m-%d')
+        try:
+            datetime_obj = datetime.datetime.strptime(timestamp.text, '%Y-%m-%d')
+        except ValueError:
+            datetime_obj = datetime.datetime.strptime(timestamp.text, '%Y%m%d')
     return datetime_obj.strftime('%Y-%m-%d')

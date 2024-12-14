@@ -136,6 +136,6 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
         audio_file.save(filepath)
         return True
     except Exception as e:
-        dialog = ErrorDialog(f"An unhandled exception occurred:\n{e}")
+        dialog = ErrorDialog(f"set_id3_tag.py | An unhandled exception occurred:\n{e}")
         dialog.exec_()
         return False
