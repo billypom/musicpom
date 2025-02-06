@@ -272,7 +272,7 @@ class MusicTable(QTableView):
         lyrics_window.exec_()
 
     def delete_songs(self):
-        """Deletes the currently selected songs from the db and music table (not the filesystem)"""
+        """Asks to delete the currently selected songs from the db and music table (not the filesystem)"""
         reply = QMessageBox.question(
             self,
             "Confirmation",
@@ -438,6 +438,9 @@ class MusicTable(QTableView):
         """Setup shortcuts here"""
         shortcut = QShortcut(QKeySequence("Ctrl+Shift+R"), self)
         shortcut.activated.connect(self.confirm_reorganize_files)
+        # Delete key?
+        shortcut = QShortcut(QKeySequence("Delete"), self)
+        shortcut.activated.connect(self.delete_songs)
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
