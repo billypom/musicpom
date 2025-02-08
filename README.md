@@ -32,4 +32,8 @@ python3 main.py
 - [x] playlists
 - [ ] delete songs from library (del key || right-click delete)
 - [ ] .wav, .ogg, .flac convertor
-- [ ] dbaccess is instantiated for every track being reorganized
+- [ ] FIXME: dbaccess is instantiated for every track being reorganized
+- [ ] automatic "radio" based on artist or genre
+- [ ] search bar, full text search on song, artist, album
+- [ ] "installer" - put files in /opt? script to install and uninstall
+- [ ] .deb package?
