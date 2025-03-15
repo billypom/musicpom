@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from components.ErrorDialog import ErrorDialog
 from utils import set_id3_tag
+from logging import debug
 
 
 class LyricsWindow(QDialog):
@@ -37,7 +38,7 @@ class LyricsWindow(QDialog):
             value=self.input_field.toPlainText(),
         )
         if success:
-            print("lyrical success! yay")
+            debug("lyrical success! yay")
         else:
             error_dialog = ErrorDialog("Could not save lyrics :( sad")
             error_dialog.exec()

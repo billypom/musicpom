@@ -10,6 +10,7 @@ from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 import traceback
 import DBA
+from logging import debug
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
     QFileDialog,
@@ -290,7 +291,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Start playback of `tableView.current_song_filepath` & moves playback slider"""
         # get metadata
         self.current_song_metadata = self.tableView.get_current_song_metadata()
-        print(f'current_song_metadata: {self.current_song_metadata}')
         # read the file
         url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath())
         # load the audio content
@@ -369,7 +369,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # delete APIC data
         try:
             audio = ID3(file)
-            print(audio)
+            debug(audio)
             if "APIC:" in audio:
                 del audio["APIC:"]
                 logging.info("Deleting album art")
@@ -426,12 +426,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         try:
             self.current_volume = self.volumeSlider.value()
             self.player.setVolume(self.current_volume)
+            self.volumeLabel = str(self.current_volume)
         except Exception as e:
             logging.error(f"main.py volume_changed() | Changing volume error: {e}")
 
     def speed_changed(self, rate: int) -> None:
         """Handles playback speed changes"""
         self.player.setPlaybackRate(rate / 50)
+        self.speedLabel.setText(str(round(rate/50, 2)))
 
     def on_play_clicked(self) -> None:
         """Updates the Play & Pause buttons when clicked"""

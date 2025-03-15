@@ -1,5 +1,5 @@
 from mutagen.id3 import ID3
-import logging
+from logging import debug, error
 
 
 def get_album_art(file: str) -> bytes:
@@ -18,7 +18,7 @@ def get_album_art(file: str) -> bytes:
         if audio.getall("APIC"):
             return audio.getall("APIC")[0].data
     except Exception as e:
-        print(f"Error retrieving album art: {e}")
+        error(f"Error retrieving album art: {e}")
     with open(default_image_path, "rb") as f:
-        logging.info("loading placeholder album art")
+        debug("loading placeholder album art")
         return f.read()

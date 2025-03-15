@@ -1,5 +1,6 @@
 import os
 import tempfile
+from logging import debug
 from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
     QGraphicsScene,
@@ -56,7 +57,7 @@ class AlbumArtGraphicsView(QGraphicsView):
         if urls:
             first_url = urls[0].toLocalFile()
             if first_url.lower().endswith((".png", ".jpg", ".jpeg")):
-                print(f"dropped {first_url}")
+                debug(f"dropped {first_url}")
                 self.albumArtDropped.emit(
                     first_url
                 )  # emit signal that album art was dropped

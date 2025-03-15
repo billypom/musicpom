@@ -1,4 +1,5 @@
 import DBA
+from logging import debug
 
 
 def initialize_db():
@@ -6,6 +7,6 @@ def initialize_db():
     with open("utils/init.sql", "r") as file:
         lines = file.read()
         for statement in lines.split(";"):
-            print(f"executing [{statement}]")
+            debug(f"executing [{statement}]")
             with DBA.DBAccess() as db:
                 db.execute(statement, ())

@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QListWidget, QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import pyqtSignal
 import DBA
+from logging import debug
 
 
 class PlaylistWidgetItem(QTreeWidgetItem):
@@ -36,7 +37,7 @@ class PlaylistsPane(QTreeWidget):
 
     def playlist_clicked(self, item):
         if isinstance(item, PlaylistWidgetItem):
-            print(f"ID: {item.id}, name: {item.text(0)}")
+            debug(f"ID: {item.id}, name: {item.text(0)}")
             self.playlist_db_id_choice = item.id
             self.playlistChoiceSignal.emit(int(item.id))
         elif item.text(0).lower() == "all songs":

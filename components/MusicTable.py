@@ -43,7 +43,7 @@ from utils.get_id3_tags import get_id3_tags
 from utils.get_album_art import get_album_art
 from utils import set_id3_tag
 from subprocess import Popen
-import logging
+from logging import debug, error
 import configparser
 import os
 import shutil
@@ -146,7 +146,7 @@ class MusicTable(QTableView):
         # in order to sort the data more effectively & have more control over UI refreshes.
 
         # Disconnect these signals to prevent unnecessary loads
-        logging.info("sort_table_by_multiple_columns()")
+        debug("sort_table_by_multiple_columns()")
         self.disconnect_data_changed()
         self.disconnect_layout_changed()
         sort_orders = []
@@ -168,7 +168,7 @@ class MusicTable(QTableView):
         # `len(config_sort_orders)` number of SELECTs
         for i in reversed(range(len(sort_orders))):
             if sort_orders[i] is not None:
-                logging.info(f"sorting column {i} by {sort_orders[i]}")
+                debug(f"sorting column {i} by {sort_orders[i]}")
                 self.sortByColumn(i, sort_orders[i])
 
         self.connect_data_changed()
@@ -298,7 +298,7 @@ class MusicTable(QTableView):
             try:
                 self.model2.removeRow(index)
             except Exception as e:
-                logging.info(f" delete_songs() failed | {e}")
+                debug(f" delete_songs() failed | {e}")
         self.connect_data_changed()
 
     def open_directory(self):
@@ -343,7 +343,7 @@ class MusicTable(QTableView):
             else:
                 raise RuntimeError("No USLT tags found in song metadata")
         except Exception as e:
-            logging.error(f"show_lyrics_menu() | could not retrieve lyrics | {e}")
+            error(f"show_lyrics_menu() | could not retrieve lyrics | {e}")
             lyrics = ""
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
@@ -370,7 +370,7 @@ class MusicTable(QTableView):
         if e is None:
             return
         data = e.mimeData()
-        logging.info(f"dropEvent data: {data}")
+        debug(f"dropEvent data: {data}")
         if data and data.hasUrls():
             directories = []
             files = []
@@ -384,8 +384,8 @@ class MusicTable(QTableView):
                         # append 1 file
                         files.append(path)
             e.accept()
-            print(f"directories: {directories}")
-            print(f"files: {files}")
+            debug(f"directories: {directories}")
+            debug(f"files: {files}")
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
                 worker.signals.signal_progress.connect(self.handle_progress)
@@ -444,7 +444,7 @@ class MusicTable(QTableView):
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
-        logging.info("on_cell_data_changed")
+        debug("on_cell_data_changed")
         if isinstance(self.model2, QStandardItemModel):
             # get the ID of the row that was edited
             id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
@@ -458,7 +458,7 @@ class MusicTable(QTableView):
             # update the ID3 information
             user_input_data = topLeft.data()
             edited_column_name = self.database_columns[topLeft.column()]
-            logging.info(f"edited column name: {edited_column_name}")
+            debug(f"edited column name: {edited_column_name}")
             response = set_id3_tag(filepath, edited_column_name, user_input_data)
             if response:
                 # Update the library with new metadata
@@ -518,9 +518,9 @@ class MusicTable(QTableView):
                         "UPDATE song SET filepath = ? WHERE filepath = ?",
                         (new_path, filepath),
                     )
-                logging.info(f"reorganize_files() | Moved: {filepath} -> {new_path}")
+                debug(f"reorganize_files() | Moved: {filepath} -> {new_path}")
             except Exception as e:
-                logging.warning(
+                error(
                     f"reorganize_files() | Error moving file: {filepath} | {e}"
                 )
         # Draw the rest of the owl
@@ -539,7 +539,7 @@ class MusicTable(QTableView):
         - Drag & Drop song(s) on tableView
         - File > Open > List of song(s)
         """
-        logging.info(f"add files, files: {files}")
+        debug(f"add files, files: {files}")
         worker = Worker(add_files_to_library, files)
         worker.signals.signal_progress.connect(self.qapp.handle_progress)
         worker.signals.signal_finished.connect(self.load_music_table)
@@ -547,7 +547,7 @@ class MusicTable(QTableView):
             threadpool = self.qapp.threadpool
             threadpool.start(worker)
         else:
-            logging.warning("Application window could not be found")
+            error("Application window could not be found")
 
     def load_music_table(self, *playlist_id):
         """
@@ -566,7 +566,7 @@ class MusicTable(QTableView):
             # Fetch playlist data
             selected_playlist_id = playlist_id[0]
             try:
-                logging.info(
+                debug(
                     f"load_music_table() | selected_playlist_id: {selected_playlist_id}"
                 )
                 with DBA.DBAccess() as db:
@@ -575,7 +575,7 @@ class MusicTable(QTableView):
                         (selected_playlist_id,),
                     )
             except Exception as e:
-                logging.warning(f"load_music_table() | Unhandled exception: {e}")
+                error(f"load_music_table() | Unhandled exception: {e}")
                 return
         else:  # Load the library
             # Fetch playlist data
@@ -586,7 +586,7 @@ class MusicTable(QTableView):
                         (),
                     )
             except Exception as e:
-                logging.warning(f"load_music_table() | Unhandled exception: {e}")
+                error(f"load_music_table() | Unhandled exception: {e}")
                 return
         # Populate the model
         for row_data in data:
@@ -612,7 +612,7 @@ class MusicTable(QTableView):
 
     def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
-        logging.info("restore_scroll_position")
+        debug("restore_scroll_position")
         # QTimer.singleShot(
         #     100,
         #     lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),

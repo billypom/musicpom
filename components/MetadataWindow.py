@@ -15,6 +15,7 @@ from utils.get_id3_tags import get_id3_tags
 from utils.set_id3_tag import set_id3_tag
 from utils.update_song_in_database import update_song_in_database
 from utils.id3_tag_mapping import id3_tag_mapping
+from logging import debug
 # import re
 
 
@@ -74,8 +75,8 @@ class MetadataWindow(QDialog):
                     tag_sets[tag].append(song_data[tag].text[0])
                 except KeyError:
                     pass
-        print("tag sets:")
-        print(tag_sets)
+        debug("tag sets:")
+        debug(tag_sets)
 
         # UI Creation
         current_layout = QHBoxLayout()
