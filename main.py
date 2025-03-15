@@ -10,7 +10,7 @@ from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 import traceback
 import DBA
-from logging import debug
+from logging import debug, error, warning, basicConfig, INFO, DEBUG
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
     QFileDialog,
@@ -121,7 +121,7 @@ class Worker(QRunnable):
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.signal_finished.emit((exctype, value, traceback.format_exc()))
-            logging.error(
+            error(
                 f"Worker failed: {exctype} | {value} | {traceback.format_exc()}"
             )
         else:
@@ -326,7 +326,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Sets the ID3 tag APIC (album art) for all selected song filepaths"""
         selected_songs = self.tableView.get_selected_songs_filepaths()
         for song in selected_songs:
-            logging.info(
+            debug(
                 f"main.py set_album_art_for_selected_songs() | updating album art for {song}"
             )
             self.update_album_art_for_song(song, album_art_path)
@@ -372,16 +372,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             debug(audio)
             if "APIC:" in audio:
                 del audio["APIC:"]
-                logging.info("Deleting album art")
+                debug("Deleting album art")
                 audio.save()
             else:
-                logging.warning(
+                warning(
                     "delete_album_art_for_current_song() | no tag called APIC"
                 )
         except Exception:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
-            logging.error(
+            error(
                 f"delete_album_art_for_current_song() | Error processing this file:\t {file}\n{exctype}\n{value}\n{traceback.format_exc()}"
             )
 
@@ -426,9 +426,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         try:
             self.current_volume = self.volumeSlider.value()
             self.player.setVolume(self.current_volume)
-            self.volumeLabel = str(self.current_volume)
+            self.volumeLabel.setText(str(self.current_volume))
         except Exception as e:
-            logging.error(f"main.py volume_changed() | Changing volume error: {e}")
+            error(f"main.py volume_changed() | Changing volume error: {e}")
 
     def speed_changed(self, rate: int) -> None:
         """Handles playback speed changes"""
@@ -450,10 +450,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def on_previous_clicked(self) -> None:
         """"""
-        logging.info("main.py on_previous_clicked()")
+        debug("main.py on_previous_clicked()")
 
     def on_next_clicked(self) -> None:
-        logging.info("main.py on_next_clicked()")
+        debug("main.py on_next_clicked()")
 
     def add_latest_playlist_to_tree(self) -> None:
         """Refreshes the playlist tree"""
@@ -587,15 +587,15 @@ if __name__ == "__main__":
             with open("utils/init.sql", "r") as file:
                 lines = file.read()
                 for statement in lines.split(";"):
-                    logging.info(f"executing [{statement}]")
+                    debug(f"executing [{statement}]")
                     db.execute(statement, ())
     # logging setup
     file_handler = logging.FileHandler(filename="log", encoding="utf-8")
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
     handlers = [file_handler, stdout_handler]
-    # logging.basicConfig(filename="log", encoding="utf-8", level=logging.DEBUG)
-    logging.basicConfig(
-        level=logging.INFO,
+    # basicConfig(filename="log", encoding="utf-8", level=logging.DEBUG)
+    basicConfig(
+        level=DEBUG,
         format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
         handlers=handlers,
     )
