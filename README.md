@@ -34,15 +34,16 @@ python3 main.py
 
 ## Todo:
 
-- [x] right-click menu
-- [x] editable lyrics window
-- [x] batch metadata changer (red highlight fields that have differing info)
-- [x] playlists
-- [ ] delete songs from library (del key || right-click delete)
-- [ ] .wav, .ogg, .flac convertor
-- [ ] FIXME: dbaccess is instantiated for every track being reorganized
-- [ ] automatic "radio" based on artist or genre
-- [ ] search bar, full text search on song, artist, album
-- [ ] when table is focused, start typing to match against the primary sort column
-- [ ] "installer" - put files in /opt? script to install and uninstall
-- [ ] .deb package?
+- ~~right-click menu~~
+- ~~editable lyrics window~~
+- ~~batch metadata changer (red highlight fields that have differing info)~~
+- ~~playlists~~
+- playlist autoexporting
+- delete songs from library (del key || right-click delete)
+- .wav, .ogg, .flac convertor
+- FIXME: dbaccess is instantiated for every track being reorganized
+- automatic "radio" based on artist or genre
+- search bar, full text search on song, artist, album
+- when table is focused, start typing to match against the primary sort column
+- "installer" - put files in /opt? script to install and uninstall
+- .deb package?

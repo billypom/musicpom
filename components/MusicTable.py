@@ -494,23 +494,27 @@ class MusicTable(QTableView):
         Reorganizes files into Artist/Album/Song,
         based on self.config['directories'][reorganize_destination']
         """
+        debug('reorganizing files')
         # Get target directory
         target_dir = str(self.config["directories"]["reorganize_destination"])
         for filepath in filepaths:
-            if str(filepath).startswith((target_dir)):
+            # Read file metadata
+            artist, album = get_reorganize_vars(filepath)
+            # Determine the new path that needs to be made
+            new_path = os.path.join(
+                target_dir, artist, album, os.path.basename(filepath)
+            )
+            # Need to determine if filepath is equal
+            if new_path == filepath:
                 continue
             try:
                 if progress_callback:
                     progress_callback.emit(f"Organizing: {filepath}")
-                # Read file metadata
-                artist, album = get_reorganize_vars(filepath)
-                # Determine the new path that needs to be made
-                new_path = os.path.join(
-                    target_dir, artist, album, os.path.basename(filepath)
-                )
                 # Create the directories if they dont exist
+                debug('make dirs')
                 os.makedirs(os.path.dirname(new_path), exist_ok=True)
                 # Move the file to the new directory
+                debug(f'{filepath} > {new_path}')
                 shutil.move(filepath, new_path)
                 # Update the db
                 with DBA.DBAccess() as db:
