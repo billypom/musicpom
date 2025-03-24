@@ -32,6 +32,13 @@ ___
 ```bash
 pyuic5 ui.ui -o ui.py
 ```
+## Config
+___
+config file and databases (libraries) are stored in user home directory `.config` folder
+```
+cd ~/.config/musicpom
+config.ini db/
+```
 
 ## Todo:
 
