@@ -121,9 +121,7 @@ class Worker(QRunnable):
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.signal_finished.emit((exctype, value, traceback.format_exc()))
-            error(
-                f"Worker failed: {exctype} | {value} | {traceback.format_exc()}"
-            )
+            error(f"Worker failed: {exctype} | {value} | {traceback.format_exc()}")
         else:
             if result:
                 self.signals.signal_finished.emit()
@@ -375,9 +373,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                 debug("Deleting album art")
                 audio.save()
             else:
-                warning(
-                    "delete_album_art_for_current_song() | no tag called APIC"
-                )
+                warning("delete_album_art_for_current_song() | no tag called APIC")
         except Exception:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
@@ -433,7 +429,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def speed_changed(self, rate: int) -> None:
         """Handles playback speed changes"""
         self.player.setPlaybackRate(rate / 50)
-        self.speedLabel.setText(str(round(rate/50, 2)))
+        self.speedLabel.setText(str(round(rate / 50, 2)))
 
     def on_play_clicked(self) -> None:
         """Updates the Play & Pause buttons when clicked"""
@@ -578,7 +574,9 @@ if __name__ == "__main__":
     config = ConfigParser()
     config.read("config.ini")
     db_filepath: str = config.get("db", "database")
-    db_path: str = "/".join(db_filepath.split("/").pop())
+    db_path = db_filepath.split("/")
+    db_path.pop()
+    db_path = "/".join(db_path)
     # If the db file doesn't exist
     if not os.path.exists(db_filepath):
         # If the db directory doesn't exist

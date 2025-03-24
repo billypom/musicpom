@@ -2,6 +2,6 @@ mutagen
 matplotlib
 pyqt5
 pydub
-pyqtdarktheme
+pyqtdarktheme-fork
 pyqtgraph
 scipy
