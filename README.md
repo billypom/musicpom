@@ -55,5 +55,6 @@ config.ini db/
 - automatic "radio" based on artist or genre
 - search bar, full text search on song, artist, album
 - when table is focused, start typing to match against the primary sort column
+- improve audio visualizer - see Renoise
 - "installer" - put files in /opt? script to install and uninstall... eh
 - .deb package?

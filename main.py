@@ -49,10 +49,6 @@ from components import (
     ExportPlaylistWindow,
 )
 
-# Create ui.py file from Qt Designer
-# pyuic5 ui.ui -o ui.py
-
-
 # good help with signals slots in threads
 # https://stackoverflow.com/questions/52993677/how-do-i-setup-signals-and-slots-in-pyqt-with-qthreads-in-both-directions
 
@@ -140,6 +136,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         super(ApplicationWindow, self).__init__()
         global stopped
         stopped = False
+        # Config
+        self.config: ConfigParser = ConfigParser()
+        self.cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
         # Multithreading stuff...
         self.threadpool = QThreadPool()
         # UI
@@ -154,11 +156,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.current_song_metadata: ID3 | dict | None = None
         self.current_song_album_art: bytes | None = None
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
-        self.config: ConfigParser = ConfigParser()
-        self.cfg_file = (
-            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
-            / "config.ini"
-        )
         self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
