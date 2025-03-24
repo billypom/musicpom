@@ -1,5 +1,6 @@
 mutagen
 matplotlib
+appdirs
 pyqt5
 pydub
 pyqtdarktheme-fork

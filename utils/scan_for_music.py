@@ -1,11 +1,15 @@
 import os
-from configparser import ConfigParser
-
 from PyQt5.QtCore import pyqtSignal
 from utils.add_files_to_library import add_files_to_library
+from configparser import ConfigParser
+from pathlib import Path
+from appdirs import user_config_dir
 
 config = ConfigParser()
-config.read("config.ini")
+cfg_file = (
+    Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+)
+config.read(cfg_file)
 
 
 def scan_for_music():

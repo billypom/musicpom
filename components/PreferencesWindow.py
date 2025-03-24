@@ -10,16 +10,26 @@ from PyQt5.QtWidgets import (
     QWidget,
     QDial,
 )
+from logging import info
 from PyQt5.QtGui import QFont
+from configparser import ConfigParser
+from pathlib import Path
+from appdirs import user_config_dir
 
 
 class PreferencesWindow(QDialog):
-    def __init__(self, config):
+    def __init__(self, reloadConfigSignal):
         super(PreferencesWindow, self).__init__()
         # Config
+        self.reloadConfigSignal = reloadConfigSignal
         self.setWindowTitle("Preferences")
         self.setMinimumSize(800, 800)
-        self.config = config
+        self.cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config = ConfigParser()
+        self.config.read(self.cfg_file)
         self.current_category = ""
 
         # Widgets
@@ -83,7 +93,7 @@ class PreferencesWindow(QDialog):
                 child.widget().deleteLater()
 
     def save_preferences(self):
-        print('im saving')
+        info("im saving")
         # Upcate the config fields
         for key in self.input_fields:
             for category in self.config.sections():
@@ -93,6 +103,7 @@ class PreferencesWindow(QDialog):
                     ].text()
 
         # Write the config file
-        with open("config.ini", "w") as configfile:
+        with open(self.cfg_file, "w") as configfile:
             self.config.write(configfile)
-        # self.close()
+
+        self.reloadConfigSignal.emit()

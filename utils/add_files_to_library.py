@@ -1,11 +1,16 @@
 import DBA
-from configparser import ConfigParser
-from utils import get_id3_tags, id3_timestamp_to_datetime
 import logging
+from utils import get_id3_tags, id3_timestamp_to_datetime
 from PyQt5.QtCore import pyqtSignal
+from configparser import ConfigParser
+from pathlib import Path
+from appdirs import user_config_dir
 
 config = ConfigParser()
-config.read("config.ini")
+cfg_file = (
+    Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+)
+config.read(cfg_file)
 
 
 def add_files_to_library(files, progress_callback=None):

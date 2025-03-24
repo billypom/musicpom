@@ -1,15 +1,17 @@
 import os
 import sys
 import logging
-from subprocess import run
 import qdarktheme
 import typing
+import traceback
+import DBA
+from subprocess import run
 from pyqtgraph import mkBrush
 from mutagen.id3 import ID3
 from mutagen.id3._frames import APIC
 from configparser import ConfigParser
-import traceback
-import DBA
+from pathlib import Path
+from appdirs import user_config_dir
 from logging import debug, error, warning, basicConfig, INFO, DEBUG
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
@@ -132,6 +134,7 @@ class Worker(QRunnable):
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     playlistCreatedSignal = pyqtSignal()
+    reloadConfigSignal = pyqtSignal()
 
     def __init__(self, clipboard):
         super(ApplicationWindow, self).__init__()
@@ -141,7 +144,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.threadpool = QThreadPool()
         # UI
         self.setupUi(self)
-        self.setWindowTitle("MusicPom")
+        self.setWindowTitle("musicpom")
         self.status_bar = QStatusBar()
         self.permanent_status_label = QLabel("Status...")
         self.status_bar.addPermanentWidget(self.permanent_status_label)
@@ -152,6 +155,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.current_song_album_art: bytes | None = None
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
         self.config: ConfigParser = ConfigParser()
+        self.cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
@@ -159,7 +167,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.clipboard = clipboard
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
-        self.config.read("config.ini")
         # Initialization
         self.timer = QTimer(self)  # Audio timing things
         self.player.setVolume(self.current_volume)
@@ -242,9 +249,13 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.delete_album_art_for_current_song
         )
 
-    def reload_config(self) -> None:
+    def load_config(self) -> None:
         """does what it says"""
-        self.config.read("config.ini")
+        cfg_loc = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config.read(cfg_loc)
 
     def get_thread_pool(self) -> QThreadPool:
         """Returns the threadpool instance"""
@@ -265,7 +276,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config["table"]["column_widths"] = column_widths_as_string
 
         # Save the config
-        with open("config.ini", "w") as configfile:
+        with open(self.cfg_file, "w") as configfile:
             self.config.write(configfile)
         if a0 is not None:
             super().closeEvent(a0)
@@ -506,10 +517,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def open_preferences(self) -> None:
         """Opens the preferences window"""
-        preferences_window = PreferencesWindow(self.config)
+        preferences_window = PreferencesWindow(self.reloadConfigSignal)
+        preferences_window.reloadConfigSignal.connect(self.load_config)
         preferences_window.exec_()  # Display the preferences window modally
-        self.reload_config()
-        self.tableView.load_music_table()
 
     # Quick Actions
 
@@ -568,15 +578,33 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
 if __name__ == "__main__":
     # Initialization
-    if not os.path.exists("config.ini"):
+
+    cfg_file = (
+        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+    )
+    cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
+
+    # If the config file doesn't exist, create it from the sample config
+    if not os.path.exists(cfg_file):
         # Create config file from sample
-        run(["cp", "sample_config.ini", "config.ini"])
+        run(["cp", "sample_config.ini", cfg_file])
     config = ConfigParser()
-    config.read("config.ini")
+    config.read(cfg_file)
+    db_filepath: str = config.get("db", "database")
+
+    # If the database location isnt set at the config location, move it
+    if not db_filepath.startswith(cfg_path):
+        config["db"]["database"] = f"{cfg_path}/{db_filepath}"
+        # Save the config
+        with open(cfg_file, "w") as configfile:
+            config.write(configfile)
+        config.read(cfg_file)
+
     db_filepath: str = config.get("db", "database")
     db_path = db_filepath.split("/")
     db_path.pop()
     db_path = "/".join(db_path)
+
     # If the db file doesn't exist
     if not os.path.exists(db_filepath):
         # If the db directory doesn't exist

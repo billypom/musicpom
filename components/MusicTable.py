@@ -44,10 +44,12 @@ from utils.get_album_art import get_album_art
 from utils import set_id3_tag
 from subprocess import Popen
 from logging import debug, error
-import configparser
 import os
 import shutil
 import typing
+from pathlib import Path
+from appdirs import user_config_dir
+from configparser import ConfigParser
 
 
 class MusicTable(QTableView):
@@ -65,8 +67,14 @@ class MusicTable(QTableView):
         self.setModel(self.model2)
 
         # Config
-        self.config = configparser.ConfigParser()
-        self.config.read("config.ini")
+        cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config = ConfigParser()
+        self.config.read(cfg_file)
+
+        # Threads
         self.threadpool = QThreadPool
         # gui names of headers
         self.table_headers = [
@@ -494,7 +502,7 @@ class MusicTable(QTableView):
         Reorganizes files into Artist/Album/Song,
         based on self.config['directories'][reorganize_destination']
         """
-        debug('reorganizing files')
+        debug("reorganizing files")
         # Get target directory
         target_dir = str(self.config["directories"]["reorganize_destination"])
         for filepath in filepaths:
@@ -511,10 +519,10 @@ class MusicTable(QTableView):
                 if progress_callback:
                     progress_callback.emit(f"Organizing: {filepath}")
                 # Create the directories if they dont exist
-                debug('make dirs')
+                debug("make dirs")
                 os.makedirs(os.path.dirname(new_path), exist_ok=True)
                 # Move the file to the new directory
-                debug(f'{filepath} > {new_path}')
+                debug(f"{filepath} > {new_path}")
                 shutil.move(filepath, new_path)
                 # Update the db
                 with DBA.DBAccess() as db:
@@ -524,9 +532,7 @@ class MusicTable(QTableView):
                     )
                 debug(f"reorganize_files() | Moved: {filepath} -> {new_path}")
             except Exception as e:
-                error(
-                    f"reorganize_files() | Error moving file: {filepath} | {e}"
-                )
+                error(f"reorganize_files() | Error moving file: {filepath} | {e}")
         # Draw the rest of the owl
         # QMessageBox.information(
         #     self, "Reorganization complete", "Files successfully reorganized"

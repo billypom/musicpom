@@ -1,13 +1,19 @@
 import sqlite3
 import logging
 from configparser import ConfigParser
+from pathlib import Path
+from appdirs import user_config_dir
 
 
 class DBAccess:
     def __init__(self, db_name=None):
         logging.info("Instantiating DBAccess")
         config = ConfigParser()
-        config.read("config.ini")
+        cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        config.read(cfg_file)
         if db_name is None:
             db_name = config.get("db", "database")
         self._conn: sqlite3.Connection = sqlite3.connect(db_name)

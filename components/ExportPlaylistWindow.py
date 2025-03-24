@@ -1,4 +1,6 @@
 import logging
+import DBA
+import os
 from PyQt5.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -11,11 +13,11 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
 )
 from PyQt5.QtGui import QFont
-from configparser import ConfigParser
 from utils import get_reorganize_vars
 from components import ErrorDialog
-import DBA
-import os
+from configparser import ConfigParser
+from pathlib import Path
+from appdirs import user_config_dir
 
 
 class ExportPlaylistWindow(QDialog):
@@ -23,10 +25,16 @@ class ExportPlaylistWindow(QDialog):
         super(ExportPlaylistWindow, self).__init__()
         self.setWindowTitle("Export playlist")
         self.setMinimumSize(600, 400)
-        config = ConfigParser()
-        config.read("config.ini")
-        self.relative_path: str = config.get("directories", "playlist_relative_path")
-        self.export_path: str = config.get("directories", "playlist_export_path")
+        self.cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config = ConfigParser()
+        self.config.read(self.cfg_file)
+        self.relative_path: str = self.config.get(
+            "directories", "playlist_relative_path"
+        )
+        self.export_path: str = self.config.get("directories", "playlist_export_path")
         self.selected_playlist_name: str = "my-playlist.m3u"
         self.current_m3u_path: str = self.export_path
         self.current_relative_path: str = self.relative_path
