@@ -513,6 +513,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         preferences_window = PreferencesWindow(self.config)
         preferences_window.exec_()  # Display the preferences window modally
         self.reload_config()
+        self.tableView.load_music_table()
 
     # Quick Actions
 
@@ -570,18 +571,20 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
 
 if __name__ == "__main__":
-    # First run initialization
+    # Initialization
     if not os.path.exists("config.ini"):
         # Create config file from sample
         run(["cp", "sample_config.ini", "config.ini"])
     config = ConfigParser()
     config.read("config.ini")
-    db_name = config.get("db", "database")
-    db_path = db_name.split("/")
-    db_path.pop()
-    db_path_as_string = "/".join(db_path)
-    if not os.path.exists(db_path_as_string):
-        os.makedirs(db_path_as_string)
+    db_filepath: str = config.get("db", "database")
+    db_path: str = "/".join(db_filepath.split("/").pop())
+    # If the db file doesn't exist
+    if not os.path.exists(db_filepath):
+        # If the db directory doesn't exist
+        if not os.path.exists(db_path):
+            # Make the directory
+            os.makedirs(db_path)
         # Create database on first run
         with DBA.DBAccess() as db:
             with open("utils/init.sql", "r") as file:
@@ -599,7 +602,7 @@ if __name__ == "__main__":
         format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
         handlers=handlers,
     )
-    # Allow for dynamic imports of my custom classes and utilities
+    # Allow for dynamic imports of my custom classes and utilities?
     project_root = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(project_root)
     # Start the app

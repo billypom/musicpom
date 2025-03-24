@@ -45,26 +45,12 @@ class PreferencesWindow(QDialog):
 
         # # Labels & input fields
         self.input_fields = {}
-        # for category in self.config.sections():
-        #     separator = QFrame()
-        #     separator.setFrameShape(QFrame.HLine)
-        #     self.content_layout.addWidget(separator)
-        #     category_label = QLabel(f"{category}")
-        #     category_label.setFont(QFont("Sans", weight=QFont.Bold))  # bold
-        #     category_label.setStyleSheet("text-transform:uppercase;")  # uppercase
-        #     self.content_layout.addWidget(category_label)
-        #     for key in self.config[category]:
-        #         label = QLabel(key)
-        #         input_field = QLineEdit(self.config[category][key])
-        #         self.content_layout.addWidget(label)
-        #         self.content_layout.addWidget(input_field)
-        #         self.input_fields[key] = input_field
 
         # Add widgets to the layout
         main_layout.addWidget(nav_pane)
         main_layout.addWidget(self.content_area)
 
-        # # Set the layout
+        # Set the layout
         self.setLayout(main_layout)
 
     def on_nav_item_clicked(self, item):
@@ -97,6 +83,7 @@ class PreferencesWindow(QDialog):
                 child.widget().deleteLater()
 
     def save_preferences(self):
+        print('im saving')
         # Upcate the config fields
         for key in self.input_fields:
             for category in self.config.sections():
