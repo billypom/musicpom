@@ -577,15 +577,31 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
 
 if __name__ == "__main__":
+    # logging setup
+    file_handler = logging.FileHandler(filename="log", encoding="utf-8")
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    handlers = [file_handler, stdout_handler]
+    # basicConfig(filename="log", encoding="utf-8", level=logging.DEBUG)
+    basicConfig(
+        level=DEBUG,
+        format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
+        handlers=handlers,
+    )
     # Initialization
 
     cfg_file = (
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
     )
     cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
+    debug(f'config file: {cfg_file}')
+    debug(f'config path: {cfg_path}')
 
+    # If config path doesn't exist, create it
+    if not os.path.exists(cfg_path):
+        os.makedirs(cfg_path)
     # If the config file doesn't exist, create it from the sample config
     if not os.path.exists(cfg_file):
+        debug('copying sample config')
         # Create config file from sample
         run(["cp", "sample_config.ini", cfg_file])
     config = ConfigParser()
@@ -594,7 +610,9 @@ if __name__ == "__main__":
 
     # If the database location isnt set at the config location, move it
     if not db_filepath.startswith(cfg_path):
-        config["db"]["database"] = f"{cfg_path}/{db_filepath}"
+        new_path = f"{cfg_path}/{db_filepath}"
+        debug(f'setting new db-database path: {new_path}')
+        config["db"]["database"] = new_path
         # Save the config
         with open(cfg_file, "w") as configfile:
             config.write(configfile)
@@ -618,16 +636,6 @@ if __name__ == "__main__":
                 for statement in lines.split(";"):
                     debug(f"executing [{statement}]")
                     db.execute(statement, ())
-    # logging setup
-    file_handler = logging.FileHandler(filename="log", encoding="utf-8")
-    stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    handlers = [file_handler, stdout_handler]
-    # basicConfig(filename="log", encoding="utf-8", level=logging.DEBUG)
-    basicConfig(
-        level=DEBUG,
-        format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
-        handlers=handlers,
-    )
     # Allow for dynamic imports of my custom classes and utilities?
     project_root = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(project_root)
