@@ -251,11 +251,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def load_config(self) -> None:
         """does what it says"""
-        cfg_loc = (
+        cfg_file = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
         )
-        self.config.read(cfg_loc)
+        self.config.read(cfg_file)
 
     def get_thread_pool(self) -> QThreadPool:
         """Returns the threadpool instance"""

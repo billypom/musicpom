@@ -4,5 +4,6 @@ appdirs
 pyqt5
 pydub
 pyqtdarktheme-fork
+pyqtdarktheme
 pyqtgraph
 scipy

@@ -5,14 +5,14 @@ from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
 
-config = ConfigParser()
-cfg_file = (
-    Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
-)
-config.read(cfg_file)
 
 
 def scan_for_music():
+    config = ConfigParser()
+    cfg_file = (
+        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+    )
+    config.read(cfg_file)
     root_dir = config.get("directories", "library")
     extensions = config.get("settings", "extensions").split(",")
     files_to_add = []
