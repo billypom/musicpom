@@ -38,7 +38,6 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QClipboard, QCloseEvent, QPixmap, QResizeEvent
 from utils import (
     scan_for_music,
-    delete_and_create_library_database,
     initialize_db,
     add_files_to_library,
 )
@@ -209,7 +208,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # QUICK ACTIONS MENU
         self.actionScanLibraries.triggered.connect(self.scan_libraries)
-        self.actionDeleteLibrary.triggered.connect(self.clear_database)
         self.actionDeleteDatabase.triggered.connect(self.delete_database)
         self.actionSortColumns.triggered.connect(
             self.tableView.sort_table_by_multiple_columns
@@ -528,19 +526,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         scan_for_music()
         self.tableView.load_music_table()
 
-    def clear_database(self) -> None:
-        """Clears all songs from the database"""
-        reply = QMessageBox.question(
-            self,
-            "Confirmation",
-            "Clear all songs from database?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
-        )
-        if reply:
-            delete_and_create_library_database()
-            self.tableView.load_music_table()
-
     def delete_database(self) -> None:
         """Deletes the entire database"""
         reply = QMessageBox.question(
@@ -550,20 +535,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
-        if reply:
-            initialize_db()
-            self.tableView.load_music_table()
-
-    def reinitialize_database(self) -> None:
-        """Clears all tables in database and recreates"""
-        reply = QMessageBox.question(
-            self,
-            "Confirmation",
-            "Recreate the database?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
-        )
-        if reply:
+        if reply == QMessageBox.Yes:
             initialize_db()
             self.tableView.load_music_table()
 
