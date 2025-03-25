@@ -196,10 +196,10 @@ class MusicTable(QTableView):
         col_count = self.model2.columnCount()
         qtableview_width = self.size().width()
         sum_of_cols = self.horizontal_header.length()
-        debug(f'qtable_width: {qtableview_width}')
-        debug(f'sum of cols: {sum_of_cols}')
+        # debug(f'qtable_width: {qtableview_width}')
+        # debug(f'sum of cols: {sum_of_cols}')
 
-        if sum_of_cols <= qtableview_width:
+        if sum_of_cols != qtableview_width:
             # if not the last header
             if logicalIndex < (col_count):
                 next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
