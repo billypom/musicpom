@@ -6,12 +6,15 @@ PyQt5 music library manager and audio player for Linux, inspired by MusicBee & i
 ___
 clone the repo
 ```bash
+# github - not up to date, need to mirror this eventually
 git clone https://github.com/billypom/musicpom
+# gitea - need to move to forgejo eventually
+git clone https://git.billypom.com/billy/musicpom.git
 ```
 
 install system packages
 ```bash
-sudo apt install ffmpeg, python3-pyqt5
+sudo apt install ffmpeg python3-pyqt5 virtualenv
 ```
 
 create environment
@@ -27,16 +30,19 @@ run
 ```bash
 python3 main.py
 ```
-## Regenerate UI - if using Qt Designer to edit ui.ui
+## Editing the UI
+i use Qt Designer, so download that if you want to try editing the UI. good luck
 ___
 ```bash
+# generate python ui from qt designer .ui file
 pyuic5 ui.ui -o ui.py
 ```
 ## Config
 ___
 config file and databases (libraries) are stored in user home directory `.config` folder
-```
+```bash
 cd ~/.config/musicpom
+# you should see config file and db folder
 config.ini db/
 ```
 
