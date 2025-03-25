@@ -392,6 +392,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.clear_audio_visualization()
         y = self.audio_visualizer.get_amplitudes()
         x = [i for i in range(len(y))]
+        self.PlotWidget.setLogMode(True, True)
         self.PlotWidget.plot(x, y, fillLevel=0, fillBrush=mkBrush("b"))
         self.PlotWidget.show()
 
