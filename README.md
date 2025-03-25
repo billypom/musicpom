@@ -51,7 +51,6 @@ config.ini db/
 - ~~editable lyrics window~~
 - ~~batch metadata changer (red highlight fields that have differing info)~~
 - ~~playlists~~
-- playlist m3u files
 - playlist autoexporting
 - fix table headers being resized and going out window bounds
 - delete songs from library (del key || right-click delete)

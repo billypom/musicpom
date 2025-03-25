@@ -2,12 +2,11 @@
 # https://github.com/ravenkls/MilkPlayer/blob/master/audio/fft_analyser.py
 
 import time
-import os
 from PyQt5 import QtCore
 from pydub import AudioSegment
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
-from logging import info
+from logging import debug
 
 
 class FFTAnalyser(QtCore.QThread):
@@ -66,9 +65,9 @@ class FFTAnalyser(QtCore.QThread):
         if not data.size:
             return
 
-        for n, f in enumerate(np.arange(0, 1, point_range), start=1):
+        for i, freq in enumerate(np.arange(0, 1, point_range), start=1):
             # get the amps which are in between the frequency range
-            amps = data[(f - point_range < data[:, 0]) & (data[:, 0] < f)]
+            amps = data[(freq - point_range < data[:, 0]) & (data[:, 0] < freq)]
             if not amps.size:
                 point_samples.append(0)
             else:
@@ -76,7 +75,7 @@ class FFTAnalyser(QtCore.QThread):
                     amps.max()
                     * (
                         (1 + self.sensitivity / 10 + (self.sensitivity - 1) / 10)
-                        ** (n / 50)
+                        ** (i / 50)
                     )
                 )
 

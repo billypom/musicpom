@@ -188,7 +188,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             lambda: self.player.setPosition(self.playbackSlider.value())
         )  # sliderReleased works better than sliderMoved
         self.volumeSlider.sliderMoved[int].connect(lambda: self.volume_changed())
-        self.speedSlider.sliderReleased.connect(
+        self.speedSlider.sliderMoved.connect(
             lambda: self.speed_changed(self.speedSlider.value())
         )
         self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
@@ -448,7 +448,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                 self.playButton.setText("⏸️")
             else:
                 self.play_audio_file()
-                self.playButton.setText("⏸️")
+                self.playButton.setText("👽")
 
     def on_previous_clicked(self) -> None:
         """"""
@@ -490,7 +490,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def create_playlist(self) -> None:
         """Creates a database record for a playlist, given a name"""
         window = CreatePlaylistWindow(self.playlistCreatedSignal)
-        window.playlistCreatedSignal.connect(self.add_latest_playlist_to_tree) # type: ignore
+        window.playlistCreatedSignal.connect(self.add_latest_playlist_to_tree)  # type: ignore
         window.exec_()
 
     def import_playlist(self) -> None:
@@ -562,17 +562,17 @@ if __name__ == "__main__":
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
     )
     cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
-    debug(f'config file: {cfg_file}')
-    debug(f'config path: {cfg_path}')
+    debug(f"config file: {cfg_file}")
+    debug(f"config path: {cfg_path}")
 
     # If config path doesn't exist, create it
     if not os.path.exists(cfg_path):
         os.makedirs(cfg_path)
     # If the config file doesn't exist, create it from the sample config
     if not os.path.exists(cfg_file):
-        debug('copying sample config')
+        debug("copying sample config")
         # Create config file from sample
-        run(["cp", "sample_config.ini", cfg_file])
+        run(["cp", "./sample_config.ini", cfg_file])
     config = ConfigParser()
     config.read(cfg_file)
     db_filepath: str = config.get("db", "database")
@@ -580,7 +580,7 @@ if __name__ == "__main__":
     # If the database location isnt set at the config location, move it
     if not db_filepath.startswith(cfg_path):
         new_path = f"{cfg_path}/{db_filepath}"
-        debug(f'setting new db-database path: {new_path}')
+        debug(f"setting new db-database path: {new_path}")
         config["db"]["database"] = new_path
         # Save the config
         with open(cfg_file, "w") as configfile:

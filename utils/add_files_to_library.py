@@ -1,38 +1,46 @@
 import DBA
-import logging
+import os
+from logging import debug
 from utils import get_id3_tags, id3_timestamp_to_datetime
-from PyQt5.QtCore import pyqtSignal
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
-
-config = ConfigParser()
-cfg_file = (
-    Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
-)
-config.read(cfg_file)
+import platform
 
 
 def add_files_to_library(files, progress_callback=None):
-    """Adds audio file(s) to the sqllite db
-    files = list() of fully qualified paths to audio file(s)
-    Returns a list of dictionaries of metadata
     """
-    logging.info("started function")
+    Adds audio file(s) to the sqllite db
+    Args:
+        files: list() of fully qualified paths to audio file(s)
+        progress_callback: emit data for user feedback
+    Returns:
+        True on success, else False
+    """
+    config = ConfigParser()
+    cfg_file = (
+        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+    )
+    config.read(cfg_file)
+
     if not files:
-        return []
+        return False
     extensions = config.get("settings", "extensions").split(",")
     insert_data = []  # To store data for batch insert
     for filepath in files:
         if any(filepath.lower().endswith(ext) for ext in extensions):
             if progress_callback:
                 progress_callback.emit(filepath)
+            # if "microsoft-standard" in platform.uname().release:
+            # filename = filepath.split(r"\\")[-1]
+            # filepath = os.path.join(filepath)
+            # else:
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
 
             try:
                 title = audio["TIT2"].text[0]
-            except KeyError as e:
+            except KeyError:
                 title = filename
             try:
                 artist = audio["TPE1"].text[0]
@@ -75,7 +83,7 @@ def add_files_to_library(files, progress_callback=None):
             )
             # Check if batch size is reached
             if len(insert_data) >= 1000:
-                logging.info(f"inserting a LOT of songs: {len(insert_data)}")
+                debug(f"inserting a LOT of songs: {len(insert_data)}")
                 with DBA.DBAccess() as db:
                     db.executemany(
                         "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -86,9 +94,9 @@ def add_files_to_library(files, progress_callback=None):
                 # continue adding files if we havent reached big length
                 continue
     # Insert any remaining data
-    logging.info("i check for insert data")
+    debug("i check for insert data")
     if insert_data:
-        logging.info(f"inserting some songs: {len(insert_data)}")
+        debug(f"inserting some songs: {len(insert_data)}")
         with DBA.DBAccess() as db:
             db.executemany(
                 "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
