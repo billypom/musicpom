@@ -21,8 +21,7 @@ create environment
 ```bash
 cd musicpom
 virtualenv venv
-cd ..
-cd musicpom
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
