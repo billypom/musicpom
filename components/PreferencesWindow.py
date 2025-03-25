@@ -93,7 +93,8 @@ class PreferencesWindow(QDialog):
                 child.widget().deleteLater()
 
     def save_preferences(self):
-        info("im saving")
+        # FIXME: this isnt working? at least not for database
+
         # Upcate the config fields
         for key in self.input_fields:
             for category in self.config.sections():

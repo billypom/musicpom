@@ -492,7 +492,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def create_playlist(self) -> None:
         """Creates a database record for a playlist, given a name"""
         window = CreatePlaylistWindow(self.playlistCreatedSignal)
-        window.playlistCreatedSignal.connect(self.add_latest_playlist_to_tree)
+        window.playlistCreatedSignal.connect(self.add_latest_playlist_to_tree) # type: ignore
         window.exec_()
 
     def import_playlist(self) -> None:

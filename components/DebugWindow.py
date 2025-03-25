@@ -2,12 +2,8 @@ from PyQt5.QtWidgets import (
     QDialog,
     QPlainTextEdit,
     QVBoxLayout,
-    QLabel,
-    QPushButton,
 )
-from PyQt5.QtGui import QFont
-from components.ErrorDialog import ErrorDialog
-from utils import set_id3_tag
+from pprint import pformat
 
 
 class DebugWindow(QDialog):
@@ -20,7 +16,7 @@ class DebugWindow(QDialog):
         layout = QVBoxLayout()
 
         # Labels & input fields
-        self.input_field = QPlainTextEdit(self.text)
+        self.input_field = QPlainTextEdit(pformat(self.text))
         layout.addWidget(self.input_field)
 
         self.setLayout(layout)

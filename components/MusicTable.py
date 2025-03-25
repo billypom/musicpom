@@ -1,4 +1,5 @@
 from mutagen.id3 import ID3
+from json import load as jsonload
 import DBA
 from PyQt5.QtGui import (
     QDragMoveEvent,
@@ -195,8 +196,10 @@ class MusicTable(QTableView):
         col_count = self.model2.columnCount()
         qtableview_width = self.size().width()
         sum_of_cols = self.horizontal_header.length()
+        debug(f'qtable_width: {qtableview_width}')
+        debug(f'sum of cols: {sum_of_cols}')
 
-        if sum != qtableview_width:
+        if sum_of_cols <= qtableview_width:
             # if not the last header
             if logicalIndex < (col_count):
                 next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
@@ -544,12 +547,11 @@ class MusicTable(QTableView):
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
 
-    def add_files(self, files) -> None:
-        """Thread handles adding songs to library
+    def add_files(self, files: list[str]) -> None:
+        """Spawns a worker thread - adds a list of filepaths to the library
         - Drag & Drop song(s) on tableView
         - File > Open > List of song(s)
         """
-        debug(f"add files, files: {files}")
         worker = Worker(add_files_to_library, files)
         worker.signals.signal_progress.connect(self.qapp.handle_progress)
         worker.signals.signal_finished.connect(self.load_music_table)
@@ -695,6 +697,7 @@ class MusicTable(QTableView):
 
     def set_current_song_filepath(self) -> None:
         """Sets the filepath of the currently playing song"""
+        # NOTE:
         # Setting the current song filepath automatically plays that song
         # self.tableView listens to this function and plays the audio file located at self.current_song_filepath
         self.current_song_filepath = (

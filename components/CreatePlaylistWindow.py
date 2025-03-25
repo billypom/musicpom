@@ -1,6 +1,5 @@
-import logging
+from logging import error
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout
-from PyQt5.QtCore import pyqtSignal
 import DBA
 
 
@@ -37,7 +36,7 @@ class CreatePlaylistWindow(QDialog):
                 with DBA.DBAccess() as db:
                     db.execute("INSERT INTO playlist (name) VALUES (?);", (value,))
             except Exception as e:
-                logging.error(
+                error(
                     f"CreatePlaylistWindow.py save() | Could not create playlist: {e}"
                 )
             self.playlistCreatedSignal.emit()
