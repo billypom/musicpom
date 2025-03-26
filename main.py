@@ -176,9 +176,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Graphics plot
         self.PlotWidget.setXRange(0, 100, padding=0)  # x axis range
         self.PlotWidget.setYRange(0, 1, padding=0)  # y axis range
+        self.PlotWidget.setLogMode(False, False)
+        self.PlotWidget.setMouseEnabled(x=False, y=False)
         self.PlotWidget.getAxis("bottom").setTicks([])  # Remove x-axis ticks
         self.PlotWidget.getAxis("bottom").setLabel("")  # Remove x-axis label
-        self.PlotWidget.setLogMode(False, False)
         # Remove y-axis labels and decorations
         self.PlotWidget.getAxis("left").setTicks([])  # Remove y-axis ticks
         self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
@@ -392,7 +393,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.clear_audio_visualization()
         y = self.audio_visualizer.get_amplitudes()
         x = [i for i in range(len(y))]
-        self.PlotWidget.setLogMode(True, True)
+        # x = nparray([0, 31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 15000, 20000])
         self.PlotWidget.plot(x, y, fillLevel=0, fillBrush=mkBrush("b"))
         self.PlotWidget.show()
 

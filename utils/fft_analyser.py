@@ -6,11 +6,11 @@ from PyQt5 import QtCore
 from pydub import AudioSegment
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
-from logging import debug
+from logging import debug, info
 
 
 class FFTAnalyser(QtCore.QThread):
-    """Analyses a song on a playlist using FFTs."""
+    """Analyses a song using FFTs."""
 
     calculated_visual = QtCore.pyqtSignal(np.ndarray)
 
@@ -57,7 +57,6 @@ class FFTAnalyser(QtCore.QThread):
         freq = np.fft.fftfreq(fourier.size, d=0.05)
         amps = 2 / v_sample.size * np.abs(fourier)
         data = np.array([freq, amps]).T
-        # info(data)
 
         point_range = 1 / self.resolution
         point_samples = []
