@@ -2,6 +2,7 @@ import os
 import tempfile
 from logging import debug
 from PyQt5.QtWidgets import (
+    QAbstractScrollArea,
     QGraphicsPixmapItem,
     QGraphicsScene,
     QGraphicsView,
@@ -30,6 +31,13 @@ class AlbumArtGraphicsView(QGraphicsView):
         super().__init__(parent)
         self.setAcceptDrops(True)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.setMinimumSize(200, 200)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)
+        self.setInteractive(False)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
         self.customContextMenuRequested.connect(self.showContextMenu)
 
