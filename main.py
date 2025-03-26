@@ -437,7 +437,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def speed_changed(self, rate: int) -> None:
         """Handles playback speed changes"""
         self.player.setPlaybackRate(rate / 50)
-        self.speedLabel.setText(str(round(rate / 50, 2)))
+        self.speedLabel.setText("{:.2f}".format(rate / 50))
 
     def on_play_clicked(self) -> None:
         """Updates the Play & Pause buttons when clicked"""

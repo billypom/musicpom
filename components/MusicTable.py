@@ -64,6 +64,7 @@ class MusicTable(QTableView):
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
         self.application_window = application_window
+        # needed a separate model to do certain actions
         self.model2: QStandardItemModel = QStandardItemModel()
         self.setModel(self.model2)
 
@@ -108,11 +109,25 @@ class MusicTable(QTableView):
         self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
+        self.current_item = None  # track where cursor was last
+
+        # Properties
+        self.setSortingEnabled(False)
+        self.setAcceptDrops(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setEditTriggers(QAbstractItemView.EditTrigger.EditKeyPressed)
+        self.setAlternatingRowColors(True)
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setSortingEnabled(True)
         self.horizontal_header: QHeaderView = self.horizontalHeader()
-        assert self.horizontal_header is not None
+        assert self.horizontal_header is not None  # i hate look at linting errors
         self.horizontal_header.setStretchLastSection(True)
         self.horizontal_header.setSectionResizeMode(QHeaderView.Interactive)
-        self.setSortingEnabled(False)
+        self.vertical_header: QHeaderView = self.verticalHeader()
+        assert self.vertical_header is not None
+        self.vertical_header.setVisible(False)
+
         # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
         self.doubleClicked.connect(self.set_current_song_filepath)
@@ -170,15 +185,17 @@ class MusicTable(QTableView):
             elif order == 2:
                 sort_orders.append(Qt.SortOrder.DescendingOrder)
 
-        # NOTE:
-        # this is bad because sortByColumn calls a SELECT statement,
-        # and will do this for as many sorts that are needed
-        # maybe not a huge deal for a small music application...
-        # `len(config_sort_orders)` number of SELECTs
+        # QTableView sorts need to happen in reverse order
+        # The primary sort column is the last column sorted.
         for i in reversed(range(len(sort_orders))):
             if sort_orders[i] is not None:
                 debug(f"sorting column {i} by {sort_orders[i]}")
                 self.sortByColumn(i, sort_orders[i])
+                # WARNING:
+                # sortByColumn calls a SELECT statement,
+                # and will do this for as many sorts that are needed
+                # maybe not a huge deal for a small music application...
+                # `len(config_sort_orders)` number of SELECTs
 
         self.connect_data_changed()
         self.connect_layout_changed()
@@ -548,7 +565,8 @@ class MusicTable(QTableView):
         self.playPauseSignal.emit()
 
     def add_files(self, files: list[str]) -> None:
-        """Spawns a worker thread - adds a list of filepaths to the library
+        """
+        Spawns a worker thread - adds a list of filepaths to the library
         - Drag & Drop song(s) on tableView
         - File > Open > List of song(s)
         """

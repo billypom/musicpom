@@ -17,6 +17,11 @@ install system packages
 sudo apt install ffmpeg python3-pyqt5 virtualenv
 ```
 
+additional packages needed for wsl
+```bash
+sudo apt install gstreamer1.0-plugins-good
+```
+
 create environment
 ```bash
 cd musicpom
@@ -51,9 +56,9 @@ config.ini db/
 - ~~editable lyrics window~~
 - ~~batch metadata changer (red highlight fields that have differing info)~~
 - ~~playlists~~
+- ~~delete songs from library (del key || right-click delete)~~
 - playlist autoexporting
 - fix table headers being resized and going out window bounds
-- delete songs from library (del key || right-click delete)
 - .wav, .ogg, .flac convertor
 - FIXME: dbaccess is instantiated for every track being reorganized
 - automatic "radio" based on artist or genre
