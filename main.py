@@ -620,6 +620,7 @@ if __name__ == "__main__":
     clipboard = app.clipboard()
     # Dark theme >:3
     qdarktheme.setup_theme()
+    # qdarktheme.setup_theme("auto")
     # Show the UI
     ui = ApplicationWindow(clipboard)
     ui.show()
