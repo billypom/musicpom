@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QDialog,
+    QListWidgetItem,
     QVBoxLayout,
     QLabel,
     QLineEdit,
@@ -10,7 +11,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QDial,
 )
-from logging import info
+from logging import debug
 from PyQt5.QtGui import QFont
 from configparser import ConfigParser
 from pathlib import Path
@@ -18,10 +19,11 @@ from appdirs import user_config_dir
 
 
 class PreferencesWindow(QDialog):
-    def __init__(self, reloadConfigSignal):
+    def __init__(self, reloadConfigSignal, reloadDatabaseSignal):
         super(PreferencesWindow, self).__init__()
         # Config
         self.reloadConfigSignal = reloadConfigSignal
+        self.reloadDatabaseSignal = reloadDatabaseSignal
         self.setWindowTitle("Preferences")
         self.setMinimumSize(800, 800)
         self.cfg_file = (
@@ -31,6 +33,8 @@ class PreferencesWindow(QDialog):
         self.config = ConfigParser()
         self.config.read(self.cfg_file)
         self.current_category = ""
+        # # Labels & input fields
+        self.input_fields = {}
 
         # Widgets
         self.content_area = QWidget()
@@ -49,12 +53,12 @@ class PreferencesWindow(QDialog):
         for category in self.config.sections():
             nav_pane.addItem(category)
         nav_pane.itemClicked.connect(self.on_nav_item_clicked)
-        nav_pane.setCurrentRow(0)
-        first_category = self.config.sections()[0]
-        self.on_nav_item_clicked(first_category)
 
-        # # Labels & input fields
-        self.input_fields = {}
+        # Pretend to click on 1st category in nav pane
+        nav_pane.setCurrentRow(0)
+        first_category = nav_pane.item(0)
+        assert first_category is not None
+        self.on_nav_item_clicked(first_category)
 
         # Add widgets to the layout
         main_layout.addWidget(nav_pane)
@@ -63,20 +67,23 @@ class PreferencesWindow(QDialog):
         # Set the layout
         self.setLayout(main_layout)
 
-    def on_nav_item_clicked(self, item):
+    def on_nav_item_clicked(self, item: QListWidgetItem):
+        self.current_category = item
         self.clear_layout(self.content_layout)
         self.input_fields = {}
         if isinstance(item, str):
-            self.current_category = item
+            self.current_category_str = item
         else:
-            self.current_category = item.text()
-        category_label = QLabel(f"{self.current_category}")
+            self.current_category_str = item.text()
+        # Labels
+        category_label = QLabel(f"{self.current_category_str}")
         category_label.setFont(QFont("Sans", weight=QFont.Bold))
         category_label.setStyleSheet("text-transform:uppercase;")
         self.content_layout.addWidget(category_label)
-        for key in self.config[self.current_category]:
+        # Input fields
+        for key in self.config[self.current_category_str]:
             label = QLabel(key)
-            input_field = QLineEdit(self.config[self.current_category][key])
+            input_field = QLineEdit(self.config[self.current_category_str][key])
             self.content_layout.addWidget(label)
             self.content_layout.addWidget(input_field)
             self.input_fields[key] = input_field
@@ -93,18 +100,22 @@ class PreferencesWindow(QDialog):
                 child.widget().deleteLater()
 
     def save_preferences(self):
-        # FIXME: this isnt working? at least not for database
+        """Save preferences, reload the config, then reload the database"""
 
         # Upcate the config fields
-        for key in self.input_fields:
-            for category in self.config.sections():
-                if key in self.config[category]:
-                    self.config[self.current_category][key] = self.input_fields[
-                        key
-                    ].text()
+        try:
+            for key in self.input_fields:
+                for category in self.config.sections():
+                    if key in self.config[category]:
+                        value = self.input_fields[key].text()
+                        self.config[self.current_category_str][key] = value
 
-        # Write the config file
-        with open(self.cfg_file, "w") as configfile:
-            self.config.write(configfile)
+            # Write the config file
+            with open(self.cfg_file, "w") as configfile:
+                self.config.write(configfile)
 
-        self.reloadConfigSignal.emit()
+            self.reloadConfigSignal.emit()
+            if self.current_category_str == "db":
+                self.reloadDatabaseSignal.emit()
+        except Exception as e:
+            debug(e)

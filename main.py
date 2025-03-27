@@ -130,6 +130,7 @@ class Worker(QRunnable):
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     playlistCreatedSignal = pyqtSignal()
     reloadConfigSignal = pyqtSignal()
+    reloadDatabaseSignal = pyqtSignal()
 
     def __init__(self, clipboard):
         super(ApplicationWindow, self).__init__()
@@ -252,6 +253,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             / "config.ini"
         )
         self.config.read(cfg_file)
+        debug("CONFIG LOADED")
 
     def get_thread_pool(self) -> QThreadPool:
         """Returns the threadpool instance"""
@@ -514,8 +516,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def open_preferences(self) -> None:
         """Opens the preferences window"""
-        preferences_window = PreferencesWindow(self.reloadConfigSignal)
-        preferences_window.reloadConfigSignal.connect(self.load_config)
+        preferences_window = PreferencesWindow(
+            self.reloadConfigSignal, self.reloadDatabaseSignal
+        )
+        preferences_window.reloadConfigSignal.connect(self.load_config)  # type: ignore
+        preferences_window.reloadDatabaseSignal.connect(self.tableView.load_music_table)  # type: ignore
         preferences_window.exec_()  # Display the preferences window modally
 
     # Quick Actions
