@@ -47,6 +47,7 @@ from components import (
     CreatePlaylistWindow,
     ExportPlaylistWindow,
 )
+from utils.get_album_art import get_album_art
 
 # good help with signals slots in threads
 # https://stackoverflow.com/questions/52993677/how-do-i-setup-signals-and-slots-in-pyqt-with-qthreads-in-both-directions
@@ -389,6 +390,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             error(
                 f"delete_album_art_for_current_song() | Error processing this file:\t {file}\n{exctype}\n{value}\n{traceback.format_exc()}"
             )
+        # Load the default album artwork in the qgraphicsview
+        album_art_data = self.tableView.get_current_song_album_art()
+        album_art_data = get_album_art(None)
+        self.albumGraphicsView.load_album_art(album_art_data)
 
     def update_audio_visualization(self) -> None:
         """Handles upading points on the pyqtgraph visual"""
