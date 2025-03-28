@@ -5,12 +5,6 @@ PyQt5 music library manager and audio player for Linux, inspired by MusicBee & i
 ## Installation:
 ___
 clone the repo
-```bash
-# github - not up to date, need to mirror this eventually
-git clone https://github.com/billypom/musicpom
-# gitea - need to move to forgejo eventually
-git clone https://git.billypom.com/billy/musicpom.git
-```
 
 install system packages
 ```bash
