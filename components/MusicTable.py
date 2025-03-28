@@ -135,6 +135,8 @@ class MusicTable(QTableView):
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         # header
+        # FIXME: table headers being resized and going out window bounds
+        # causing some recursion errors...
         self.horizontal_header: QHeaderView = self.horizontalHeader()
         assert self.horizontal_header is not None  # i hate look at linting errors
         self.horizontal_header.setStretchLastSection(True)
@@ -541,6 +543,9 @@ class MusicTable(QTableView):
         based on self.config['directories'][reorganize_destination']
         """
         debug("reorganizing files")
+        # FIXME: batch update, instead of doing 1 file at a time
+        # DBAccess is being instantiated for every file, boo
+
         # Get target directory
         target_dir = str(self.config["directories"]["reorganize_destination"])
         for filepath in filepaths:

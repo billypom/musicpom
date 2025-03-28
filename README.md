@@ -55,8 +55,6 @@ config.ini db/
 - ~~delete songs from library (del key || right-click delete)~~
 - playlist autoexporting
 - .wav, .ogg, .flac convertor
-- FIXME: table headers being resized and going out window bounds
-- FIXME: dbaccess is instantiated for every track being reorganized
 - automatic "radio" based on artist or genre
 - search bar, full text search on song, artist, album
 - when table is focused, start typing to match against the primary sort column
