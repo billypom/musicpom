@@ -29,11 +29,13 @@ run
 python3 main.py
 ```
 ## Editing the UI
-i use Qt Designer, so download that if you want to try editing the UI. good luck
 ___
+i use Qt Designer, so download that if you want to try editing the UI. good luck
 ```bash
 # generate python ui from qt designer .ui file
 pyuic5 ui.ui -o ui.py
+# shell script to do the same thing
+./create_ui.sh
 ```
 ## Config
 ___
