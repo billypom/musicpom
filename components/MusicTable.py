@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
 )
 from PyQt5.QtCore import (
+    QSortFilterProxyModel,
     Qt,
     QModelIndex,
     QThreadPool,
@@ -63,10 +64,25 @@ class MusicTable(QTableView):
 
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
+        print(f"QTableView Model: {self.model()}")
+        # why do i need this?
         self.application_window = application_window
-        # needed a separate model to do certain actions
+
+        # NOTE: wtf is actually going on here with the models?
+        # Create QStandardItemModel
+        # Create QSortFilterProxyModel
+        # Set QSortFilterProxyModel source to QStandardItemModel
+        # Set QTableView model to the Proxy model
+        # so it looks like this, i guess:
+        # QTableView model = QSortFilterProxyModel(QStandardItemModel)
+
+        # need a standard item  model to do actions on cells
         self.model2: QStandardItemModel = QStandardItemModel()
-        self.setModel(self.model2)
+        # proxy model for sorting i guess?
+        proxymodel = QSortFilterProxyModel()
+        proxymodel.setSourceModel(self.model2)
+        self.setModel(proxymodel)
+        self.setSortingEnabled(True)
 
         # Config
         cfg_file = (
@@ -112,18 +128,18 @@ class MusicTable(QTableView):
         self.current_item = None  # track where cursor was last
 
         # Properties
-        self.setSortingEnabled(False)
         self.setAcceptDrops(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setEditTriggers(QAbstractItemView.EditTrigger.EditKeyPressed)
         self.setAlternatingRowColors(True)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setSortingEnabled(True)
+        # header
         self.horizontal_header: QHeaderView = self.horizontalHeader()
         assert self.horizontal_header is not None  # i hate look at linting errors
         self.horizontal_header.setStretchLastSection(True)
         self.horizontal_header.setSectionResizeMode(QHeaderView.Interactive)
+        # dumb vertical estupido
         self.vertical_header: QHeaderView = self.verticalHeader()
         assert self.vertical_header is not None
         self.vertical_header.setVisible(False)
@@ -194,7 +210,7 @@ class MusicTable(QTableView):
                 # WARNING:
                 # sortByColumn calls a SELECT statement,
                 # and will do this for as many sorts that are needed
-                # maybe not a huge deal for a small music application...
+                # maybe not a huge deal for a small music application...?
                 # `len(config_sort_orders)` number of SELECTs
 
         self.connect_data_changed()
@@ -472,8 +488,8 @@ class MusicTable(QTableView):
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
-        debug("on_cell_data_changed")
         if isinstance(self.model2, QStandardItemModel):
+            debug("on_cell_data_changed | doing the normal stuff")
             # get the ID of the row that was edited
             id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
             # get the db song_id from the row
@@ -491,6 +507,8 @@ class MusicTable(QTableView):
             if response:
                 # Update the library with new metadata
                 update_song_in_database(song_id, edited_column_name, user_input_data)
+            return
+        debug("")
 
     def handle_progress(self, data):
         """Emits data to main"""
