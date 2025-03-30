@@ -14,13 +14,13 @@ class FFTAnalyser(QtCore.QThread):
 
     calculated_visual = QtCore.pyqtSignal(np.ndarray)
 
-    def __init__(self, player):  # noqa: F821
+    def __init__(self, player, x_resolution):  # noqa: F821
         super().__init__()
         self.player = player
         self.reset_media()
         self.player.currentMediaChanged.connect(self.reset_media)
 
-        self.resolution = 100
+        self.resolution = x_resolution
         self.visual_delta_threshold = 1000
         self.sensitivity = 10
 
@@ -97,7 +97,7 @@ class FFTAnalyser(QtCore.QThread):
                 self.points[n] = 1e-5
 
         # interpolate points
-        rs = gaussian_filter1d(self.points, sigma=2)
+        rs = gaussian_filter1d(self.points, sigma=4)
 
         # Mirror the amplitudes, these are renamed to 'rs' because we are using them
         # for polar plotting, which is plotted in terms of r and theta
@@ -107,6 +107,7 @@ class FFTAnalyser(QtCore.QThread):
         # they are divided by the highest sample in the song to normalise the
         # amps in terms of decimals from 0 -> 1
         self.calculated_visual.emit(rs / self.max_sample)
+        print(rs/self.max_sample)
 
     def run(self):
         """Runs the animate function depending on the song."""

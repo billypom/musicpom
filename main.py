@@ -160,14 +160,19 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
-        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
-        self.current_volume: int = 50
+        self.analyzer_x_resolution = 200
+        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.analyzer_x_resolution)
+        self.timer = QTimer(self)  # Audio timing things
         self.clipboard = clipboard
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
-        # Initialization
-        self.timer = QTimer(self)  # Audio timing things
+
+        # Settings init
+        self.current_volume: int = int(self.config["settings"]["volume"])
         self.player.setVolume(self.current_volume)
+        self.volumeLabel.setText(str(self.current_volume))
+        self.volumeSlider.setValue(self.current_volume)
+
         # Audio probe for processing audio signal in real time
         self.probe.setSource(self.player)
         self.probe.audioBufferProbed.connect(self.process_probe)
@@ -176,14 +181,18 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.timer.timeout.connect(self.move_slider)
 
         # Graphics plot
-        self.PlotWidget.setXRange(0, 100, padding=0)  # x axis range
+        self.PlotWidget.setXRange(0, self.analyzer_x_resolution, padding=0)  # x axis range
         self.PlotWidget.setYRange(0, 1, padding=0)  # y axis range
         self.PlotWidget.setLogMode(False, False)
         self.PlotWidget.setMouseEnabled(x=False, y=False)
-        self.PlotWidget.getAxis("bottom").setTicks([])  # Remove x-axis ticks
+        # Remove x-axis ticks
+        ticks = ['20', '31.25', '62.5', '125', '250', '500', '1000', '2000', '4000', '10000', '20000']
+        self.PlotWidget.getAxis("bottom").setTicks([])
         self.PlotWidget.getAxis("bottom").setLabel("")  # Remove x-axis label
+        # x = nparray([0, 31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 15000, 20000])
         # Remove y-axis labels and decorations
-        self.PlotWidget.getAxis("left").setTicks([])  # Remove y-axis ticks
+        # self.PlotWidget.getAxis("left").setTicks([[(str(tick), tick) for tick in ticks]])
+        self.PlotWidget.getAxis("left").setTicks([])
         self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
 
         # Connections
@@ -273,6 +282,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             list_of_column_widths.append(str(self.tableView.columnWidth(i)))
         column_widths_as_string = ",".join(list_of_column_widths)
         self.config["table"]["column_widths"] = column_widths_as_string
+        self.config["settings"]["volume"] = str(self.current_volume)
 
         # Save the config
         with open(self.cfg_file, "w") as configfile:
@@ -553,6 +563,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def process_probe(self, buff) -> None:
         """Audio visualizer buffer processing"""
+        print('probe')
         buff.startTime()
         self.update_audio_visualization()
 
