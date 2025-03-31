@@ -162,7 +162,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
-        self.analyzer_x_resolution = 200
+        self.analyzer_x_resolution = 150
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.analyzer_x_resolution)
         self.timer = QTimer(self)  # Audio timing things
         self.clipboard = clipboard
@@ -187,6 +187,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.PlotWidget.setYRange(0, 1, padding=0)  # y axis range
         self.PlotWidget.setLogMode(False, False)
         self.PlotWidget.setMouseEnabled(x=False, y=False)
+        # Performance optimizations
+        self.PlotWidget.setAntialiasing(False)
+        self.PlotWidget.setDownsampling(auto=True, mode='peak')
+        self.PlotWidget.setClipToView(True)
         # Remove x-axis ticks
         # ticks = ['20', '31.25', '62.5', '125', '250', '500', '1000', '2000', '4000', '10000', '20000']
         # self.PlotWidget.getAxis("bottom").setTicks([])
@@ -421,15 +425,25 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def update_audio_visualization(self) -> None:
         """Handles upading points on the pyqtgraph visual"""
-        self.clear_audio_visualization()
         y = self.audio_visualizer.get_amplitudes()
-        x = [i for i in range(len(y))]
-        # x = nparray([0, 31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 15000, 20000])
-        self.PlotWidget.plot(x, y, fillLevel=0, fillBrush=mkBrush("b"))
-        self.PlotWidget.show()
+        if len(y) == 0:
+            return
+            
+        if self.audio_visualizer._plot_item is None:
+            self.PlotWidget.clear()
+            self.audio_visualizer._plot_item = self.PlotWidget.plot(
+                self.audio_visualizer._x_data, 
+                y, 
+                pen='b',  # Use pen instead of fill for better performance
+                fillLevel=0, 
+                fillBrush=mkBrush("b")
+            )
+        else:
+            self.audio_visualizer._plot_item.setData(self.audio_visualizer._x_data, y)
 
     def clear_audio_visualization(self) -> None:
         self.PlotWidget.clear()
+        self.audio_visualizer._plot_item = None
 
     def move_slider(self) -> None:
         """Handles moving the playback slider"""

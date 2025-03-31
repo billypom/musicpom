@@ -21,6 +21,8 @@ class AudioVisualizer(QtWidgets.QWidget):
         self.fft_analyser.calculated_visual.connect(self.set_amplitudes)
         self.fft_analyser.start()
         self.amps = np.array([])
+        self._plot_item = None
+        self._x_data = np.arange(self.x_resolution)
 
     def get_amplitudes(self):
         return self.amps

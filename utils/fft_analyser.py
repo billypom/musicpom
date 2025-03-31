@@ -24,7 +24,7 @@ class FFTAnalyser(QtCore.QThread):
         # this length is a number, in seconds, of how much audio is sampled to determine the frequencies
         # of the audio at a specific point in time
         # in this case, it takes 5% of the samples at some point in time
-        self.sampling_window_length = 0.09
+        self.sampling_window_length = 0.05
         self.visual_delta_threshold = 1000
         self.sensitivity = 10
 
@@ -124,7 +124,7 @@ class FFTAnalyser(QtCore.QThread):
                 self.points[n] = 1e-5
 
         # interpolate points
-        rs = gaussian_filter1d(self.points, sigma=2)
+        rs = gaussian_filter1d(self.points, sigma=1.5)
 
         # divide by the highest sample in the song to normalise the
         # amps in terms of decimals from 0 -> 1
@@ -142,4 +142,4 @@ class FFTAnalyser(QtCore.QThread):
                 except ValueError:
                     self.calculated_visual.emit(np.zeros(self.resolution))
                     self.start_animate = False
-            time.sleep(0.025)
+            time.sleep(0.033)
