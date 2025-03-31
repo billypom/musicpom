@@ -4,14 +4,7 @@ from utils import FFTAnalyser
 
 
 class AudioVisualizer(QtWidgets.QWidget):
-    """_Audio Visualizer component_
-
-    Args:
-        QtWidgets (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
+    """Audio Visualizer component"""
 
     def __init__(self, media_player, x_resolution):
         super().__init__()
@@ -28,13 +21,12 @@ class AudioVisualizer(QtWidgets.QWidget):
         # Generate logarithmic frequency scale (20Hz - 20kHz)
         self.min_freq = 20
         self.max_freq = 23000
-        self.frequency_values = np.logspace(np.log10(self.min_freq), np.log10(self.max_freq), self.x_resolution)
+        self.frequency_values = np.logspace(
+            np.log10(self.min_freq), np.log10(self.max_freq), self.x_resolution
+        )
 
-    def get_frequency_ticks(self, num_ticks=10):
+    def get_frequency_ticks(self):
         """Returns frequency ticks for x-axis display
-
-        Args:
-            num_ticks (int): Approximate number of ticks to display
 
         Returns:
             list: List of tuples with (position, label) for each tick
@@ -51,7 +43,7 @@ class AudioVisualizer(QtWidgets.QWidget):
             if freq < 1000:
                 label = f"{freq}Hz"
             else:
-                label = f"{freq/1000:.0f}kHz"
+                label = f"{freq / 1000:.0f}kHz"
             ticks.append((idx, label))
 
         return ticks
@@ -71,7 +63,7 @@ class AudioVisualizer(QtWidgets.QWidget):
         With a noise floor cutoff at around -96dB (for very small values)
         """
         # Avoid log(0) by adding a small epsilon
-        epsilon = 1e-10  
+        epsilon = 1e-10
         amplitudes = np.maximum(self.amps, epsilon)
         # Convert to decibels (20*log10 is the standard formula for amplitude to dB)
         db_values = 20 * np.log10(amplitudes)

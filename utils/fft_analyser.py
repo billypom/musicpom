@@ -79,12 +79,8 @@ class FFTAnalyser(QtCore.QThread):
         # Logarithmic frequency scaling
         min_freq = np.min(freq[freq > 0])  # minimum positive frequency
         # 20hz
-        # print('min')
-        # print(min_freq * .05 * self.song.frame_rate)
         max_freq = np.max(freq)  # maximum frequency
         # 20khz
-        # print('max')
-        # print(max_freq * .05 * self.song.frame_rate)
         log_freqs = np.logspace(np.log10(min_freq), np.log10(max_freq), self.resolution)
 
         point_samples = []
@@ -92,10 +88,10 @@ class FFTAnalyser(QtCore.QThread):
         if not data.size:
             return
 
-        #for i, freq in enumerate(np.arange(0, 1, point_range), start=1):
+        # for i, freq in enumerate(np.arange(0, 1, point_range), start=1):
         for i, log_freq in enumerate(log_freqs):
             # get the amps which are in between the frequency range
-            #amps = data[(freq - point_range < data[:, 0]) & (data[:, 0] < freq)]
+            # amps = data[(freq - point_range < data[:, 0]) & (data[:, 0] < freq)]
             amps = data[(log_freq - point_range < data[:, 0]) & (data[:, 0] < log_freq)]
             if not amps.size:
                 point_samples.append(0)
@@ -109,7 +105,7 @@ class FFTAnalyser(QtCore.QThread):
                 )
 
         # Add the point_samples to the self.points array, the reason we have a separate
-        # array (self.bars) is so that we can fade out the previous amplitudes from
+        # array (self.points) is so that we can fade out the previous amplitudes from
         # the past
         for n, amp in enumerate(point_samples):
             # amp *= 2

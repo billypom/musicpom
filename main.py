@@ -12,7 +12,6 @@ from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
-from numpy import array as nparray
 from logging import debug, error, warning, basicConfig, INFO, DEBUG
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
@@ -163,7 +162,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
         self.analyzer_x_resolution = 150
-        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.analyzer_x_resolution)
+        self.audio_visualizer: AudioVisualizer = AudioVisualizer(
+            self.player, self.analyzer_x_resolution
+        )
         self.timer = QTimer(self)  # Audio timing things
         self.clipboard = clipboard
         self.tableView.load_qapp(self)
@@ -185,30 +186,36 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Set fixed size for album art
         self.albumGraphicsView.setFixedSize(250, 250)
 
-        # Make sure PlotWidget doesn't exceed album art height
-        self.PlotWidget.setFixedHeight(225)  # Adjust to leave room for playback controls
-
         # Graphics plot
-        self.PlotWidget.setXRange(0, self.analyzer_x_resolution, padding=0)  # x axis range
-        self.PlotWidget.setYRange(-96, 0, padding=0)  # y axis range for decibels (-96dB to 0dB)
-        self.PlotWidget.setLogMode(x=False, y=False)  # Logarithmic x-axis for frequency display
+        # Make sure PlotWidget doesn't exceed album art height
+        # Adjust to leave room for playback controls
+        self.PlotWidget.setFixedHeight(225)
+        # x range
+        self.PlotWidget.setXRange(0, self.analyzer_x_resolution, padding=0)
+        # y axis range for decibals (-96db to 0db)
+        self.PlotWidget.setYRange(-96, 0, padding=0)
+        # Logarithmic x-axis for frequency display
+        self.PlotWidget.setLogMode(x=False, y=False)
         self.PlotWidget.setMouseEnabled(x=False, y=False)
+        self.PlotWidget.showGrid(x=True, y=True)
         # Performance optimizations
         self.PlotWidget.setAntialiasing(False)
-        self.PlotWidget.setDownsampling(auto=True, mode='peak')
+        self.PlotWidget.setDownsampling(auto=True, mode="peak")
         self.PlotWidget.setClipToView(True)
 
         # Add tick marks for common decibel values (expanded range)
-        y_ticks = [(-84, '-84dB'),  (-60, '-60dB'), 
-                   (-36, '-36dB'),  (-12, '-12dB'), (0, '0dB')]
-        self.PlotWidget.getAxis('left').setTicks([y_ticks])
+        y_ticks = [
+            (-84, "-84dB"),
+            (-60, "-60dB"),
+            (-36, "-36dB"),
+            (-12, "-12dB"),
+            (0, "0dB"),
+        ]
+        self.PlotWidget.getAxis("left").setTicks([y_ticks])
 
         # Add frequency ticks on x-axis
         freq_ticks = self.audio_visualizer.get_frequency_ticks()
-        self.PlotWidget.getAxis('bottom').setTicks([freq_ticks])
-
-        # Display grid for better readability
-        self.PlotWidget.showGrid(x=True, y=True)
+        self.PlotWidget.getAxis("bottom").setTicks([freq_ticks])
 
         # Connections
         self.playbackSlider.sliderReleased.connect(
@@ -228,10 +235,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionExportPlaylist.triggered.connect(self.export_playlist)
 
         # EDIT MENU
+        self.actionPreferences.triggered.connect(self.open_preferences)
         # VIEW MENU
-        self.actionPreferences.triggered.connect(
-            self.open_preferences
-        )  # Open preferences menu
 
         # QUICK ACTIONS MENU
         self.actionScanLibraries.triggered.connect(self.scan_libraries)
@@ -447,10 +452,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Use the actual frequency values for x-axis
         self.audio_visualizer._plot_item = self.PlotWidget.plot(
             self.audio_visualizer._x_data,  # We'll keep using indices for drawing
-            y, 
-            pen='b',  # Use pen instead of fill for better performance
-            fillLevel=-96 if self.audio_visualizer.use_decibels else 0,  # Fill from -96dB for decibel scale
-            fillBrush=mkBrush("b")
+            y,
+            pen="b",  # Use pen instead of fill for better performance
+            fillLevel=-96
+            if self.audio_visualizer.use_decibels
+            else 0,  # Fill from -96dB for decibel scale
+            fillBrush=mkBrush("b"),
         )
         # else:
         #     self.audio_visualizer._plot_item.setData(self.audio_visualizer._x_data, y)
