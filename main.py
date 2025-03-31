@@ -12,6 +12,7 @@ from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
+from numpy import array as nparray
 from logging import debug, error, warning, basicConfig, INFO, DEBUG
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
@@ -148,6 +149,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # UI
         self.setupUi(self)
         self.setWindowTitle("musicpom")
+        # self.vLayoutAlbumArt.SetFixedSize()
         self.status_bar = QStatusBar()
         self.permanent_status_label = QLabel("Status...")
         self.status_bar.addPermanentWidget(self.permanent_status_label)
@@ -160,7 +162,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
-        self.analyzer_x_resolution = 100
+        self.analyzer_x_resolution = 200
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.analyzer_x_resolution)
         self.timer = QTimer(self)  # Audio timing things
         self.clipboard = clipboard
@@ -186,14 +188,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.PlotWidget.setLogMode(False, False)
         self.PlotWidget.setMouseEnabled(x=False, y=False)
         # Remove x-axis ticks
-        ticks = ['20', '31.25', '62.5', '125', '250', '500', '1000', '2000', '4000', '10000', '20000']
-        self.PlotWidget.getAxis("bottom").setTicks([])
-        self.PlotWidget.getAxis("bottom").setLabel("")  # Remove x-axis label
-        # x = nparray([0, 31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 15000, 20000])
+        # ticks = ['20', '31.25', '62.5', '125', '250', '500', '1000', '2000', '4000', '10000', '20000']
+        # self.PlotWidget.getAxis("bottom").setTicks([])
+        # self.PlotWidget.getAxis("bottom").setLabel("")  # Remove x-axis label
+        # ticks = nparray([0, 31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 15000, 20000])
+
         # Remove y-axis labels and decorations
         # self.PlotWidget.getAxis("left").setTicks([[(str(tick), tick) for tick in ticks]])
-        self.PlotWidget.getAxis("left").setTicks([])
-        self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
+        # self.PlotWidget.getAxis("left").setTicks([])
+        # self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
+        self.PlotWidget.showGrid(x=True, y=True)
 
         # Connections
         self.playbackSlider.sliderReleased.connect(
@@ -306,7 +310,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.permanent_status_label.setText(message)
 
     def play_audio_file(self) -> None:
-        """Start playback of `tableView.current_song_filepath` & moves playback slider"""
+        """
+        Start playback of `tableView.current_song_filepath` & moves playback slider
+        """
+        self.tableView.set_current_song_filepath()
         # get metadata
         self.current_song_metadata = self.tableView.get_current_song_metadata()
         # read the file
@@ -333,6 +340,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             )
             title = self.current_song_metadata["TIT2"][0]
 
+            debug(artist)
+            debug(title)
+            debug(album)
             self.artistLabel.setText(artist)
             self.albumLabel.setText(album)
             self.titleLabel.setText(title)

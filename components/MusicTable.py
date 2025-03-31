@@ -148,8 +148,8 @@ class MusicTable(QTableView):
 
         # CONNECTIONS
         self.clicked.connect(self.set_selected_song_filepath)
-        self.doubleClicked.connect(self.set_current_song_filepath)
-        self.enterKey.connect(self.set_current_song_filepath)
+        # self.doubleClicked.connect(self.set_current_song_filepath)
+        # self.enterKey.connect(self.set_current_song_filepath)
         self.deleteKey.connect(self.delete_songs)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model2.layoutChanged.connect(self.restore_scroll_position)
@@ -465,6 +465,7 @@ class MusicTable(QTableView):
             )
             if new_index.isValid():
                 self.setCurrentIndex(new_index)
+            super().keyPressEvent(e)
         elif key == Qt.Key.Key_Down:  # Arrow key navigation
             current_index = self.currentIndex()
             new_index = self.model2.index(
@@ -472,6 +473,7 @@ class MusicTable(QTableView):
             )
             if new_index.isValid():
                 self.setCurrentIndex(new_index)
+            super().keyPressEvent(e)
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             if self.state() != QAbstractItemView.EditingState:
                 self.enterKey.emit()  # Enter key detected
@@ -737,7 +739,7 @@ class MusicTable(QTableView):
         )
 
     def set_current_song_filepath(self) -> None:
-        """Sets the filepath of the currently playing song"""
+        """Sets the current song filepath to the value in column 'path' with current selected row index"""
         # NOTE:
         # Setting the current song filepath automatically plays that song
         # self.tableView listens to this function and plays the audio file located at self.current_song_filepath

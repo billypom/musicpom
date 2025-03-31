@@ -1,5 +1,5 @@
 import os
-import logging
+from logging import debug, error
 from mutagen.id3 import ID3
 from mutagen.id3._frames import TIT2
 from mutagen.id3._util import ID3NoHeaderError
@@ -7,7 +7,7 @@ from mutagen.id3._util import ID3NoHeaderError
 
 def get_id3_tags(filename):
     """Get the ID3 tags for an audio file"""
-    logging.info(filename)
+    debug(filename)
 
     try:
         # Open the MP3 file and read its content
@@ -34,6 +34,6 @@ def get_id3_tags(filename):
         audio.save()
 
     except Exception as e:
-        logging.error(f"Could not assign file ID3 tag: {e}")
+        error(f"Could not assign file ID3 tag: {e}")
 
     return audio
