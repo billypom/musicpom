@@ -160,7 +160,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
-        self.analyzer_x_resolution = 200
+        self.analyzer_x_resolution = 100
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.analyzer_x_resolution)
         self.timer = QTimer(self)  # Audio timing things
         self.clipboard = clipboard
@@ -563,7 +563,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def process_probe(self, buff) -> None:
         """Audio visualizer buffer processing"""
-        print('probe')
         buff.startTime()
         self.update_audio_visualization()
 

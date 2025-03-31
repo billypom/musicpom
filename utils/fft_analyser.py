@@ -21,6 +21,7 @@ class FFTAnalyser(QtCore.QThread):
         self.player.currentMediaChanged.connect(self.reset_media)
 
         self.resolution = x_resolution
+        self.sampling_window_length = 0.05
         self.visual_delta_threshold = 1000
         self.sensitivity = 10
 
@@ -46,17 +47,25 @@ class FFTAnalyser(QtCore.QThread):
     def calculate_amps(self):
         """Calculates the amplitudes used for visualising the media."""
 
-        sample_count = int(self.song.frame_rate * 0.05)
+        sample_count = int(self.song.frame_rate * self.sampling_window_length)
         start_index = int((self.player.position() / 1000) * self.song.frame_rate)
         v_sample = self.samples[
             start_index : start_index + sample_count
         ]  # samples to analyse
 
+
         # use FFTs to analyse frequency and amplitudes
         fourier = np.fft.fft(v_sample)
-        freq = np.fft.fftfreq(fourier.size, d=0.05)
+        freq = np.fft.fftfreq(fourier.size, d=self.sampling_window_length)
         amps = 2 / v_sample.size * np.abs(fourier)
         data = np.array([freq, amps]).T
+        print(freq * .05 * self.song.frame_rate)
+
+        # given 520 hz sine wave
+        # np.argmax(fourier) = 2374
+        # freq[2374] * .05 * self.song.frame_rate = 520
+
+        # x values = freq * self.song.frame_rate * .05
 
         point_range = 1 / self.resolution
         point_samples = []
@@ -97,7 +106,7 @@ class FFTAnalyser(QtCore.QThread):
                 self.points[n] = 1e-5
 
         # interpolate points
-        rs = gaussian_filter1d(self.points, sigma=4)
+        rs = gaussian_filter1d(self.points, sigma=2)
 
         # Mirror the amplitudes, these are renamed to 'rs' because we are using them
         # for polar plotting, which is plotted in terms of r and theta
@@ -107,7 +116,7 @@ class FFTAnalyser(QtCore.QThread):
         # they are divided by the highest sample in the song to normalise the
         # amps in terms of decimals from 0 -> 1
         self.calculated_visual.emit(rs / self.max_sample)
-        print(rs/self.max_sample)
+        # print(rs/self.max_sample)
 
     def run(self):
         """Runs the animate function depending on the song."""
