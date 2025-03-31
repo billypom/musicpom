@@ -12,7 +12,7 @@ from logging import debug, info
 class FFTAnalyser(QtCore.QThread):
     """Analyses a song using FFTs."""
 
-    calculated_visual = QtCore.pyqtSignal(np.ndarray)
+    calculatedVisual = QtCore.pyqtSignal(np.ndarray)
 
     def __init__(self, player, x_resolution):  # noqa: F821
         super().__init__()
@@ -25,7 +25,7 @@ class FFTAnalyser(QtCore.QThread):
         # of the audio at a specific point in time
         # in this case, it takes 5% of the samples at some point in time
         self.sampling_window_length = 0.05
-        self.visual_delta_threshold = 1000
+        self.visual_delta_threshold = 100
         self.sensitivity = 10
 
     def reset_media(self):
@@ -52,9 +52,8 @@ class FFTAnalyser(QtCore.QThread):
 
         sample_count = int(self.song.frame_rate * self.sampling_window_length)
         start_index = int((self.player.position() / 1000) * self.song.frame_rate)
-        v_sample = self.samples[
-            start_index : start_index + sample_count
-        ]  # samples to analyse
+        # samples to analyse
+        v_sample = self.samples[start_index : start_index + sample_count]
 
         # Use a window function to reduce spectral leakage
         window = np.hanning(len(v_sample))
@@ -65,6 +64,7 @@ class FFTAnalyser(QtCore.QThread):
         freq = np.fft.fftfreq(fourier.size, d=self.sampling_window_length)
         amps = 2 / v_sample.size * np.abs(fourier)
         data = np.array([freq, amps]).T
+        # TEST:
         # print(freq * .05 * self.song.frame_rate)
 
         # NOTE:
@@ -108,26 +108,29 @@ class FFTAnalyser(QtCore.QThread):
         # array (self.points) is so that we can fade out the previous amplitudes from
         # the past
         for n, amp in enumerate(point_samples):
-            # amp *= 2
-
-            if (
-                self.points[n] > 0
-                and amp < self.points[n]
-                or self.player.state()
-                in (self.player.PausedState, self.player.StoppedState)
+            if self.player.state() in (
+                self.player.PausedState,
+                self.player.StoppedState,
             ):
-                self.points[n] -= self.points[n] / 5  # fade out
-            elif abs(self.points[n] - amp) > self.visual_delta_threshold:
+                # More aggressive decay when no audio is playing
+                self.points[n] *= 0.7  # Faster fade out when paused/stopped
+            elif amp < self.points[n]:
+                # Faster fade for frequencies that are decreasing
+                self.points[n] = self.points[n] * 0.8 + amp * 0.2  # Smoother transition
+            else:
+                # Rise quickly to new peaks
                 self.points[n] = amp
-            if self.points[n] < 1:
-                self.points[n] = 1e-12
+
+            # Set a lower threshold to properly reach zero
+            if self.points[n] < 1e-4:
+                self.points[n] = 0
 
         # interpolate points
-        rs = gaussian_filter1d(self.points, sigma=1.5)
+        rs = gaussian_filter1d(self.points, sigma=1)
 
         # divide by the highest sample in the song to normalise the
         # amps in terms of decimals from 0 -> 1
-        self.calculated_visual.emit(rs / self.max_sample)
+        self.calculatedVisual.emit(rs / self.max_sample)
         # self.calculated_visual.emit(rs)
         # print(rs)
         # print(rs/self.max_sample)
@@ -139,6 +142,6 @@ class FFTAnalyser(QtCore.QThread):
                 try:
                     self.calculate_amps()
                 except ValueError:
-                    self.calculated_visual.emit(np.zeros(self.resolution))
+                    self.calculatedVisual.emit(np.zeros(self.resolution))
                     self.start_animate = False
             time.sleep(0.033)

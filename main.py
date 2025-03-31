@@ -11,6 +11,7 @@ from mutagen.id3 import ID3
 from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 from pathlib import Path
+from numpy import where as npwhere
 from appdirs import user_config_dir
 from logging import debug, error, warning, basicConfig, INFO, DEBUG
 from ui import Ui_MainWindow
@@ -161,7 +162,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
-        self.analyzer_x_resolution = 150
+        self.analyzer_x_resolution = 100
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(
             self.player, self.analyzer_x_resolution
         )
@@ -445,6 +446,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         if len(y) == 0:
             return
+
+        # print(y)
 
         # if self.audio_visualizer._plot_item is None:
         # thanks cursor sonnet whatever

@@ -11,7 +11,7 @@ class AudioVisualizer(QtWidgets.QWidget):
         self.media_player = media_player
         self.x_resolution = x_resolution
         self.fft_analyser = FFTAnalyser(self.media_player, self.x_resolution)
-        self.fft_analyser.calculated_visual.connect(self.set_amplitudes)
+        self.fft_analyser.calculatedVisual.connect(self.set_amplitudes)
         self.fft_analyser.start()
         self.amps = np.array([])
         self._plot_item = None
@@ -63,7 +63,7 @@ class AudioVisualizer(QtWidgets.QWidget):
         With a noise floor cutoff at around -96dB (for very small values)
         """
         # Avoid log(0) by adding a small epsilon
-        epsilon = 1e-10
+        epsilon = 1e-30
         amplitudes = np.maximum(self.amps, epsilon)
         # Convert to decibels (20*log10 is the standard formula for amplitude to dB)
         db_values = 20 * np.log10(amplitudes)
@@ -72,4 +72,9 @@ class AudioVisualizer(QtWidgets.QWidget):
         return db_values
 
     def set_amplitudes(self, amps):
+        """
+        This function is hooked into the calculatedVisual signal from FFTAnalyzer() object
+        Amps are assigned here, based on values passed by the signal
+        """
+        # self.amps = np.maximum(np.array(amps), 1e-12)  # Set a very small threshold
         self.amps = np.array(amps)
