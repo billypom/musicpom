@@ -330,15 +330,19 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         if self.current_song_metadata is not None:
             artist = (
                 self.current_song_metadata["TPE1"][0]
-                if "artist" in self.current_song_metadata
+                if "TPE1" in self.current_song_metadata
                 else None
             )
             album = (
                 self.current_song_metadata["TALB"][0]
-                if "album" in self.current_song_metadata
+                if "TALB" in self.current_song_metadata
                 else None
             )
-            title = self.current_song_metadata["TIT2"][0]
+            title = (
+                self.current_song_metadata["TIT2"][0]
+                if "TIT2" in self.current_song_metadata
+                else None
+            )
 
             debug(artist)
             debug(title)
