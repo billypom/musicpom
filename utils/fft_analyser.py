@@ -56,6 +56,9 @@ class FFTAnalyser(QtCore.QThread):
             start_index : start_index + sample_count
         ]  # samples to analyse
 
+        # Use a window function to reduce spectral leakage
+        window = np.hanning(len(v_sample))
+        v_sample = v_sample * window
 
         # use FFTs to analyse frequency and amplitudes
         fourier = np.fft.fft(v_sample)
@@ -117,11 +120,11 @@ class FFTAnalyser(QtCore.QThread):
                 or self.player.state()
                 in (self.player.PausedState, self.player.StoppedState)
             ):
-                self.points[n] -= self.points[n] / 10  # fade out
+                self.points[n] -= self.points[n] / 5  # fade out
             elif abs(self.points[n] - amp) > self.visual_delta_threshold:
                 self.points[n] = amp
             if self.points[n] < 1:
-                self.points[n] = 1e-5
+                self.points[n] = 1e-12
 
         # interpolate points
         rs = gaussian_filter1d(self.points, sigma=1.5)

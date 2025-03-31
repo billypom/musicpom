@@ -1,6 +1,7 @@
 import os
 import tempfile
 from logging import debug
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (
     QAbstractScrollArea,
     QGraphicsPixmapItem,
@@ -32,6 +33,9 @@ class AlbumArtGraphicsView(QGraphicsView):
         self.setAcceptDrops(True)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.setMinimumSize(200, 200)
+        self.setMaximumSize(200, 200)  # Also set maximum size to maintain square shape
+        # self.setSizePolicy(Qt.QSizePolicy.Fixed, Qt.QSizePolicy.Fixed)  # Keep fixed size
+        self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)

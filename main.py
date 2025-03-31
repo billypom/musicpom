@@ -182,25 +182,32 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.timer.start(100)
         self.timer.timeout.connect(self.move_slider)
 
+        # Set fixed size for album art
+        self.albumGraphicsView.setFixedSize(250, 250)
+
+        # Make sure PlotWidget doesn't exceed album art height
+        self.PlotWidget.setFixedHeight(225)  # Adjust to leave room for playback controls
+
         # Graphics plot
         self.PlotWidget.setXRange(0, self.analyzer_x_resolution, padding=0)  # x axis range
-        self.PlotWidget.setYRange(0, 1, padding=0)  # y axis range
-        self.PlotWidget.setLogMode(False, False)
+        self.PlotWidget.setYRange(-96, 0, padding=0)  # y axis range for decibels (-96dB to 0dB)
+        self.PlotWidget.setLogMode(x=False, y=False)  # Logarithmic x-axis for frequency display
         self.PlotWidget.setMouseEnabled(x=False, y=False)
         # Performance optimizations
         self.PlotWidget.setAntialiasing(False)
         self.PlotWidget.setDownsampling(auto=True, mode='peak')
         self.PlotWidget.setClipToView(True)
-        # Remove x-axis ticks
-        # ticks = ['20', '31.25', '62.5', '125', '250', '500', '1000', '2000', '4000', '10000', '20000']
-        # self.PlotWidget.getAxis("bottom").setTicks([])
-        # self.PlotWidget.getAxis("bottom").setLabel("")  # Remove x-axis label
-        # ticks = nparray([0, 31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 15000, 20000])
 
-        # Remove y-axis labels and decorations
-        # self.PlotWidget.getAxis("left").setTicks([[(str(tick), tick) for tick in ticks]])
-        # self.PlotWidget.getAxis("left").setTicks([])
-        # self.PlotWidget.getAxis("left").setLabel("")  # Remove y-axis label
+        # Add tick marks for common decibel values (expanded range)
+        y_ticks = [(-84, '-84dB'),  (-60, '-60dB'), 
+                   (-36, '-36dB'),  (-12, '-12dB'), (0, '0dB')]
+        self.PlotWidget.getAxis('left').setTicks([y_ticks])
+
+        # Add frequency ticks on x-axis
+        freq_ticks = self.audio_visualizer.get_frequency_ticks()
+        self.PlotWidget.getAxis('bottom').setTicks([freq_ticks])
+
+        # Display grid for better readability
         self.PlotWidget.showGrid(x=True, y=True)
 
         # Connections
@@ -424,22 +431,29 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.albumGraphicsView.load_album_art(album_art_data)
 
     def update_audio_visualization(self) -> None:
-        """Handles upading points on the pyqtgraph visual"""
-        y = self.audio_visualizer.get_amplitudes()
+        """Handles updating points on the pyqtgraph visual"""
+        if self.audio_visualizer.use_decibels:
+            # Use decibel values instead of raw amplitudes
+            y = self.audio_visualizer.get_decibels()
+        else:
+            y = self.audio_visualizer.get_amplitudes()
+
         if len(y) == 0:
             return
-            
-        if self.audio_visualizer._plot_item is None:
-            self.PlotWidget.clear()
-            self.audio_visualizer._plot_item = self.PlotWidget.plot(
-                self.audio_visualizer._x_data, 
-                y, 
-                pen='b',  # Use pen instead of fill for better performance
-                fillLevel=0, 
-                fillBrush=mkBrush("b")
-            )
-        else:
-            self.audio_visualizer._plot_item.setData(self.audio_visualizer._x_data, y)
+
+        # if self.audio_visualizer._plot_item is None:
+        # thanks cursor sonnet whatever
+        self.PlotWidget.clear()
+        # Use the actual frequency values for x-axis
+        self.audio_visualizer._plot_item = self.PlotWidget.plot(
+            self.audio_visualizer._x_data,  # We'll keep using indices for drawing
+            y, 
+            pen='b',  # Use pen instead of fill for better performance
+            fillLevel=-96 if self.audio_visualizer.use_decibels else 0,  # Fill from -96dB for decibel scale
+            fillBrush=mkBrush("b")
+        )
+        # else:
+        #     self.audio_visualizer._plot_item.setData(self.audio_visualizer._x_data, y)
 
     def clear_audio_visualization(self) -> None:
         self.PlotWidget.clear()

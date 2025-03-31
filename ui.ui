@@ -28,13 +28,35 @@
       </property>
       <item>
        <layout class="QHBoxLayout" name="hLayoutHead" stretch="1,0,6">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetFixedSize</enum>
+        </property>
         <item>
          <layout class="QVBoxLayout" name="vlayoutAlbumArt">
           <property name="sizeConstraint">
            <enum>QLayout::SetFixedSize</enum>
           </property>
           <item>
-           <widget class="AlbumArtGraphicsView" name="albumGraphicsView"/>
+           <widget class="AlbumArtGraphicsView" name="albumGraphicsView">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>200</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>200</width>
+              <height>200</height>
+             </size>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -43,8 +65,14 @@
         </item>
         <item>
          <layout class="QVBoxLayout" name="vLayoutPlaybackVisuals">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetMaximumSize</enum>
+          </property>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,0,4,1">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetMaximumSize</enum>
+            </property>
             <item>
              <widget class="QSlider" name="playbackSlider">
               <property name="orientation">
@@ -137,7 +165,20 @@
            </layout>
           </item>
           <item>
-           <widget class="PlotWidget" name="PlotWidget" native="true"/>
+           <widget class="PlotWidget" name="PlotWidget" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>150</height>
+             </size>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
