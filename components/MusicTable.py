@@ -2,7 +2,10 @@ from mutagen.id3 import ID3
 from json import load as jsonload
 import DBA
 from PyQt5.QtGui import (
+    QColor,
     QDragMoveEvent,
+    QPainter,
+    QPen,
     QStandardItem,
     QStandardItemModel,
     QKeySequence,
@@ -64,7 +67,6 @@ class MusicTable(QTableView):
 
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
-        print(f"QTableView Model: {self.model()}")
         # why do i need this?
         self.application_window = application_window
 
@@ -125,7 +127,7 @@ class MusicTable(QTableView):
         self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
-        self.current_item = None  # track where cursor was last
+        self.current_index = None  # track where cursor was last
 
         # Properties
         self.setAcceptDrops(True)
@@ -147,13 +149,13 @@ class MusicTable(QTableView):
         self.vertical_header.setVisible(False)
 
         # CONNECTIONS
-        self.clicked.connect(self.set_selected_song_filepath)
+        self.clicked.connect(self.on_cell_clicked)
         # self.doubleClicked.connect(self.set_current_song_filepath)
         # self.enterKey.connect(self.set_current_song_filepath)
         self.deleteKey.connect(self.delete_songs)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model2.layoutChanged.connect(self.restore_scroll_position)
-        self.horizontal_header.sectionResized.connect(self.header_was_resized)
+        self.horizontal_header.sectionResized.connect(self.on_header_resized)
         # Final actions
         self.load_music_table()
         self.setup_keyboard_shortcuts()
@@ -161,12 +163,259 @@ class MusicTable(QTableView):
         # Load the column widths from last save
         # NOTE: Constructor can't call member function i guess?
         # otherwise i would just use `self.load_header_widths()`
-        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        if not isinstance(table_view_column_widths[0], int) or not isinstance(
-            table_view_column_widths, list
-        ):
-            for i in range(self.model2.columnCount() - 1):
-                self.setColumnWidth(i, int(table_view_column_widths[i]))
+        # table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
+        # if not isinstance(table_view_column_widths[0], int) or not isinstance(
+        #     table_view_column_widths, list
+        # ):
+        #     for i in range(self.model2.columnCount() - 1):
+        #         self.setColumnWidth(i, int(table_view_column_widths[i]))
+        self.load_header_widths()
+
+    #  _________________
+    # |                 |
+    # |                 |
+    # | Built-in Events |
+    # |                 |
+    # |_________________|
+
+    def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
+        """Do something when the QTableView is resized"""
+        if e is None:
+            raise Exception
+        super().resizeEvent(e)
+
+    def paintEvent(self, e):
+        """Override paint event to highlight the current cell"""
+        # First do the default painting
+        super().paintEvent(e)
+
+        # Check if we have a current cell
+        if self.current_index and self.current_index.isValid():
+            # Get the visual rect for the current cell
+            rect = self.visualRect(self.current_index)
+
+            # Create a painter for custom drawing
+            painter = QPainter(self.viewport())
+
+            # Draw a border around the current cell
+            pen = QPen(QColor("#4a90e2"), 2)  # Blue, 2px width
+
+            painter.setPen(pen)
+            painter.drawRect(rect.adjusted(1, 1, -1, -1))
+            painter.end()
+
+    def contextMenuEvent(self, a0):
+        """Right-click context menu for rows in Music Table"""
+        menu = QMenu(self)
+        add_to_playlist_action = QAction("Add to playlist", self)
+        add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
+        menu.addAction(add_to_playlist_action)
+        # edit metadata
+        edit_metadata_action = QAction("Edit metadata", self)
+        edit_metadata_action.triggered.connect(self.edit_selected_files_metadata)
+        menu.addAction(edit_metadata_action)
+        # edit lyrics
+        lyrics_menu = QAction("Lyrics (View/Edit)", self)
+        lyrics_menu.triggered.connect(self.show_lyrics_menu)
+        menu.addAction(lyrics_menu)
+        # open in file explorer
+        open_containing_folder_action = QAction("Open in system file manager", self)
+        open_containing_folder_action.triggered.connect(self.open_directory)
+        menu.addAction(open_containing_folder_action)
+        # view id3 tags (debug)
+        view_id3_tags_debug = QAction("View ID3 tags (debug)", self)
+        view_id3_tags_debug.triggered.connect(self.show_id3_tags_debug_menu)
+        menu.addAction(view_id3_tags_debug)
+        # delete song
+        delete_action = QAction("Delete", self)
+        delete_action.triggered.connect(self.delete_songs)
+        menu.addAction(delete_action)
+        # show
+        self.set_selected_song_filepath()
+        if a0 is not None:
+            menu.exec_(a0.globalPos())
+
+    def dragEnterEvent(self, e: QDragEnterEvent | None):
+        if e is None:
+            return
+        data = e.mimeData()
+        if data and data.hasUrls():
+            e.accept()
+        else:
+            e.ignore()
+
+    def dragMoveEvent(self, e: QDragMoveEvent | None):
+        if e is None:
+            return
+        data = e.mimeData()
+        if data and data.hasUrls():
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e: QDropEvent | None):
+        if e is None:
+            return
+        data = e.mimeData()
+        debug(f"dropEvent data: {data}")
+        if data and data.hasUrls():
+            directories = []
+            files = []
+            for url in data.urls():
+                if url.isLocalFile():
+                    path = url.toLocalFile()
+                    if os.path.isdir(path):
+                        # append 1 directory
+                        directories.append(path)
+                    else:
+                        # append 1 file
+                        files.append(path)
+            e.accept()
+            debug(f"directories: {directories}")
+            debug(f"files: {files}")
+            if directories:
+                worker = Worker(self.get_audio_files_recursively, directories)
+                worker.signals.signal_progress.connect(self.handle_progress)
+                # worker.signals.signal_progress.connect(self.qapp.handle_progress)
+                worker.signals.signal_result.connect(self.on_recursive_search_finished)
+                worker.signals.signal_finished.connect(self.load_music_table)
+                if self.qapp:
+                    threadpool = self.qapp.threadpool
+                    threadpool.start(worker)
+            if files:
+                self.add_files(files)
+        else:
+            e.ignore()
+
+    def keyPressEvent(self, e):
+        """Press a key. Do a thing"""
+        if not e:
+            return
+
+        key = e.key()
+        if key == Qt.Key.Key_Space:  # Spacebar to play/pause
+            self.toggle_play_pause()
+
+        elif key == Qt.Key.Key_Right:
+            current_index = self.currentIndex()
+            new_index = self.model2.index(
+                current_index.row(), current_index.column() + 1
+            )
+            if new_index.isValid():
+                self.setCurrentIndex(new_index)
+            super().keyPressEvent(e)
+
+        elif key == Qt.Key.Key_Left:
+            current_index = self.currentIndex()
+            new_index = self.model2.index(
+                current_index.row(), current_index.column() - 1
+            )
+            if new_index.isValid():
+                self.setCurrentIndex(new_index)
+            super().keyPressEvent(e)
+
+        elif key == Qt.Key.Key_Up:
+            current_index = self.currentIndex()
+            new_index = self.model2.index(
+                current_index.row() - 1, current_index.column()
+            )
+            if new_index.isValid():
+                self.setCurrentIndex(new_index)
+            super().keyPressEvent(e)
+
+        elif key == Qt.Key.Key_Down:
+            current_index = self.currentIndex()
+            new_index = self.model2.index(
+                current_index.row() + 1, current_index.column()
+            )
+            if new_index.isValid():
+                self.setCurrentIndex(new_index)
+            super().keyPressEvent(e)
+
+        elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            if self.state() != QAbstractItemView.EditingState:
+                self.enterKey.emit()  # Enter key detected
+            else:
+                super().keyPressEvent(e)
+        else:  # Default behavior
+            super().keyPressEvent(e)
+
+    #  ____________________
+    # |                    |
+    # |                    |
+    # | On action handlers |
+    # |                    |
+    # |____________________|
+
+    def on_cell_clicked(self, index):
+        """
+        When a cell is clicked, do some stuff :)
+        """
+        if index == self.current_index:
+            print("nope")
+            return
+        self.current_index = index
+        self.set_selected_song_filepath()
+        self.viewport().update()  # type: ignore
+
+    def on_header_resized(self, logicalIndex, oldSize, newSize):
+        """Handles keeping headers inside the viewport"""
+        # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
+        col_count = self.model2.columnCount()
+        qtableview_width = self.size().width()
+        sum_of_cols = self.horizontal_header.length()
+        # debug(f'qtable_width: {qtableview_width}')
+        # debug(f'sum of cols: {sum_of_cols}')
+
+        if sum_of_cols != qtableview_width:
+            # if not the last header
+            if logicalIndex < (col_count):
+                next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
+                # If it should shrink
+                if next_header_size > (sum_of_cols - qtableview_width):
+                    # shrink it
+                    self.horizontal_header.resizeSection(
+                        logicalIndex + 1,
+                        next_header_size - (sum_of_cols - qtableview_width),
+                    )
+                else:
+                    # block the resize
+                    self.horizontal_header.resizeSection(logicalIndex, oldSize)
+
+    def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
+        """Handles updating ID3 tags when data changes in a cell"""
+        if isinstance(self.model2, QStandardItemModel):
+            debug("on_cell_data_changed | doing the normal stuff")
+            # get the ID of the row that was edited
+            id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
+            # get the db song_id from the row
+            song_id = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
+            # get the filepath through a series of steps...
+            # NOTE: filepath is always the last column
+            filepath_column_idx = self.model2.columnCount() - 1
+            filepath_index = self.model2.index(topLeft.row(), filepath_column_idx)
+            filepath = self.model2.data(filepath_index)
+            # update the ID3 information
+            user_input_data = topLeft.data()
+            edited_column_name = self.database_columns[topLeft.column()]
+            debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
+            response = set_id3_tag(filepath, edited_column_name, user_input_data)
+            if response:
+                # Update the library with new metadata
+                update_song_in_database(song_id, edited_column_name, user_input_data)
+            return
+
+    def on_recursive_search_finished(self, result):
+        """file search completion handler"""
+        if result:
+            self.add_files(result)
+
+    #  ____________________
+    # |                    |
+    # |                    |
+    # |       Verbs        |
+    # |                    |
+    # |____________________|
 
     def load_header_widths(self):
         """
@@ -218,67 +467,6 @@ class MusicTable(QTableView):
         self.connect_data_changed()
         self.connect_layout_changed()
         # self.model2.layoutChanged.emit()
-
-    def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
-        """Do something when the QTableView is resized"""
-        if e is None:
-            raise Exception
-        super().resizeEvent(e)
-
-    def header_was_resized(self, logicalIndex, oldSize, newSize):
-        """Handles keeping headers inside the viewport"""
-        # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
-        col_count = self.model2.columnCount()
-        qtableview_width = self.size().width()
-        sum_of_cols = self.horizontal_header.length()
-        # debug(f'qtable_width: {qtableview_width}')
-        # debug(f'sum of cols: {sum_of_cols}')
-
-        if sum_of_cols != qtableview_width:
-            # if not the last header
-            if logicalIndex < (col_count):
-                next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
-                # If it should shrink
-                if next_header_size > (sum_of_cols - qtableview_width):
-                    # shrink it
-                    self.horizontal_header.resizeSection(
-                        logicalIndex + 1,
-                        next_header_size - (sum_of_cols - qtableview_width),
-                    )
-                else:
-                    # block the resize
-                    self.horizontal_header.resizeSection(logicalIndex, oldSize)
-
-    def contextMenuEvent(self, a0):
-        """Right-click context menu for rows in Music Table"""
-        menu = QMenu(self)
-        add_to_playlist_action = QAction("Add to playlist", self)
-        add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
-        menu.addAction(add_to_playlist_action)
-        # edit metadata
-        edit_metadata_action = QAction("Edit metadata", self)
-        edit_metadata_action.triggered.connect(self.edit_selected_files_metadata)
-        menu.addAction(edit_metadata_action)
-        # edit lyrics
-        lyrics_menu = QAction("Lyrics (View/Edit)", self)
-        lyrics_menu.triggered.connect(self.show_lyrics_menu)
-        menu.addAction(lyrics_menu)
-        # open in file explorer
-        open_containing_folder_action = QAction("Open in system file manager", self)
-        open_containing_folder_action.triggered.connect(self.open_directory)
-        menu.addAction(open_containing_folder_action)
-        # view id3 tags (debug)
-        view_id3_tags_debug = QAction("View ID3 tags (debug)", self)
-        view_id3_tags_debug.triggered.connect(self.show_id3_tags_debug_menu)
-        menu.addAction(view_id3_tags_debug)
-        # delete song
-        delete_action = QAction("Delete", self)
-        delete_action.triggered.connect(self.delete_songs)
-        menu.addAction(delete_action)
-        # show
-        self.set_selected_song_filepath()
-        if a0 is not None:
-            menu.exec_(a0.globalPos())
 
     def disconnect_data_changed(self):
         """Disconnects the dataChanged signal from QTableView.model"""
@@ -394,94 +582,6 @@ class MusicTable(QTableView):
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
 
-    def dragEnterEvent(self, e: QDragEnterEvent | None):
-        if e is None:
-            return
-        data = e.mimeData()
-        if data and data.hasUrls():
-            e.accept()
-        else:
-            e.ignore()
-
-    def dragMoveEvent(self, e: QDragMoveEvent | None):
-        if e is None:
-            return
-        data = e.mimeData()
-        if data and data.hasUrls():
-            e.accept()
-        else:
-            e.ignore()
-
-    def dropEvent(self, e: QDropEvent | None):
-        if e is None:
-            return
-        data = e.mimeData()
-        debug(f"dropEvent data: {data}")
-        if data and data.hasUrls():
-            directories = []
-            files = []
-            for url in data.urls():
-                if url.isLocalFile():
-                    path = url.toLocalFile()
-                    if os.path.isdir(path):
-                        # append 1 directory
-                        directories.append(path)
-                    else:
-                        # append 1 file
-                        files.append(path)
-            e.accept()
-            debug(f"directories: {directories}")
-            debug(f"files: {files}")
-            if directories:
-                worker = Worker(self.get_audio_files_recursively, directories)
-                worker.signals.signal_progress.connect(self.handle_progress)
-                # worker.signals.signal_progress.connect(self.qapp.handle_progress)
-                worker.signals.signal_result.connect(self.on_recursive_search_finished)
-                worker.signals.signal_finished.connect(self.load_music_table)
-                if self.qapp:
-                    threadpool = self.qapp.threadpool
-                    threadpool.start(worker)
-            if files:
-                self.add_files(files)
-        else:
-            e.ignore()
-
-    def on_recursive_search_finished(self, result):
-        """file search completion handler"""
-        if result:
-            self.add_files(result)
-
-    def keyPressEvent(self, e):
-        """Press a key. Do a thing"""
-        if not e:
-            return
-        key = e.key()
-        if key == Qt.Key.Key_Space:  # Spacebar to play/pause
-            self.toggle_play_pause()
-        elif key == Qt.Key.Key_Up:  # Arrow key navigation
-            current_index = self.currentIndex()
-            new_index = self.model2.index(
-                current_index.row() - 1, current_index.column()
-            )
-            if new_index.isValid():
-                self.setCurrentIndex(new_index)
-            super().keyPressEvent(e)
-        elif key == Qt.Key.Key_Down:  # Arrow key navigation
-            current_index = self.currentIndex()
-            new_index = self.model2.index(
-                current_index.row() + 1, current_index.column()
-            )
-            if new_index.isValid():
-                self.setCurrentIndex(new_index)
-            super().keyPressEvent(e)
-        elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            if self.state() != QAbstractItemView.EditingState:
-                self.enterKey.emit()  # Enter key detected
-            else:
-                super().keyPressEvent(e)
-        else:  # Default behavior
-            super().keyPressEvent(e)
-
     def setup_keyboard_shortcuts(self):
         """Setup shortcuts here"""
         shortcut = QShortcut(QKeySequence("Ctrl+Shift+R"), self)
@@ -489,30 +589,6 @@ class MusicTable(QTableView):
         # Delete key?
         shortcut = QShortcut(QKeySequence("Delete"), self)
         shortcut.activated.connect(self.delete_songs)
-
-    def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
-        """Handles updating ID3 tags when data changes in a cell"""
-        if isinstance(self.model2, QStandardItemModel):
-            debug("on_cell_data_changed | doing the normal stuff")
-            # get the ID of the row that was edited
-            id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
-            # get the db song_id from the row
-            song_id = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
-            # get the filepath through a series of steps...
-            # NOTE: filepath is always the last column
-            filepath_column_idx = self.model2.columnCount() - 1
-            filepath_index = self.model2.index(topLeft.row(), filepath_column_idx)
-            filepath = self.model2.data(filepath_index)
-            # update the ID3 information
-            user_input_data = topLeft.data()
-            edited_column_name = self.database_columns[topLeft.column()]
-            debug(f"edited column name: {edited_column_name}")
-            response = set_id3_tag(filepath, edited_column_name, user_input_data)
-            if response:
-                # Update the library with new metadata
-                update_song_in_database(song_id, edited_column_name, user_input_data)
-            return
-        debug("")
 
     def handle_progress(self, data):
         """Emits data to main"""
