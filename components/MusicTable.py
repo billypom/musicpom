@@ -76,7 +76,7 @@ class MusicTable(QTableView):
         # Set QSortFilterProxyModel source to QStandardItemModel
         # Set QTableView model to the Proxy model
         # so it looks like this, i guess:
-        # QTableView model = QSortFilterProxyModel(QStandardItemModel)
+        # QTableView model2 = QSortFilterProxyModel(QStandardItemModel)
 
         # need a standard item  model to do actions on cells
         self.model2: QStandardItemModel = QStandardItemModel()
@@ -274,7 +274,6 @@ class MusicTable(QTableView):
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
                 worker.signals.signal_progress.connect(self.handle_progress)
-                # worker.signals.signal_progress.connect(self.qapp.handle_progress)
                 worker.signals.signal_result.connect(self.on_recursive_search_finished)
                 worker.signals.signal_finished.connect(self.load_music_table)
                 if self.qapp:
@@ -298,7 +297,7 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row(), index.column() + 1)
             if new_index.isValid():
-                print(f"right -> ({new_index.row()},{new_index.column()})")
+                # print(f"right -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
                 self.viewport().update()  # type: ignore
             super().keyPressEvent(e)
@@ -308,7 +307,7 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row(), index.column() - 1)
             if new_index.isValid():
-                print(f"left -> ({new_index.row()},{new_index.column()})")
+                # print(f"left -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
                 self.viewport().update()  # type: ignore
             super().keyPressEvent(e)
@@ -318,7 +317,7 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row() - 1, index.column())
             if new_index.isValid():
-                print(f"up -> ({new_index.row()},{new_index.column()})")
+                # print(f"up -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
                 self.viewport().update()  # type: ignore
             super().keyPressEvent(e)
@@ -328,7 +327,7 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row() + 1, index.column())
             if new_index.isValid():
-                print(f"down -> ({new_index.row()},{new_index.column()})")
+                # print(f"down -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
                 self.viewport().update()  # type: ignore
             super().keyPressEvent(e)
@@ -493,13 +492,15 @@ class MusicTable(QTableView):
             worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
             worker.signals.signal_progress.connect(self.qapp.handle_progress)
             worker.signals.signal_finished.connect(self.delete_selected_row_indices)
-            worker.signals.signal_finished.connect(self.load_music_table)
             if self.qapp:
                 threadpool = self.qapp.threadpool
                 threadpool.start(worker)
 
     def delete_selected_row_indices(self):
-        """Removes rows from the QTableView based on a list of indices"""
+        """
+        Removes rows from the QTableView based on a list of indices
+        and then reload the table
+        """
         selected_indices = self.get_selected_rows()
         self.disconnect_data_changed()
         for index in selected_indices:
@@ -508,6 +509,7 @@ class MusicTable(QTableView):
             except Exception as e:
                 debug(f" delete_songs() failed | {e}")
         self.connect_data_changed()
+        self.load_music_table()
 
     def edit_selected_files_metadata(self):
         """Opens a form with metadata from the selected audio files"""
