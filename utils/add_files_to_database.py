@@ -8,9 +8,9 @@ from appdirs import user_config_dir
 import platform
 
 
-def add_files_to_library(files, progress_callback=None):
+def add_files_to_database(files, progress_callback=None):
     """
-    Adds audio file(s) to the sqllite db
+    Adds audio file(s) to the sqllite db "song" table
     Args:
         files: list() of fully qualified paths to audio file(s)
         progress_callback: emit data for user feedback

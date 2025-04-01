@@ -11,7 +11,6 @@ from mutagen.id3 import ID3
 from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 from pathlib import Path
-from numpy import where as npwhere
 from appdirs import user_config_dir
 from logging import debug, error, warning, basicConfig, INFO, DEBUG
 from ui import Ui_MainWindow
@@ -40,7 +39,7 @@ from PyQt5.QtGui import QClipboard, QCloseEvent, QPixmap, QResizeEvent
 from utils import (
     scan_for_music,
     initialize_db,
-    add_files_to_library,
+    add_files_to_database,
 )
 from components import (
     PreferencesWindow,
@@ -545,7 +544,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         open_files_window.exec_()
         filenames = open_files_window.selectedFiles()
         # Adds files to the library in a new thread
-        worker = Worker(add_files_to_library, filenames)
+        worker = Worker(add_files_to_database, filenames)
         worker.signals.signal_finished.connect(self.tableView.load_music_table)
         worker.signals.signal_progress.connect(self.handle_progress)
         self.threadpool.start(worker)

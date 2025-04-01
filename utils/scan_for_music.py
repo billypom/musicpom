@@ -1,10 +1,9 @@
 import os
 from PyQt5.QtCore import pyqtSignal
-from utils.add_files_to_library import add_files_to_library
+from utils.add_files_to_database import add_files_to_database
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
-
 
 
 def scan_for_music():
@@ -22,4 +21,4 @@ def scan_for_music():
             filename = os.path.join(dirpath, file)
             if any(filename.lower().endswith(ext) for ext in extensions):
                 files_to_add.append(filename)
-    add_files_to_library(files_to_add)
+    add_files_to_database(files_to_add)
