@@ -25,7 +25,7 @@ class FFTAnalyser(QtCore.QThread):
         # of the audio at a specific point in time
         # in this case, it takes 5% of the samples at some point in time
         self.sampling_window_length = 0.05
-        self.visual_delta_threshold = 100
+        self.visual_delta_threshold = 1000
         self.sensitivity = 10
 
     def reset_media(self):
