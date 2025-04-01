@@ -369,9 +369,10 @@ class MusicTable(QTableView):
         # debug(f'qtable_width: {qtableview_width}')
         # debug(f'sum of cols: {sum_of_cols}')
 
+        # check for discrepancy
         if sum_of_cols != qtableview_width:
             # if not the last header
-            if logicalIndex < (col_count):
+            if logicalIndex < col_count:
                 next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
                 # If it should shrink
                 if next_header_size > (sum_of_cols - qtableview_width):
