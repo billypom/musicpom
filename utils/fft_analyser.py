@@ -13,6 +13,7 @@ class FFTAnalyser(QtCore.QThread):
     """Analyses a song using FFTs."""
 
     calculatedVisual = QtCore.pyqtSignal(np.ndarray)
+    calculatedVisualRs = QtCore.pyqtSignal(np.ndarray)
 
     def __init__(self, player, x_resolution):  # noqa: F821
         super().__init__()
@@ -122,11 +123,12 @@ class FFTAnalyser(QtCore.QThread):
                 self.points[n] = amp
 
             # Set a lower threshold to properly reach zero
-            if self.points[n] < 1e-4:
+            if self.points[n] < 1e-2:
                 self.points[n] = 0
 
+        print(self.points)
         # interpolate points
-        rs = gaussian_filter1d(self.points, sigma=1)
+        rs = gaussian_filter1d(self.points, sigma=2)
 
         # divide by the highest sample in the song to normalise the
         # amps in terms of decimals from 0 -> 1
