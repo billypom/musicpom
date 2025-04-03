@@ -27,7 +27,7 @@ class FFTAnalyser(QtCore.QThread):
         # in this case, it takes 5% of the samples at some point in time
         self.sampling_window_length = 0.05
         self.visual_delta_threshold = 1000
-        self.sensitivity = 10
+        self.sensitivity = 1
 
     def reset_media(self):
         """Resets the media to the currently playing song."""
@@ -109,6 +109,7 @@ class FFTAnalyser(QtCore.QThread):
         # array (self.points) is so that we can fade out the previous amplitudes from
         # the past
         for n, amp in enumerate(point_samples):
+            amp *= 2
             if self.player.state() in (
                 self.player.PausedState,
                 self.player.StoppedState,
@@ -121,12 +122,12 @@ class FFTAnalyser(QtCore.QThread):
             else:
                 # Rise quickly to new peaks
                 self.points[n] = amp
-
+                # print(f'amp > points[n] - {amp} > {self.points[n]}')
             # Set a lower threshold to properly reach zero
-            if self.points[n] < 1e-2:
-                self.points[n] = 0
+            if self.points[n] < 1:
+                self.points[n] = 1e-5
 
-        print(self.points)
+        # print(self.points)
         # interpolate points
         rs = gaussian_filter1d(self.points, sigma=2)
 
