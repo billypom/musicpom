@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 from PyQt5.QtCore import (
+    QSize,
     QUrl,
     QTimer,
     Qt,
@@ -221,9 +222,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.playbackSlider.sliderReleased.connect(
             lambda: self.player.setPosition(self.playbackSlider.value())
         )  # sliderReleased works better than sliderMoved
-        self.volumeSlider.sliderMoved[int].connect(lambda: self.volume_changed())
+        self.volumeSlider.sliderMoved[int].connect(lambda: self.on_volume_changed())
         self.speedSlider.sliderMoved.connect(
-            lambda: self.speed_changed(self.speedSlider.value())
+            lambda: self.on_speed_changed(self.speedSlider.value())
         )
         self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
         self.previousButton.clicked.connect(self.on_previous_clicked)
@@ -276,18 +277,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.delete_album_art_for_current_song
         )
 
-    def load_config(self) -> None:
-        """does what it says"""
-        cfg_file = (
-            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
-            / "config.ini"
-        )
-        self.config.read(cfg_file)
-        debug("CONFIG LOADED")
-
-    def get_thread_pool(self) -> QThreadPool:
-        """Returns the threadpool instance"""
-        return self.threadpool
+    #  _________________
+    # |                 |
+    # |                 |
+    # | Built-in Events |
+    # |                 |
+    # |_________________|
 
     def resizeEvent(self, a0: typing.Optional[QResizeEvent]) -> None:
         """Do something when the window resizes"""
@@ -310,20 +305,86 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         if a0 is not None:
             super().closeEvent(a0)
 
-    def show_status_bar_message(self, message: str, timeout: int | None = None) -> None:
-        """
-        Show a `message` in the status bar for a length of time - `timeout` in ms
-        """
-        if timeout:
-            self.status_bar.showMessage(message, timeout)
+    #  ____________________
+    # |                    |
+    # |                    |
+    # | On action handlers |
+    # |                    |
+    # |____________________|
+
+    def on_volume_changed(self) -> None:
+        """Handles volume changes"""
+        try:
+            self.current_volume = self.volumeSlider.value()
+            self.player.setVolume(self.current_volume)
+            self.volumeLabel.setText(str(self.current_volume))
+        except Exception as e:
+            error(f"main.py on_volume_changed() | Changing volume error: {e}")
+
+    def on_speed_changed(self, rate: int) -> None:
+        """Handles playback speed changes"""
+        self.player.setPlaybackRate(rate / 50)
+        self.speedLabel.setText("{:.2f}".format(rate / 50))
+
+    def on_play_clicked(self) -> None:
+        """Updates the Play & Pause buttons when clicked"""
+        if self.player.state() == QMediaPlayer.State.PlayingState:
+            self.player.pause()
+            self.playButton.setText("▶️")
         else:
-            self.status_bar.showMessage(message)
+            if self.player.state() == QMediaPlayer.State.PausedState:
+                self.player.play()
+                self.playButton.setText("⏸️")
+            else:
+                self.play_audio_file()
+                self.playButton.setText("👽")
+
+    def on_previous_clicked(self) -> None:
+        """"""
+        # TODO: implement this
+        debug("main.py on_previous_clicked()")
+
+    def on_next_clicked(self) -> None:
+        """"""
+        # TODO: implement this
+        debug("main.py on_next_clicked()")
+
+    #  ____________________
+    # |                    |
+    # |                    |
+    # |       Verbs        |
+    # |                    |
+    # |____________________|
+
+    def load_config(self) -> None:
+        """does what it says"""
+        cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config.read(cfg_file)
+        debug("CONFIG LOADED")
+
+    def get_thread_pool(self) -> QThreadPool:
+        """Returns the threadpool instance"""
+        return self.threadpool
 
     def set_permanent_status_bar_message(self, message: str) -> None:
         """
         Sets the permanent message label in the status bar
         """
+        # what does this do?
         self.permanent_status_label.setText(message)
+
+    def show_status_bar_message(self, message: str, timeout: int | None = None) -> None:
+        """
+        Show a `message` in the status bar for a length of time - `timeout` in ms
+        (bottom left)
+        """
+        if timeout:
+            self.status_bar.showMessage(message, timeout)
+        else:
+            self.status_bar.showMessage(message)
 
     def play_audio_file(self) -> None:
         """
@@ -359,10 +420,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                 if "TIT2" in self.current_song_metadata
                 else None
             )
-
-            debug(artist)
-            debug(title)
-            debug(album)
             self.artistLabel.setText(artist)
             self.albumLabel.setText(album)
             self.titleLabel.setText(title)
@@ -414,7 +471,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def delete_album_art_for_current_song(self) -> None:
         """Handles deleting the ID3 tag APIC (album art) for current song"""
         file = self.tableView.get_current_song_filepath()
-        # delete APIC data
         try:
             audio = ID3(file)
             debug(audio)
@@ -430,10 +486,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             error(
                 f"delete_album_art_for_current_song() | Error processing this file:\t {file}\n{exctype}\n{value}\n{traceback.format_exc()}"
             )
+            return
         # Load the default album artwork in the qgraphicsview
-        album_art_data = self.tableView.get_current_song_album_art()
+        # album_art_data = self.tableView.get_current_song_album_art()
         album_art_data = get_album_art(None)
         self.albumGraphicsView.load_album_art(album_art_data)
+
+    def process_probe(self, buff) -> None:
+        """Audio visualizer buffer processing"""
+        buff.startTime()
+        self.update_audio_visualization()
 
     def update_audio_visualization(self) -> None:
         """Handles updating points on the pyqtgraph visual"""
@@ -445,8 +507,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         if len(y) == 0:
             return
-
-        # print(y)
 
         # if self.audio_visualizer._plot_item is None:
         # thanks cursor sonnet whatever
@@ -493,40 +553,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                     f"{int(duration_minutes):02d}:{int(duration_seconds):02d}"
                 )
 
-    def volume_changed(self) -> None:
-        """Handles volume changes"""
-        try:
-            self.current_volume = self.volumeSlider.value()
-            self.player.setVolume(self.current_volume)
-            self.volumeLabel.setText(str(self.current_volume))
-        except Exception as e:
-            error(f"main.py volume_changed() | Changing volume error: {e}")
-
-    def speed_changed(self, rate: int) -> None:
-        """Handles playback speed changes"""
-        self.player.setPlaybackRate(rate / 50)
-        self.speedLabel.setText("{:.2f}".format(rate / 50))
-
-    def on_play_clicked(self) -> None:
-        """Updates the Play & Pause buttons when clicked"""
-        if self.player.state() == QMediaPlayer.State.PlayingState:
-            self.player.pause()
-            self.playButton.setText("▶️")
-        else:
-            if self.player.state() == QMediaPlayer.State.PausedState:
-                self.player.play()
-                self.playButton.setText("⏸️")
-            else:
-                self.play_audio_file()
-                self.playButton.setText("👽")
-
-    def on_previous_clicked(self) -> None:
-        """"""
-        debug("main.py on_previous_clicked()")
-
-    def on_next_clicked(self) -> None:
-        debug("main.py on_next_clicked()")
-
     def add_latest_playlist_to_tree(self) -> None:
         """Refreshes the playlist tree"""
         self.playlistTreeView.add_latest_playlist_to_tree()
@@ -554,6 +580,13 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         updates the status bar when progress is emitted
         """
         self.show_status_bar_message(data)
+
+    #  ____________________
+    # |                    |
+    # |                    |
+    # |   menubar verbs    |
+    # |                    |
+    # |____________________|
 
     # File
 
@@ -611,11 +644,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         if reply == QMessageBox.Yes:
             initialize_db()
             self.tableView.load_music_table()
-
-    def process_probe(self, buff) -> None:
-        """Audio visualizer buffer processing"""
-        buff.startTime()
-        self.update_audio_visualization()
 
 
 if __name__ == "__main__":
@@ -689,5 +717,9 @@ if __name__ == "__main__":
     # qdarktheme.setup_theme("auto")
     # Show the UI
     ui = ApplicationWindow(clipboard)
+    # window size
+    width, height = tuple(config.get("settings", "window_size").split(","))
+    window_size = QSize(int(width), int(height))
+    ui.resize(window_size)
     ui.show()
     sys.exit(app.exec_())

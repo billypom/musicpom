@@ -74,7 +74,7 @@ class AudioVisualizer(QtWidgets.QWidget):
         # Convert to decibels (20*log10 is the standard formula for amplitude to dB)
         db_values = 20 * np.log10(amplitudes)
         # Clip very low values to have a reasonable floor (e.g. -96dB)
-        db_values = np.maximum(db_values, -2000)
+        db_values = np.maximum(db_values, -96)
         return db_values
 
     def set_rs(self, rs):
