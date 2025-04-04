@@ -27,7 +27,7 @@ class FFTAnalyser(QtCore.QThread):
         # in this case, it takes 5% of the samples at some point in time
         self.sampling_window_length = 0.05
         self.visual_delta_threshold = 1000
-        self.sensitivity = 1
+        self.sensitivity = 10
 
     def reset_media(self):
         """Resets the media to the currently playing song."""
@@ -65,6 +65,7 @@ class FFTAnalyser(QtCore.QThread):
         freq = np.fft.fftfreq(fourier.size, d=self.sampling_window_length)
         amps = 2 / v_sample.size * np.abs(fourier)
         data = np.array([freq, amps]).T
+
         # TEST:
         # print(freq * .05 * self.song.frame_rate)
 
@@ -89,18 +90,18 @@ class FFTAnalyser(QtCore.QThread):
         if not data.size:
             return
 
-        # for i, freq in enumerate(np.arange(0, 1, point_range), start=1):
-        for i, log_freq in enumerate(log_freqs):
+        for i, freq in enumerate(np.arange(0, 1, point_range), start=1):
+        # for i, log_freq in enumerate(log_freqs):
             # get the amps which are in between the frequency range
-            # amps = data[(freq - point_range < data[:, 0]) & (data[:, 0] < freq)]
-            amps = data[(log_freq - point_range < data[:, 0]) & (data[:, 0] < log_freq)]
+            amps = data[(freq - point_range < data[:, 0]) & (data[:, 0] < freq)]
+            # amps = data[(log_freq - point_range < data[:, 0]) & (data[:, 0] < log_freq)]
             if not amps.size:
                 point_samples.append(0)
             else:
                 point_samples.append(
                     amps.max()
                     * (
-                        (1 + self.sensitivity / 10 + (self.sensitivity - 1) / 10)
+                        ((1 + self.sensitivity) / 10 + (self.sensitivity - 1) / 10)
                         ** (i / 50)
                     )
                 )
@@ -109,7 +110,7 @@ class FFTAnalyser(QtCore.QThread):
         # array (self.points) is so that we can fade out the previous amplitudes from
         # the past
         for n, amp in enumerate(point_samples):
-            amp *= 2
+            # amp *= 2
             if self.player.state() in (
                 self.player.PausedState,
                 self.player.StoppedState,
@@ -124,10 +125,11 @@ class FFTAnalyser(QtCore.QThread):
                 self.points[n] = amp
                 # print(f'amp > points[n] - {amp} > {self.points[n]}')
             # Set a lower threshold to properly reach zero
-            if self.points[n] < 1:
-                self.points[n] = 1e-5
+            if self.points[n] < 1e-4:
+                self.points[n] = 0
 
         # print(self.points)
+
         # interpolate points
         rs = gaussian_filter1d(self.points, sigma=2)
 

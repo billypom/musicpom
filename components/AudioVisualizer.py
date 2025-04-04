@@ -1,5 +1,7 @@
 import numpy as np
+import math
 from PyQt5 import QtWidgets
+from numpy.lib import math
 from utils import FFTAnalyser
 
 
@@ -67,12 +69,12 @@ class AudioVisualizer(QtWidgets.QWidget):
         With a noise floor cutoff at around -96dB (for very small values)
         """
         # Avoid log(0) by adding a small epsilon
-        epsilon = 1e-6
+        epsilon = 1e-30
         amplitudes = np.maximum(self.amps, epsilon)
         # Convert to decibels (20*log10 is the standard formula for amplitude to dB)
         db_values = 20 * np.log10(amplitudes)
         # Clip very low values to have a reasonable floor (e.g. -96dB)
-        db_values = np.maximum(db_values, -96)
+        db_values = np.maximum(db_values, -2000)
         return db_values
 
     def set_rs(self, rs):
@@ -84,4 +86,5 @@ class AudioVisualizer(QtWidgets.QWidget):
         Amps are assigned here, based on values passed by the signal
         """
         # self.amps = np.maximum(np.array(amps), 1e-12)  # Set a very small threshold
+        # print(self.amps)
         self.amps = np.array(amps)
