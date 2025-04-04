@@ -53,11 +53,10 @@ config.ini db/
 - ~~batch metadata changer (red highlight fields that have differing info)~~
 - ~~playlists~~
 - ~~delete songs from library (del key || right-click delete)~~
+- ~~improve audio visualizer - logarithmic x-axis ISO octave bands - see Renoise~~
+- ~~when table is focused, start typing to match against the primary sort column~~
 - playlist autoexporting
 - .wav, .ogg, .flac convertor
 - automatic "radio" based on artist or genre
-- search bar, full text search on song, artist, album
-- when table is focused, start typing to match against the primary sort column
-- improve audio visualizer - logarithmic x-axis ISO octave bands - see Renoise
 - "installer" - put files in /opt? script to install and uninstall... eh
 - .deb package?
