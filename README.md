@@ -57,6 +57,11 @@ config.ini db/
 - ~~when table is focused, start typing to match against the primary sort column~~
 - playlist autoexporting
 - .wav, .ogg, .flac convertor
+- remember last window size
+- playback modes (normal, repeat playlist, repeat 1 song, shuffle)
+- autoplay next song in all modes
+- allow spectrum analyzer to fall when playback stops or song is paused
+- ability to delete playlist
 - automatic "radio" based on artist or genre
 - "installer" - put files in /opt? script to install and uninstall... eh
 - .deb package?
