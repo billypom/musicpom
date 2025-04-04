@@ -1,17 +1,15 @@
 import numpy as np
-import math
 from PyQt5 import QtWidgets
-from numpy.lib import math
 from utils import FFTAnalyser
 
 
 class AudioVisualizer(QtWidgets.QWidget):
     """Audio Visualizer component"""
 
-    def __init__(self, media_player, x_resolution):
+    def __init__(self, media_player):
         super().__init__()
         self.media_player = media_player
-        self.x_resolution = x_resolution
+        self.x_resolution = 100
         self.fft_analyser = FFTAnalyser(self.media_player, self.x_resolution)
         self.fft_analyser.calculatedVisual.connect(self.set_amplitudes)
         self.fft_analyser.calculatedVisualRs.connect(self.set_rs)
@@ -27,6 +25,10 @@ class AudioVisualizer(QtWidgets.QWidget):
         self.frequency_values = np.logspace(
             np.log10(self.min_freq), np.log10(self.max_freq), self.x_resolution
         )
+
+    def get_x_resolution(self):
+        """Returns the resolution for the graphics plot"""
+        return self.x_resolution
 
     def get_frequency_ticks(self):
         """Returns frequency ticks for x-axis display

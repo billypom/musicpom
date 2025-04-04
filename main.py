@@ -162,10 +162,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
-        self.analyzer_x_resolution = 100
-        self.audio_visualizer: AudioVisualizer = AudioVisualizer(
-            self.player, self.analyzer_x_resolution
-        )
+        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
         self.timer = QTimer(self)  # Audio timing things
         self.clipboard = clipboard
         self.tableView.load_qapp(self)
@@ -192,7 +189,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Adjust to leave room for playback controls
         self.PlotWidget.setFixedHeight(225)
         # x range
-        self.PlotWidget.setXRange(0, self.analyzer_x_resolution, padding=0)
+        self.PlotWidget.setXRange(
+            0, self.audio_visualizer.get_x_resolution(), padding=0
+        )
         # y axis range for decibals (-96db to 0db)
         self.PlotWidget.setYRange(-96, 0, padding=0)
         # Logarithmic x-axis for frequency display
@@ -298,6 +297,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         column_widths_as_string = ",".join(list_of_column_widths)
         self.config["table"]["column_widths"] = column_widths_as_string
         self.config["settings"]["volume"] = str(self.current_volume)
+        self.config["settings"]["window_size"] = (
+            str(self.width()) + "," + str(self.height())
+        )
 
         # Save the config
         with open(self.cfg_file, "w") as configfile:
