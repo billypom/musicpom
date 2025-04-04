@@ -38,9 +38,11 @@ from PyQt5.QtCore import (
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QClipboard, QCloseEvent, QPixmap, QResizeEvent
 from utils import (
+    delete_album_art,
     scan_for_music,
     initialize_db,
     add_files_to_database,
+    set_album_art,
 )
 from components import (
     PreferencesWindow,
@@ -436,63 +438,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             debug(
                 f"main.py set_album_art_for_selected_songs() | updating album art for {song}"
             )
-            self.update_album_art_for_song(song, album_art_path)
-
-    def update_album_art_for_song(
-        self, song_file_path: str, album_art_path: str
-    ) -> None:
-        """Updates the ID3 tag APIC (album art) for 1 song"""
-        # audio = MP3(song_file_path, ID3=ID3)
-        audio = ID3(song_file_path)
-        # Remove existing APIC Frames (album art)
-        audio.delall("APIC")
-        # Add the album art
-        with open(album_art_path, "rb") as album_art_file:
-            if album_art_path.endswith(".jpg") or album_art_path.endswith(".jpeg"):
-                audio.add(
-                    APIC(
-                        encoding=3,  # 3 = utf-8
-                        mime="image/jpeg",
-                        type=3,  # 3 = cover image
-                        desc="Cover",
-                        data=album_art_file.read(),
-                    )
-                )
-            elif album_art_path.endswith(".png"):
-                audio.add(
-                    APIC(
-                        encoding=3,  # 3 = utf-8
-                        mime="image/png",
-                        type=3,  # 3 = cover image
-                        desc="Cover",
-                        data=album_art_file.read(),
-                    )
-                )
-        audio.save()
+            set_album_art(song, album_art_path)
 
     def delete_album_art_for_current_song(self) -> None:
         """Handles deleting the ID3 tag APIC (album art) for current song"""
         file = self.tableView.get_current_song_filepath()
-        try:
-            audio = ID3(file)
-            debug(audio)
-            if "APIC:" in audio:
-                del audio["APIC:"]
-                debug("Deleting album art")
-                audio.save()
-            else:
-                warning("delete_album_art_for_current_song() | no tag called APIC")
-        except Exception:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            error(
-                f"delete_album_art_for_current_song() | Error processing this file:\t {file}\n{exctype}\n{value}\n{traceback.format_exc()}"
-            )
-            return
-        # Load the default album artwork in the qgraphicsview
-        # album_art_data = self.tableView.get_current_song_album_art()
-        album_art_data = get_album_art(None)
-        self.albumGraphicsView.load_album_art(album_art_data)
+        result = delete_album_art(file)
+        if result:
+            # Load the default album artwork in the qgraphicsview
+            album_art_data = get_album_art(None)
+            self.albumGraphicsView.load_album_art(album_art_data)
 
     def process_probe(self, buff) -> None:
         """Audio visualizer buffer processing"""

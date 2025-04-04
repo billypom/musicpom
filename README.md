@@ -55,9 +55,9 @@ config.ini db/
 - ~~delete songs from library (del key || right-click delete)~~
 - ~~improve audio visualizer - logarithmic x-axis ISO octave bands - see Renoise~~
 - ~~when table is focused, start typing to match against the primary sort column~~
+- ~~remember last window size~~
 - playlist autoexporting
 - .wav, .ogg, .flac convertor
-- remember last window size
 - playback modes (normal, repeat playlist, repeat 1 song, shuffle)
 - autoplay next song in all modes
 - allow spectrum analyzer to fall when playback stops or song is paused

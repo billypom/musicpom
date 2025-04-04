@@ -1,11 +1,9 @@
 import DBA
-import os
 from logging import debug
-from utils import get_id3_tags, id3_timestamp_to_datetime
+from utils import get_id3_tags, convert_id3_timestamp_to_datetime
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
-import platform
 
 
 def add_files_to_database(files, progress_callback=None):
@@ -31,10 +29,6 @@ def add_files_to_database(files, progress_callback=None):
         if any(filepath.lower().endswith(ext) for ext in extensions):
             if progress_callback:
                 progress_callback.emit(filepath)
-            # if "microsoft-standard" in platform.uname().release:
-            # filename = filepath.split(r"\\")[-1]
-            # filepath = os.path.join(filepath)
-            # else:
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
 
@@ -59,7 +53,7 @@ def add_files_to_database(files, progress_callback=None):
             except KeyError:
                 genre = ""
             try:
-                date = id3_timestamp_to_datetime(audio["TDRC"].text[0])
+                date = convert_id3_timestamp_to_datetime(audio["TDRC"].text[0])
             except KeyError:
                 date = ""
             try:

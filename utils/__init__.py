@@ -1,5 +1,5 @@
 from .fft_analyser import FFTAnalyser
-from .id3_timestamp_to_datetime import id3_timestamp_to_datetime
+from .convert_id3_timestamp_to_datetime import convert_id3_timestamp_to_datetime
 from .initialize_db import initialize_db
 from .safe_get import safe_get
 from .get_album_art import get_album_art
@@ -13,3 +13,5 @@ from .update_song_in_database import update_song_in_database
 from .scan_for_music import scan_for_music
 from .add_files_to_database import add_files_to_database
 from .convert_date_str_to_tyer_tdat_id3_tag import convert_date_str_to_tyer_tdat_id3_tag
+from .set_album_art import set_album_art
+from .delete_album_art import delete_album_art

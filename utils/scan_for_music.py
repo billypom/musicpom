@@ -7,6 +7,11 @@ from appdirs import user_config_dir
 
 
 def scan_for_music():
+    """
+    Scans the user-defined library directory (defined in config file)
+    Looks for audio files with specific extensions (defined in config file)
+    Adds found files to the database/primary library (songs table - which holds all songs :o)
+    """
     config = ConfigParser()
     cfg_file = (
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"

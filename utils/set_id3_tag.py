@@ -1,4 +1,4 @@
-import logging
+from logging import debug, error
 from components import ErrorDialog
 from utils.id3_tag_mapping import id3_tag_mapping
 from utils.convert_date_str_to_tyer_tdat_id3_tag import (
@@ -92,7 +92,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
 
     Returns:
         True / False"""
-    logging.info(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
+    debug(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
 
     try:
         try:  # Load existing tags
@@ -112,7 +112,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             try:
                 audio = ID3(filepath)
             except Exception as e:
-                logging.error(f"ran into an exception: {e}")
+                error(f"ran into an exception: {e}")
                 audio = ID3()
             audio.delall("USLT")
             frame = USLT(encoding=3, text=value)
@@ -124,7 +124,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             tag_name = id3_tag_mapping[tag_name]
             # Other
         if tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
-            logging.info(f"tag_name = {tag_name}")
+            debug(f"tag_name = {tag_name}")
             tag_class = mutagen_id3_tag_mapping[tag_name]
             if issubclass(tag_class, Frame):
                 frame = tag_class(encoding=3, text=[value])
