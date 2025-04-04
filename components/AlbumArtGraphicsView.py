@@ -25,7 +25,9 @@ class AlbumArtGraphicsView(QGraphicsView):
     Displays the album art of the currently playing song
     """
 
+    # drag&drop / copy&paste will update album art for selected songs
     albumArtDropped = pyqtSignal(str)
+    # delete will only delete album art for current song
     albumArtDeleted = pyqtSignal()
 
     def __init__(self, parent=None):
@@ -124,17 +126,23 @@ class AlbumArtGraphicsView(QGraphicsView):
 
     def copy_album_art_to_clipboard(self):
         """Copies album art to the clipboard"""
-        if not self.scene().items():
+        scene = self.scene()
+        if scene is None:
+            return
+        if not scene.items():
             return  # dont care if no pic
 
         clipboard = self.qapp.clipboard
-        pixmap_item = self.scene().items()[0]
+        pixmap_item = scene.items()[0]
         if hasattr(pixmap_item, "pixmap"):
             clipboard.setPixmap(pixmap_item.pixmap())
 
     def paste_album_art_from_clipboard(self):
         """Handles pasting album art into a song via system clipboard"""
         clipboard = self.qapp.clipboard
+        scene = self.scene()
+        if scene is None:
+            return
         mime_data = clipboard.mimeData()
         # Check if clipboard data is raw data or filepath
         pixmap = None
@@ -151,7 +159,7 @@ class AlbumArtGraphicsView(QGraphicsView):
             #     self.scene().clear()
             # except Exception:
             #     pass
-            self.scene().addPixmap(pixmap)
+            scene.addPixmap(pixmap)
             # Create temp file for pic
             temp_file, file_path = tempfile.mkstemp(suffix=".jpg")
             os.close(temp_file)  # close the file

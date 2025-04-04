@@ -253,12 +253,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         ## CONNECTIONS
         # tableView
-        self.tableView.doubleClicked.connect(
-            self.play_audio_file
-        )  # Listens for the double click event, then plays the song
-        self.tableView.enterKey.connect(
-            self.play_audio_file
-        )  # Listens for the enter key event, then plays the song
+        self.tableView.doubleClicked.connect(self.play_audio_file)
+        self.tableView.enterKey.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
@@ -456,12 +452,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def update_audio_visualization(self) -> None:
         """Handles updating points on the pyqtgraph visual"""
-        if self.audio_visualizer.use_decibels:
-            # Use decibel values instead of raw amplitudes
-            y = self.audio_visualizer.get_decibels()
-        else:
-            y = self.audio_visualizer.get_amplitudes()
-
+        # Use decibel values instead of raw amplitudes
+        y = self.audio_visualizer.get_decibels()
         if len(y) == 0:
             return
 
@@ -514,6 +506,21 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """Refreshes the playlist tree"""
         self.playlistTreeView.add_latest_playlist_to_tree()
 
+    def handle_progress(self, data):
+        """
+        updates the status bar when progress is emitted
+        """
+        self.show_status_bar_message(data)
+
+    #  ____________________
+    # |                    |
+    # |                    |
+    # |   menubar verbs    |
+    # |                    |
+    # |____________________|
+
+    # File
+
     def open_files(self) -> None:
         """
         Opens the open files window
@@ -532,21 +539,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         worker.signals.signal_progress.connect(self.handle_progress)
         self.threadpool.start(worker)
 
-    def handle_progress(self, data):
-        """
-        updates the status bar when progress is emitted
-        """
-        self.show_status_bar_message(data)
-
-    #  ____________________
-    # |                    |
-    # |                    |
-    # |   menubar verbs    |
-    # |                    |
-    # |____________________|
-
-    # File
-
     def create_playlist(self) -> None:
         """Creates a database record for a playlist, given a name"""
         window = CreatePlaylistWindow(self.playlistCreatedSignal)
@@ -558,6 +550,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         Imports a .m3u file, given a base path attempts to match playlist files to
         database records that currently exist
         """
+        # TODO: implement this
         pass
 
     def export_playlist(self) -> None:
@@ -584,7 +577,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def scan_libraries(self) -> None:
         """
         Scans for new files in the configured library folder
-        Refreshes the datagridview
+        then, refreshes the datagridview
         """
         scan_for_music()
         self.tableView.load_music_table()
