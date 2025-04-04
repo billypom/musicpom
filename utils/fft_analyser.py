@@ -74,15 +74,20 @@ class FFTAnalyser(QtCore.QThread):
         # np.argmax(fourier) = 2374
         # freq[2374] * .05 * self.song.frame_rate = 520 :O omg! thats the hz value
         # x values = freq * self.song.frame_rate * self.sampling_window_length
-        # print(freq * self.song.frame_rate * .05)
 
         point_range = 1 / self.resolution
 
         # Logarithmic frequency scaling
         min_freq = np.min(freq[freq > 0])  # minimum positive frequency
+        # print(
+        #     f"min freq: {min_freq * self.sampling_window_length * self.song.frame_rate}"
+        # )
         # 20hz
         max_freq = np.max(freq)  # maximum frequency
-        # 20khz
+        # print(
+        #     f"max freq: {max_freq * self.sampling_window_length * self.song.frame_rate}"
+        # )
+        # 23khz
         log_freqs = np.logspace(np.log10(min_freq), np.log10(max_freq), self.resolution)
 
         point_samples = []
