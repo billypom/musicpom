@@ -95,16 +95,16 @@ class FFTAnalyser(QtCore.QThread):
         if not data.size:
             return
 
-        for i, freq in enumerate(np.arange(0, 1, point_range), start=1):
-        # for i, log_freq in enumerate(log_freqs):
+        # for i, freq in enumerate(np.arange(0, 1, point_range), start=1):
+        for i, log_freq in enumerate(log_freqs):
             # get the amps which are in between the frequency range
-            amps = data[(freq - point_range < data[:, 0]) & (data[:, 0] < freq)]
-            # amps = data[(log_freq - point_range < data[:, 0]) & (data[:, 0] < log_freq)]
+            # amps = data[(freq - point_range < data[:, 0]) & (data[:, 0] < freq)]
+            amps = data[(log_freq - point_range < data[:, 0]) & (data[:, 0] < log_freq)]
             if not amps.size:
                 point_samples.append(0)
             else:
                 point_samples.append(
-                    amps.max()
+                    amps[0][1].max() # BINK!!!!!!!!!!!!!
                     * (
                         ((1 + self.sensitivity) / 10 + (self.sensitivity - 1) / 10)
                         ** (i / 50)
