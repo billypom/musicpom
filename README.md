@@ -56,6 +56,7 @@ config.ini db/
 - ~~improve audio visualizer - logarithmic x-axis ISO octave bands - see Renoise~~
 - ~~when table is focused, start typing to match against the primary sort column~~
 - ~~remember last window size~~
+- automatically fix broken config before loading app (new config options added)
 - playlist autoexporting
 - .wav, .ogg, .flac convertor
 - playback modes (normal, repeat playlist, repeat 1 song, shuffle)
