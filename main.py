@@ -595,6 +595,46 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             initialize_db()
             self.tableView.load_music_table()
 
+def update_config_file():
+    """
+    If the user config file is not up to date, update it with samples from sample config
+    """
+    cfg_file = (
+        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+    )
+    sample_cfg_file = './sample_config.ini'
+    cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
+
+    # If config path doesn't exist, create it
+    if not os.path.exists(cfg_path):
+        os.makedirs(cfg_path)
+    # If the config file doesn't exist, create it from the sample config
+    if not os.path.exists(cfg_file):
+        debug("copying sample config")
+        # Create config file from sample
+        run(["cp", "./sample_config.ini", cfg_file])
+        return
+    # make sure config is up to date
+    config = ConfigParser()
+    sample_config = ConfigParser()
+    config.read(cfg_file)
+    sample_config.read(sample_cfg_file)
+    orig_sections = config.sections()
+    sample_sections = sample_config.sections()
+    for section in sample_sections:
+        if section not in orig_sections:
+            # add new sections to the current config
+            config.add_section(section)
+
+        orig_options = dict(config.items(section))
+        sample_options = dict(sample_config.items(section))
+        for option, value in sample_options.items():
+            if option not in orig_options:
+                # add new options to the section, for current config
+                config.set(section, option, value)
+
+    with open(cfg_file, "w") as configfile:
+        config.write(configfile)
 
 if __name__ == "__main__":
     # logging setup
@@ -608,22 +648,12 @@ if __name__ == "__main__":
         handlers=handlers,
     )
     # Initialization
+    update_config_file()
 
     cfg_file = (
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
     )
     cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
-    debug(f"config file: {cfg_file}")
-    debug(f"config path: {cfg_path}")
-
-    # If config path doesn't exist, create it
-    if not os.path.exists(cfg_path):
-        os.makedirs(cfg_path)
-    # If the config file doesn't exist, create it from the sample config
-    if not os.path.exists(cfg_file):
-        debug("copying sample config")
-        # Create config file from sample
-        run(["cp", "./sample_config.ini", cfg_file])
     config = ConfigParser()
     config.read(cfg_file)
     db_filepath: str = config.get("db", "database")
