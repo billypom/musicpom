@@ -25,7 +25,7 @@ class AlbumArtGraphicsView(QGraphicsView):
     Displays the album art of the currently playing song
     """
 
-    # drag&drop / copy&paste will update album art for selected songs
+    # drag&drop / copy&paste will update album art for all selected songs
     albumArtDropped = pyqtSignal(str)
     # delete will only delete album art for current song
     albumArtDeleted = pyqtSignal()
@@ -81,23 +81,21 @@ class AlbumArtGraphicsView(QGraphicsView):
 
     def showContextMenu(self, position: QPoint):
         """Handles showing a context menu when right clicking the album art"""
-        contextMenu = QMenu(self)  # Create the menu
+        menu = QMenu(self)  # Create the menu
 
-        copyAction = QAction("Copy", self)  # Add the actions
-        pasteAction = QAction("Paste", self)
-        deleteAction = QAction("Delete", self)
+        copy_action = QAction("Copy", self)  # Add the actions
+        paste_action = QAction("Paste", self)
+        delete_action = QAction("Delete", self)
 
-        copyAction.triggered.connect(
-            self.copy_album_art_to_clipboard
-        )  # Add the signal triggers
-        pasteAction.triggered.connect(self.paste_album_art_from_clipboard)
-        deleteAction.triggered.connect(self.delete_album_art)
+        copy_action.triggered.connect(self.copy_album_art_to_clipboard)
+        paste_action.triggered.connect(self.paste_album_art_from_clipboard)
+        delete_action.triggered.connect(self.delete_album_art)
 
-        contextMenu.addAction(copyAction)  # Add actions to the menu
-        contextMenu.addAction(pasteAction)
-        contextMenu.addAction(deleteAction)
+        menu.addAction(copy_action)  # Add actions to the menu
+        menu.addAction(paste_action)
+        menu.addAction(delete_action)
         # DO
-        contextMenu.exec_(self.mapToGlobal(position))  # Show the menu
+        menu.exec_(self.mapToGlobal(position))  # Show the menu
 
     def load_album_art(self, album_art_data: bytes) -> None:
         """Displays the album art for the currently playing track in the GraphicsView"""

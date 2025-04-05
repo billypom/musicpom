@@ -203,7 +203,7 @@ class MusicTable(QTableView):
                 painter.drawRect(rect.adjusted(1, 1, -1, -1))
 
     def contextMenuEvent(self, a0):
-        """Right-click context menu for rows in Music Table"""
+        """Right-click context menu"""
         menu = QMenu(self)
         add_to_playlist_action = QAction("Add to playlist", self)
         add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
