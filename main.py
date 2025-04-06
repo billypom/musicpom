@@ -133,7 +133,6 @@ class Worker(QRunnable):
 
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
-    playlistCreatedSignal = pyqtSignal()
     reloadConfigSignal = pyqtSignal()
     reloadDatabaseSignal = pyqtSignal()
 
@@ -244,7 +243,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # FILE MENU
         self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
-        self.actionNewPlaylist.triggered.connect(self.create_playlist)
+        self.actionNewPlaylist.triggered.connect(self.playlistTreeView.create_playlist)
         self.actionExportPlaylist.triggered.connect(self.export_playlist)
 
         # EDIT MENU
