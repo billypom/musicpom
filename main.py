@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+from PyQt5 import QtCore
 import qdarktheme
 import typing
 import traceback
@@ -36,7 +37,7 @@ from PyQt5.QtCore import (
     QRunnable,
 )
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
-from PyQt5.QtGui import QClipboard, QCloseEvent, QPixmap, QResizeEvent
+from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
 from utils import (
     delete_album_art,
     scan_for_music,
@@ -138,35 +139,45 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self, clipboard):
         super(ApplicationWindow, self).__init__()
-        global stopped
-        stopped = False
+
+        # clipboard good
+        self.clipboard = clipboard
+
         # Config
         self.config: ConfigParser = ConfigParser()
         self.cfg_file = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
         )
+        self.config.read(self.cfg_file)
+
         # Multithreading stuff...
         self.threadpool = QThreadPool()
         # UI
         self.setupUi(self)
         self.setWindowTitle("musicpom")
+
+        self.setup_fonts()
+
         # self.vLayoutAlbumArt.SetFixedSize()
         self.status_bar = QStatusBar()
         self.permanent_status_label = QLabel("Status...")
         self.status_bar.addPermanentWidget(self.permanent_status_label)
         self.setStatusBar(self.status_bar)
+
         self.selected_song_filepath: str | None = None
         self.current_song_filepath: str | None = None
         self.current_song_metadata: ID3 | dict | None = None
         self.current_song_album_art: bytes | None = None
+
+        # widget bits
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
-        self.config.read(self.cfg_file)
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
         self.timer = QTimer(self)  # Audio timing things
-        self.clipboard = clipboard
+
+        # sharing functions with other classes and that
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
 
@@ -356,6 +367,27 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     # |                    |
     # |____________________|
 
+    def setup_fonts(self):
+        """Initializes font sizes and behaviors for various UI components"""
+        font: QFont = QFont()
+        font.setPointSize(16)
+        font.setBold(True)
+        self.artistLabel: QLabel
+        self.artistLabel.setFont(font)
+        self.artistLabel.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        font: QFont = QFont()
+        font.setPointSize(16)
+        font.setBold(False)
+        self.titleLabel.setFont(font)
+        self.titleLabel.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        font: QFont = QFont()
+        font.setPointSize(16)
+        font.setItalic(True)
+        self.albumLabel.setFont(font)
+        self.albumLabel.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+
     def load_config(self) -> None:
         """does what it says"""
         cfg_file = (
@@ -479,7 +511,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def move_slider(self) -> None:
         """Handles moving the playback slider"""
-        if stopped:
+        if self.player.state() == QMediaPlayer.State.StoppedState:
             return
         else:
             if self.playbackSlider.isSliderDown():

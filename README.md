@@ -64,5 +64,4 @@ config.ini db/
 - allow spectrum analyzer to fall when playback stops or song is paused
 - ability to delete playlist
 - automatic "radio" based on artist or genre
-- "installer" - put files in /opt? script to install and uninstall... eh
-- .deb package?
+- jump to currently playing song

@@ -7,6 +7,7 @@ from pydub import AudioSegment
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
 from logging import debug, info
+from PyQt5.QtMultimedia import QMediaPlayer
 
 
 class FFTAnalyser(QtCore.QThread):
@@ -117,8 +118,8 @@ class FFTAnalyser(QtCore.QThread):
         for n, amp in enumerate(point_samples):
             # amp *= 2
             if self.player.state() in (
-                self.player.PausedState,
-                self.player.StoppedState,
+                QMediaPlayer.State.PausedState,
+                QMediaPlayer.State.StoppedState
             ):
                 # More aggressive decay when no audio is playing
                 self.points[n] *= 0.7  # Faster fade out when paused/stopped
