@@ -57,6 +57,7 @@ config.ini db/
 - ~~when table is focused, start typing to match against the primary sort column~~
 - ~~remember last window size~~
 - ~~automatically fix broken config before loading app (new config options added)~~
+- jump to currently playing song - how do i make this work regardless of current sort params?
 - playlist autoexporting
 - .wav, .ogg, .flac convertor
 - playback modes (normal, repeat playlist, repeat 1 song, shuffle)
@@ -64,4 +65,3 @@ config.ini db/
 - allow spectrum analyzer to fall when playback stops or song is paused
 - ability to delete playlist
 - automatic "radio" based on artist or genre
-- jump to currently playing song
