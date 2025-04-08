@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QMessageBox
 import DBA
 from logging import debug
 from utils import get_id3_tags, convert_id3_timestamp_to_datetime
@@ -31,6 +32,14 @@ def add_files_to_database(files, progress_callback=None):
                 progress_callback.emit(filepath)
             filename = filepath.split("/")[-1]
             audio = get_id3_tags(filepath)
+            if not audio:
+                QMessageBox.error(
+                    "Error",
+                    f"Could not retrieve ID3 tags for {filepath}",
+                    QMessageBox.Ok,
+                    QMessageBox.Ok,
+                )
+                return
 
             try:
                 title = audio["TIT2"].text[0]

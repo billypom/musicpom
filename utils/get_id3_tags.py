@@ -5,9 +5,12 @@ from mutagen.id3._frames import TIT2
 from mutagen.id3._util import ID3NoHeaderError
 
 
-def get_id3_tags(filename):
+def get_id3_tags(filename: str):
     """Get the ID3 tags for an audio file"""
-    debug(filename)
+    # debug(filename)
+
+    if filename.endswith(".flac"):
+        return
 
     try:
         # Open the MP3 file and read its content

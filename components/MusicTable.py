@@ -120,7 +120,7 @@ class MusicTable(QTableView):
         ]
         #
         # hide the id column
-        self.hideColumn(0)
+        # self.hideColumn(0)
         # db names of headers
         self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
@@ -508,7 +508,7 @@ class MusicTable(QTableView):
             try:
                 self.model2.removeRow(index)
             except Exception as e:
-                debug(f" delete_songs() failed | {e}")
+                debug(f"delete_selected_row_indices() failed | {e}")
         self.connect_data_changed()
         self.load_music_table()
 

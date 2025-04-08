@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QFrame,
     QHBoxLayout,
+    QMessageBox,
     QVBoxLayout,
     QLabel,
     QLineEdit,
@@ -65,6 +66,15 @@ class MetadataWindow(QDialog):
         # e.g.,  { "TIT2": ["song_title1", "song_title2"], ... }
         for song in self.songs:
             song_data = get_id3_tags(song[0])
+            if not song_data:
+                QMessageBox.error(
+                    self,
+                    "Error",
+                    f"Could not retrieve ID3 tags for {song[0]}",
+                    QMessageBox.Ok,
+                    QMessageBox.Ok,
+                )
+                return
             for tag in self.id3_tag_mapping:
                 try:
                     _ = tag_sets[tag]
