@@ -78,7 +78,7 @@ class MusicTable(QTableView):
         # so it looks like this, i guess:
         # QTableView model2 = QSortFilterProxyModel(QStandardItemModel)
 
-        # need a standard item  model to do actions on cells
+        # need a standard item model to do actions on cells
         self.model2: QStandardItemModel = QStandardItemModel()
         # proxy model for sorting i guess?
         proxymodel = QSortFilterProxyModel()
@@ -101,7 +101,7 @@ class MusicTable(QTableView):
             "title",
             "artist",
             "album",
-            "track_number",
+            "track",
             "genre",
             "codec",
             "year",
@@ -118,16 +118,13 @@ class MusicTable(QTableView):
             "TDRC",
             None,
         ]
-        #
-        # hide the id column
-        # self.hideColumn(0)
         # db names of headers
         self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
-        self.songChanged = None
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
-        self.current_index = None  # track where cursor was last
+        self.current_song_db_id = None
+        self.current_song_qmodelindex = None
 
         # Properties
         self.setAcceptDrops(True)
@@ -150,25 +147,15 @@ class MusicTable(QTableView):
 
         # CONNECTIONS
         self.clicked.connect(self.on_cell_clicked)
+        self.deleteKey.connect(self.delete_songs)
         # self.doubleClicked.connect(self.set_current_song_filepath)
         # self.enterKey.connect(self.set_current_song_filepath)
-        self.deleteKey.connect(self.delete_songs)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontal_header.sectionResized.connect(self.on_header_resized)
         # Final actions
         self.load_music_table()
         self.setup_keyboard_shortcuts()
-
-        # Load the column widths from last save
-        # NOTE: Constructor can't call member function i guess?
-        # otherwise i would just use `self.load_header_widths()`
-        # table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        # if not isinstance(table_view_column_widths[0], int) or not isinstance(
-        #     table_view_column_widths, list
-        # ):
-        #     for i in range(self.model2.columnCount() - 1):
-        #         self.setColumnWidth(i, int(table_view_column_widths[i]))
         self.load_header_widths()
 
     #  _________________
@@ -213,9 +200,13 @@ class MusicTable(QTableView):
         edit_metadata_action.triggered.connect(self.edit_selected_files_metadata)
         menu.addAction(edit_metadata_action)
         # edit lyrics
-        lyrics_menu = QAction("Lyrics (View/Edit)", self)
-        lyrics_menu.triggered.connect(self.show_lyrics_menu)
-        menu.addAction(lyrics_menu)
+        edit_lyrics_action = QAction("Lyrics (View/Edit)", self)
+        edit_lyrics_action.triggered.connect(self.show_lyrics_menu)
+        menu.addAction(edit_lyrics_action)
+        # jump to current song in table
+        jump_to_current_song_action = QAction("Jump to current song", self)
+        jump_to_current_song_action.triggered.connect(self.jump_to_current_song)
+        menu.addAction(jump_to_current_song_action)
         # open in file explorer
         open_containing_folder_action = QAction("Open in system file manager", self)
         open_containing_folder_action.triggered.connect(self.open_directory)
@@ -520,6 +511,16 @@ class MusicTable(QTableView):
         window.refreshMusicTableSignal.connect(self.load_music_table)
         window.exec_()  # Display the preferences window modally
 
+    def jump_to_current_song(self):
+        """Moves screen to the currently playing song, and selects the row"""
+        # FIXME: this doesn't work regardless of sorting
+        # 1. play song 2. sort columns differently 3. jump to current song
+        # this will jump to table index of where the song was when it started playing (its index was set)
+
+        self.scrollTo(self.current_song_qmodelindex)
+        row = self.current_song_qmodelindex.row()
+        self.selectRow(row)
+
     def open_directory(self):
         """Opens the currently selected song in the system file manager"""
         if self.get_selected_song_filepath() is None:
@@ -646,9 +647,9 @@ class MusicTable(QTableView):
         """
         Loads data into self (QTableView)
         Loads all songs in library, by default
-        Loads songs from a  playlist, if `playlist_id` is given
+        Loads songs from a playlist, if `playlist_id` is given
 
-        hint: You can get a playlist_id from a signal emitted from PlaylistsPane as a tuple (1,)
+        hint: You get a `playlist_id` from the signal emitted from PlaylistsPane as a tuple (1,)
         """
         self.disconnect_data_changed()
         self.disconnect_layout_changed()
@@ -671,7 +672,6 @@ class MusicTable(QTableView):
                 error(f"load_music_table() | Unhandled exception: {e}")
                 return
         else:  # Load the library
-            # Fetch playlist data
             try:
                 with DBA.DBAccess() as db:
                     data = db.query(
@@ -696,7 +696,8 @@ class MusicTable(QTableView):
                 items.append(std_item)
 
             self.model2.appendRow(items)
-            # store id using setData - useful for later faster db fetching
+            # store database id in the row object using setData
+            # - useful for fast db fetching and other model operations
             for item in items:
                 item.setData(id, Qt.ItemDataRole.UserRole)
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
@@ -828,13 +829,17 @@ class MusicTable(QTableView):
         )
 
     def set_current_song_filepath(self) -> None:
-        """Sets the current song filepath to the value in column 'path' with current selected row index"""
+        """
+        Sets the current song filepath to the value in column 'path' with current selected row index
+        also stores the QModelIndex for some useful other stuff
+        """
         # NOTE:
         # Setting the current song filepath automatically plays that song
         # self.tableView listens to this function and plays the audio file located at self.current_song_filepath
-        self.current_song_filepath = (
-            self.currentIndex().siblingAtColumn(self.table_headers.index("path")).data()
-        )
+        self.current_song_qmodelindex: QModelIndex = self.currentIndex()
+        self.current_song_filepath: str = self.current_song_qmodelindex.siblingAtColumn(
+            self.table_headers.index("path")
+        ).data()
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""

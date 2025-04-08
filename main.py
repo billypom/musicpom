@@ -373,19 +373,25 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         font.setBold(True)
         self.artistLabel: QLabel
         self.artistLabel.setFont(font)
-        self.artistLabel.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.artistLabel.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
+        )
 
         font: QFont = QFont()
         font.setPointSize(16)
         font.setBold(False)
         self.titleLabel.setFont(font)
-        self.titleLabel.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.titleLabel.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
+        )
 
         font: QFont = QFont()
         font.setPointSize(16)
         font.setItalic(True)
         self.albumLabel.setFont(font)
-        self.albumLabel.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.albumLabel.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
+        )
 
     def load_config(self) -> None:
         """does what it says"""
@@ -626,6 +632,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             initialize_db()
             self.tableView.load_music_table()
 
+
 def update_config_file():
     """
     If the user config file is not up to date, update it with samples from sample config
@@ -633,7 +640,7 @@ def update_config_file():
     cfg_file = (
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
     )
-    sample_cfg_file = './sample_config.ini'
+    sample_cfg_file = "./sample_config.ini"
     cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
 
     # If config path doesn't exist, create it
@@ -666,6 +673,7 @@ def update_config_file():
 
     with open(cfg_file, "w") as configfile:
         config.write(configfile)
+
 
 if __name__ == "__main__":
     # logging setup
