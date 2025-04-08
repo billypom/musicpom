@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QMessageBox
+from mutagen.id3 import ID3
 import DBA
 from logging import debug
 from utils import get_id3_tags, convert_id3_timestamp_to_datetime
@@ -21,25 +22,21 @@ def add_files_to_database(files, progress_callback=None):
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
     )
     config.read(cfg_file)
-
     if not files:
-        return False
+        return False, {'Failure': 'All operations failed in add_files_to_database()'}
     extensions = config.get("settings", "extensions").split(",")
+    failed_dict = {}
     insert_data = []  # To store data for batch insert
     for filepath in files:
         if any(filepath.lower().endswith(ext) for ext in extensions):
             if progress_callback:
                 progress_callback.emit(filepath)
             filename = filepath.split("/")[-1]
-            audio = get_id3_tags(filepath)
-            if not audio:
-                QMessageBox.error(
-                    "Error",
-                    f"Could not retrieve ID3 tags for {filepath}",
-                    QMessageBox.Ok,
-                    QMessageBox.Ok,
-                )
-                return
+
+            audio, details = get_id3_tags(filepath)
+            if not isinstance(audio, ID3):
+                failed_dict[filepath] = details
+                continue
 
             try:
                 title = audio["TIT2"].text[0]
@@ -105,7 +102,7 @@ def add_files_to_database(files, progress_callback=None):
                 "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 insert_data,
             )
-    return True
+    return True, failed_dict
 
 
 # id int unsigned auto_increment,

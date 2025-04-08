@@ -124,7 +124,7 @@ class MusicTable(QTableView):
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
         self.current_song_db_id = None
-        self.current_song_qmodelindex = None
+        self.current_song_qmodelindex: QModelIndex
 
         # Properties
         self.setAcceptDrops(True)
@@ -265,7 +265,7 @@ class MusicTable(QTableView):
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
                 worker.signals.signal_progress.connect(self.handle_progress)
-                worker.signals.signal_result.connect(self.on_recursive_search_finished)
+                worker.signals.signal_result.connect(self.on_get_audio_files_recursively_finished)
                 worker.signals.signal_finished.connect(self.load_music_table)
                 if self.qapp:
                     threadpool = self.qapp.threadpool
@@ -399,49 +399,29 @@ class MusicTable(QTableView):
                 update_song_in_database(song_id, edited_column_name, user_input_data)
             return
 
-    def on_recursive_search_finished(self, result):
-        """file search completion handler"""
-        if result:
-            self.add_files_to_library(result)
-
     def handle_progress(self, data):
         """Emits data to main"""
         self.handleProgressSignal.emit(data)
 
-    #  ____________________
-    # |                    |
-    # |                    |
-    # | Connection  Mgmt   |
-    # |                    |
-    # |____________________|
+    def on_get_audio_files_recursively_finished(self, result):
+        """file search completion handler"""
+        if result:
+            self.add_files_to_library(result)
 
-    def disconnect_data_changed(self):
-        """Disconnects the dataChanged signal from QTableView.model"""
-        try:
-            self.model2.dataChanged.disconnect()
-        except Exception:
-            pass
+    def on_add_files_to_database_finished(self, *args):
+        """
+        Shows failed to import files and reasons
+        Runs after worker process signal_finished for add_files_to_database()
 
-    def connect_data_changed(self):
-        """Connects the dataChanged signal from QTableView.model"""
-        try:
-            self.model2.dataChanged.connect(self.on_cell_data_changed)
-        except Exception:
-            pass
-
-    def disconnect_layout_changed(self):
-        """Disconnects the layoutChanged signal from QTableView.model"""
-        try:
-            self.model2.layoutChanged.disconnect()
-        except Exception:
-            pass
-
-    def connect_layout_changed(self):
-        """Connects the layoutChanged signal from QTableView.model"""
-        try:
-            self.model2.layoutChanged.connect(self.restore_scroll_position)
-        except Exception:
-            pass
+        Args:
+            - args: ((return_data),)
+            - data returned from the original worker process function are returned here
+              as the first item in a tuple
+        """
+        # TODO: make this prettier, show a table in a window instead of raw text probably
+        _, details = args[0][:2]
+        window = DebugWindow(details)
+        window.exec_()
 
     #  ____________________
     # |                    |
@@ -458,6 +438,7 @@ class MusicTable(QTableView):
         """
         worker = Worker(add_files_to_database, files)
         worker.signals.signal_progress.connect(self.qapp.handle_progress)
+        worker.signals.signal_result.connect(self.on_add_files_to_database_finished)
         worker.signals.signal_finished.connect(self.load_music_table)
         if self.qapp:
             threadpool = self.qapp.threadpool
@@ -539,12 +520,9 @@ class MusicTable(QTableView):
 
     def show_id3_tags_debug_menu(self):
         """Shows ID3 tags for a specific .mp3 file"""
-        selected_song_filepath = self.get_selected_song_filepath()
-        if selected_song_filepath is None:
-            return
-        current_song = self.get_selected_song_metadata()
-        lyrics_window = DebugWindow(selected_song_filepath, str(current_song))
-        lyrics_window.exec_()
+        if self.get_selected_song_filepath() is not None:
+            window = DebugWindow(str(self.get_selected_song_metadata()))
+            window.exec_()
 
     def show_lyrics_menu(self):
         """Shows the lyrics for the currently selected song"""
@@ -601,6 +579,8 @@ class MusicTable(QTableView):
         debug("reorganizing files")
         # FIXME: batch update, instead of doing 1 file at a time
         # DBAccess is being instantiated for every file, boo
+        # NOTE: 
+        # is that even possible with move file function?
 
         # Get target directory
         target_dir = str(self.config["directories"]["reorganize_destination"])
@@ -618,10 +598,8 @@ class MusicTable(QTableView):
                 if progress_callback:
                     progress_callback.emit(f"Organizing: {filepath}")
                 # Create the directories if they dont exist
-                debug("make dirs")
                 os.makedirs(os.path.dirname(new_path), exist_ok=True)
                 # Move the file to the new directory
-                debug(f"{filepath} > {new_path}")
                 shutil.move(filepath, new_path)
                 # Update the db
                 with DBA.DBAccess() as db:
@@ -629,7 +607,7 @@ class MusicTable(QTableView):
                         "UPDATE song SET filepath = ? WHERE filepath = ?",
                         (new_path, filepath),
                     )
-                debug(f"reorganize_files() | Moved: {filepath} -> {new_path}")
+                # debug(f"reorganize_files() | Moved: {filepath} -> {new_path}")
             except Exception as e:
                 error(f"reorganize_files() | Error moving file: {filepath} | {e}")
         # Draw the rest of the owl
@@ -757,7 +735,7 @@ class MusicTable(QTableView):
 
     def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
-        debug("restore_scroll_position")
+        debug("restore_scroll_position (inactive)")
         # QTimer.singleShot(
         #     100,
         #     lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),
@@ -845,6 +823,40 @@ class MusicTable(QTableView):
         """Necessary for using members and methods of main application window"""
         self.qapp = qapp
 
+    #  ____________________
+    # |                    |
+    # |                    |
+    # | Connection  Mgmt   |
+    # |                    |
+    # |____________________|
+
+    def disconnect_data_changed(self):
+        """Disconnects the dataChanged signal from QTableView.model"""
+        try:
+            self.model2.dataChanged.disconnect()
+        except Exception:
+            pass
+
+    def connect_data_changed(self):
+        """Connects the dataChanged signal from QTableView.model"""
+        try:
+            self.model2.dataChanged.connect(self.on_cell_data_changed)
+        except Exception:
+            pass
+
+    def disconnect_layout_changed(self):
+        """Disconnects the layoutChanged signal from QTableView.model"""
+        try:
+            self.model2.layoutChanged.disconnect()
+        except Exception:
+            pass
+
+    def connect_layout_changed(self):
+        """Connects the layoutChanged signal from QTableView.model"""
+        try:
+            self.model2.layoutChanged.connect(self.restore_scroll_position)
+        except Exception:
+            pass
 
 # QT Roles
 
