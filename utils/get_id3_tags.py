@@ -5,8 +5,18 @@ from mutagen.id3._frames import TIT2
 from mutagen.id3._util import ID3NoHeaderError
 
 
-def get_id3_tags(filename: str) -> tuple[object, str]:
-    """Get the ID3 tags for an audio file"""
+def get_id3_tags(filename: str) -> tuple[ID3 | dict, str]:
+    """
+    Get the ID3 tags for an audio file
+    Returns a tuple of:
+    - mutagen ID3 object OR python dictionary
+    - string reason for failure (failure = empty dict above)
+
+    Args
+        - filename
+    Returns
+        - tuple(ID3/dict, fail_reason)
+    """
     # debug(filename)
 
     if filename.endswith(".mp3"):
@@ -37,7 +47,7 @@ def get_id3_tags(filename: str) -> tuple[object, str]:
 
         except Exception as e:
             error(f"Could not assign file ID3 tag: {e}")
-            return None, f"Could not assign ID3 tag to file: {e}"
-    return None, "non mp3 file"
+            return {}, f"Could not assign ID3 tag to file: {e}"
+    return {}, "non mp3 file"
 
 

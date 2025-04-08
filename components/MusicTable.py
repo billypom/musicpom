@@ -343,7 +343,6 @@ class MusicTable(QTableView):
         """
         When a cell is clicked, do some stuff :)
         """
-        print(f"click - ({index.row()}, {index.column()})")
         current_index = self.currentIndex()
         if index == current_index:
             return
@@ -418,10 +417,12 @@ class MusicTable(QTableView):
             - data returned from the original worker process function are returned here
               as the first item in a tuple
         """
+        # FIXME:
         # TODO: make this prettier, show a table in a window instead of raw text probably
         _, details = args[0][:2]
-        window = DebugWindow(details)
-        window.exec_()
+        if details:
+            window = DebugWindow(details)
+            window.exec_()
 
     #  ____________________
     # |                    |
@@ -774,7 +775,7 @@ class MusicTable(QTableView):
 
     def get_selected_song_metadata(self) -> ID3 | dict:
         """Returns the selected song's ID3 tags"""
-        return get_id3_tags(self.selected_song_filepath)
+        return get_id3_tags(self.selected_song_filepath)[0]
 
     def get_selected_songs_db_ids(self) -> list:
         """Returns a list of id's for the selected songs"""
@@ -794,7 +795,7 @@ class MusicTable(QTableView):
 
     def get_current_song_metadata(self) -> ID3 | dict:
         """Returns the currently playing song's ID3 tags"""
-        return get_id3_tags(self.current_song_filepath)
+        return get_id3_tags(self.current_song_filepath)[0]
 
     def get_current_song_album_art(self) -> bytes:
         """Returns the APIC data (album art lol) for the currently playing song"""
