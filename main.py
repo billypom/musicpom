@@ -172,9 +172,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # widget bits
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
-        self.probe: QAudioProbe = QAudioProbe()  # Gets audio data
-        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player)
-        self.timer = QTimer(self)  # Audio timing things
+        self.probe: QAudioProbe = QAudioProbe()  # Gets audio buffer data
+        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.probe, self.PlotWidget)
+        self.timer = QTimer(self)  # for playback slider and such
 
         # sharing functions with other classes and that
         self.tableView.load_qapp(self)
@@ -186,48 +186,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.volumeLabel.setText(str(self.current_volume))
         self.volumeSlider.setValue(self.current_volume)
 
-        # Audio probe for processing audio signal in real time
-        self.probe.setSource(self.player)
-        self.probe.audioBufferProbed.connect(self.process_probe)
         # Slider Timer (realtime playback feedback horizontal bar)
         self.timer.start(100)
         self.timer.timeout.connect(self.move_slider)
 
         # Set fixed size for album art
         self.albumGraphicsView.setFixedSize(250, 250)
-
-        # Graphics plot
-        # Make sure PlotWidget doesn't exceed album art height
-        # Adjust to leave room for playback controls
-        self.PlotWidget.setFixedHeight(225)
-        # x range
-        self.PlotWidget.setXRange(
-            0, self.audio_visualizer.get_x_resolution(), padding=0
-        )
-        # y axis range for decibals (-96db to 0db)
-        self.PlotWidget.setYRange(-96, 0, padding=0)
-        # Logarithmic x-axis for frequency display
-        self.PlotWidget.setLogMode(x=False, y=False)
-        self.PlotWidget.setMouseEnabled(x=False, y=False)
-        self.PlotWidget.showGrid(x=True, y=True)
-        # Performance optimizations
-        self.PlotWidget.setAntialiasing(False)
-        self.PlotWidget.setDownsampling(auto=True, mode="peak")
-        self.PlotWidget.setClipToView(True)
-
-        # Add tick marks for common decibel values (expanded range)
-        y_ticks = [
-            (-84, "-84dB"),
-            (-60, "-60dB"),
-            (-36, "-36dB"),
-            (-12, "-12dB"),
-            (0, "0dB"),
-        ]
-        self.PlotWidget.getAxis("left").setTicks([y_ticks])
-
-        # Add frequency ticks on x-axis
-        freq_ticks = self.audio_visualizer.get_frequency_ticks()
-        self.PlotWidget.getAxis("bottom").setTicks([freq_ticks])
 
         # Connections
         self.playbackSlider.sliderReleased.connect(
@@ -237,6 +201,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.speedSlider.sliderMoved.connect(
             lambda: self.on_speed_changed(self.speedSlider.value())
         )
+        # self.speedSlider.doubleClicked.connect(lambda: self.on_speed_changed(1))
         self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
         self.previousButton.clicked.connect(self.on_previous_clicked)
         self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
@@ -481,38 +446,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             # Load the default album artwork in the qgraphicsview
             album_art_data = get_album_art(None)
             self.albumGraphicsView.load_album_art(album_art_data)
-
-    def process_probe(self, buff) -> None:
-        """Audio visualizer buffer processing"""
-        buff.startTime()
-        self.update_audio_visualization()
-
-    def update_audio_visualization(self) -> None:
-        """Handles updating points on the pyqtgraph visual"""
-        # Use decibel values instead of raw amplitudes
-        y = self.audio_visualizer.get_decibels()
-        if len(y) == 0:
-            return
-
-        # if self.audio_visualizer._plot_item is None:
-        # thanks cursor sonnet whatever
-        self.PlotWidget.clear()
-        # Use the actual frequency values for x-axis
-        self.audio_visualizer._plot_item = self.PlotWidget.plot(
-            self.audio_visualizer._x_data,  # We'll keep using indices for drawing
-            y,
-            pen="b",  # Use pen instead of fill for better performance
-            fillLevel=-96
-            if self.audio_visualizer.use_decibels
-            else 0,  # Fill from -96dB for decibel scale
-            fillBrush=mkBrush("b"),
-        )
-        # else:
-        #     self.audio_visualizer._plot_item.setData(self.audio_visualizer._x_data, y)
-
-    def clear_audio_visualization(self) -> None:
-        self.PlotWidget.clear()
-        self.audio_visualizer._plot_item = None
 
     def move_slider(self) -> None:
         """Handles moving the playback slider"""
