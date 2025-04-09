@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QAction, QListWidget, QMenu, QMessageBox, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QAction, QInputDialog, QListWidget, QMenu, QMessageBox, QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import pyqtSignal, Qt, QPoint
 import DBA
 from logging import debug
@@ -71,8 +71,19 @@ class PlaylistsPane(QTreeWidget):
         window.exec_()
 
     def rename_playlist(self, *args):
-        # TODO: implement this
-        pass
+        """
+        Asks user for input
+        Renames selected playlist based on user input
+        """
+        text, ok = QInputDialog.getText(self, "Rename playlist", "New name:                                 ")
+
+        if len(text) > 64:
+            QMessageBox.warning(self, "WARNING", "Name must not exceed 64 characters")
+            return
+        if ok:
+            with DBA.DBAccess() as db:
+                db.execute('UPDATE playlist SET name = ? WHERE id = ?;', (text, self.playlist_db_id_choice))
+            self.reload_playlists()
 
     def delete_playlist(self, *args):
         """Deletes a playlist"""
