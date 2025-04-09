@@ -34,6 +34,9 @@ def add_files_to_database(files, progress_callback=None):
             filename = filepath.split("/")[-1]
 
             audio, details = get_id3_tags(filepath)
+            print('got id3 tags')
+            print(type(audio))
+            print(audio)
             if not isinstance(audio, ID3):
                 failed_dict[filepath] = details
                 continue
