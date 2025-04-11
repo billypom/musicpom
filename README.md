@@ -58,10 +58,13 @@ config.ini db/
 - ~~remember last window size~~
 - ~~automatically fix broken config before loading app (new config options added)~~
 - ~~allow spectrum analyzer to fall when playback stops or song is paused~~
-- jump to currently playing song - how do i make this work regardless of current sort params?
-- playlist autoexporting
-- .wav, .ogg, .flac convertor
+- ~~ability to delete playlist~~
+##### QMediaPlaylist
+https://doc.qt.io/qtforpython-5/PySide2/QtMultimedia/QMediaPlaylist.html#PySide2.QtMultimedia.PySide2.QtMultimedia.QMediaPlaylist
 - playback modes (normal, repeat playlist, repeat 1 song, shuffle)
+- jump to currently playing song - how do i make this work regardless of current sort params?
 - autoplay next song in all modes
-- ability to delete playlist
+##### misc
+- database playlist autoexporting
+- .wav, .ogg, .flac convertor
 - automatic "radio" based on artist or genre
