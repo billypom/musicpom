@@ -50,6 +50,7 @@ from components import (
     AudioVisualizer,
     CreatePlaylistWindow,
     ExportPlaylistWindow,
+    PMediaPlayer,
 )
 from utils.get_album_art import get_album_art
 
@@ -171,9 +172,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # widget bits
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
-        self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
+        # self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
+        self.player: PMediaPlayer = PMediaPlayer()
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio buffer data
-        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.probe, self.PlotWidget)
+        self.audio_visualizer: AudioVisualizer = AudioVisualizer(
+            self.player, self.probe, self.PlotWidget
+        )
         self.timer = QTimer(self)  # for playback slider and such
 
         # sharing functions with other classes and that
