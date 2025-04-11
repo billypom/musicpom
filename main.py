@@ -50,7 +50,6 @@ from components import (
     AudioVisualizer,
     CreatePlaylistWindow,
     ExportPlaylistWindow,
-    PMediaPlayer,
 )
 from utils.get_album_art import get_album_art
 
@@ -172,8 +171,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # widget bits
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
-        # self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
-        self.player: PMediaPlayer = PMediaPlayer()
+        self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio buffer data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(
             self.player, self.probe, self.PlotWidget
@@ -405,6 +403,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         content = QMediaContent(url)
         # set the player to play the content
         self.player.setMedia(content)
+        # self.player.setMedia(QUrl("gst-pipeline: videotestsrc ! autovideosink"))
         self.player.play()  # play
         self.move_slider()  # mover
         # self.player.setPlaybackRate(1.5)
