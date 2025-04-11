@@ -47,7 +47,7 @@ class PMediaPlayer:
 
     def _build_pitch_filter(self, rate: float):
         pitch = Gst.ElementFactory.make("pitch", "pitch")
-        pitch.set_property("pitch", 1.0)  # Keep pitch constant
+        # pitch.set_property("pitch", 1.0)  # Keep pitch constant
         pitch.set_property("rate", rate)
 
         bin = Gst.Bin.new("filter_bin")
