@@ -568,63 +568,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             initialize_db()
             self.tableView.load_music_table()
 
-
-def update_config_file():
+def update_database_file() -> bool:
     """
-    If the user config file is not up to date, update it with samples from sample config
+    Reads the database file (specified by config file)
     """
-    cfg_file = (
-        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
-    )
-    sample_cfg_file = "./sample_config.ini"
-    cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
-
-    # If config path doesn't exist, create it
-    if not os.path.exists(cfg_path):
-        os.makedirs(cfg_path)
-    # If the config file doesn't exist, create it from the sample config
-    if not os.path.exists(cfg_file):
-        debug("copying sample config")
-        # Create config file from sample
-        run(["cp", "./sample_config.ini", cfg_file])
-        return
-    # make sure config is up to date
-    config = ConfigParser()
-    sample_config = ConfigParser()
-    config.read(cfg_file)
-    sample_config.read(sample_cfg_file)
-    orig_sections = config.sections()
-    sample_sections = sample_config.sections()
-    for section in sample_sections:
-        if section not in orig_sections:
-            # add new sections to the current config
-            config.add_section(section)
-
-        orig_options = dict(config.items(section))
-        sample_options = dict(sample_config.items(section))
-        for option, value in sample_options.items():
-            if option not in orig_options:
-                # add new options to the section, for current config
-                config.set(section, option, value)
-
-    with open(cfg_file, "w") as configfile:
-        config.write(configfile)
-
-
-if __name__ == "__main__":
-    # logging setup
-    file_handler = logging.FileHandler(filename="log", encoding="utf-8")
-    stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    handlers = [file_handler, stdout_handler]
-    # basicConfig(filename="log", encoding="utf-8", level=logging.DEBUG)
-    basicConfig(
-        level=DEBUG,
-        format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
-        handlers=handlers,
-    )
-    # Initialization
-    update_config_file()
-
     cfg_file = (
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
     )
@@ -636,7 +583,7 @@ if __name__ == "__main__":
     # If the database location isnt set at the config location, move it
     if not db_filepath.startswith(cfg_path):
         new_path = f"{cfg_path}/{db_filepath}"
-        debug(f"setting new db-database path: {new_path}")
+        debug(f"Set new config [db] database path: \n> Current: {db_filepath}\n> New:{new_path}")
         config["db"]["database"] = new_path
         # Save the config
         with open(cfg_file, "w") as configfile:
@@ -648,20 +595,85 @@ if __name__ == "__main__":
     db_path.pop()
     db_path = "/".join(db_path)
 
-    # If the db file doesn't exist
+
+    if os.path.exists(db_filepath):
+        try:
+            size = os.path.getsize(db_filepath)
+        except OSError:
+            error('Database file exists but could not read.')
+            return False
+        if size == 0:
+            initialize_db()
     if not os.path.exists(db_filepath):
-        # If the db directory doesn't exist
         if not os.path.exists(db_path):
-            # Make the directory
             os.makedirs(db_path)
-        # Create database on first run
-        with DBA.DBAccess() as db:
-            with open("utils/init.sql", "r") as file:
-                lines = file.read()
-                for statement in lines.split(";"):
-                    debug(f"executing [{statement}]")
-                    db.execute(statement, ())
-    # Allow for dynamic imports of my custom classes and utilities?
+        # still make the db even if the directory existed
+        initialize_db()
+    return True
+
+def update_config_file() -> ConfigParser:
+    """
+    If the user config file is not up to date, update it with examples from sample config
+    """
+    cfg_file = (
+        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+    )
+    cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
+
+    # If config path doesn't exist, create it
+    if not os.path.exists(cfg_path):
+        os.makedirs(cfg_path)
+    # If the config file doesn't exist, create it from the sample config
+    if not os.path.exists(cfg_file):
+        debug("copying sample config")
+        # Create config file from sample
+        run(["cp", "./sample_config.ini", cfg_file])
+        config = ConfigParser()
+        config.read(cfg_file)
+        return config
+
+    # Current config - add new sections
+    config = ConfigParser()
+    config.read(cfg_file)
+    sample_config = ConfigParser()
+    sample_cfg_file = "./sample_config.ini"
+    sample_config.read(sample_cfg_file)
+    orig_sections = config.sections()
+    sample_sections = sample_config.sections()
+    for section in sample_sections:
+        if section not in orig_sections:
+            config.add_section(section)
+        orig_options = dict(config.items(section))
+        sample_options = dict(sample_config.items(section))
+        for option, value in sample_options.items():
+            if option not in orig_options:
+                # add new options to the section, for current config
+                config.set(section, option, value)
+
+    with open(cfg_file, "w") as configfile:
+        config.write(configfile)
+    return config
+
+
+
+
+if __name__ == "__main__":
+    # logging setup
+    file_handler = logging.FileHandler(filename="log", encoding="utf-8")
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    handlers = [file_handler, stdout_handler]
+    basicConfig(
+        level=DEBUG,
+        format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
+        handlers=handlers,
+    )
+    # Initialization
+    config: ConfigParser = update_config_file()
+    if not update_database_file():
+        sys.exit(1)
+
+    # Allow for dynamic imports of my custom classes and utilities
+    # ?
     project_root = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(project_root)
     # Start the app
@@ -669,7 +681,7 @@ if __name__ == "__main__":
     clipboard = app.clipboard()
     # Dark theme >:3
     qdarktheme.setup_theme()
-    # qdarktheme.setup_theme("auto")
+    # qdarktheme.setup_theme("auto") # this is supposed to work but doesnt
     # Show the UI
     ui = ApplicationWindow(clipboard)
     # window size
