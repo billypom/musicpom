@@ -18,10 +18,12 @@ from PyQt5.QtWidgets import (
     QAction,
     QHeaderView,
     QMenu,
+    QPlainTextEdit,
     QTableView,
     QShortcut,
     QMessageBox,
     QAbstractItemView,
+    QVBoxLayout,
 )
 from PyQt5.QtCore import (
     QItemSelectionModel,
@@ -37,6 +39,7 @@ from components.ErrorDialog import ErrorDialog
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
+from components.QuestionBoxDetails import QuestionBoxDetails
 
 from main import Worker
 from utils.batch_delete_filepaths_from_database import (
@@ -496,21 +499,20 @@ class MusicTable(QTableView):
         # FIXME: need to get indexes based on the proxy model
         selected_filepaths = self.get_selected_songs_filepaths()
         formatted_selected_filepaths = "\n".join(selected_filepaths)
-        reply = QMessageBox.question(
-            self,
-            "Confirmation",
-            f"Remove these songs from the library? (Files stay on your computer)\n{formatted_selected_filepaths}",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
+        question_dialog = QuestionBoxDetails(
+            title="Delete songs",
+            description="Remove these songs from the library?",
+            details=formatted_selected_filepaths,
         )
-        if reply == QMessageBox.Yes:
-            pprint(selected_filepaths)
+        reply = question_dialog.execute()
+        if reply:
             worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
             worker.signals.signal_progress.connect(self.qapp.handle_progress)
             worker.signals.signal_finished.connect(self.delete_selected_row_indices)
             if self.qapp:
                 threadpool = self.qapp.threadpool
                 threadpool.start(worker)
+        return
 
     def delete_selected_row_indices(self):
         """
