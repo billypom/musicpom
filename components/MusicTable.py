@@ -128,6 +128,7 @@ class MusicTable(QTableView):
         self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
         self.selected_song_filepath = ""
+        self.selected_song_qmodel_index: QModelIndex
         self.current_song_filepath = ""
         self.current_song_db_id = None
         self.current_song_qmodel_index: QModelIndex
@@ -356,10 +357,16 @@ class MusicTable(QTableView):
     def on_sort(self):
         debug("on_sort")
         search_col_num = self.table_headers.index("path")
-        qmodel_index = self.find_qmodel_index_by_value(
+        selected_qmodel_index = self.find_qmodel_index_by_value(
+            self.model2, search_col_num, self.selected_song_filepath
+        )
+        current_qmodel_index = self.find_qmodel_index_by_value(
             self.model2, search_col_num, self.current_song_filepath
         )
-        self.set_qmodel_index(qmodel_index)
+        # Update the 2 QModelIndexes that we track
+        self.set_selected_song_qmodel_index(selected_qmodel_index)
+        self.set_current_song_qmodel_index(current_qmodel_index)
+        self.jump_to_selected_song()
         self.jump_to_current_song()
 
         # ```python
@@ -377,8 +384,8 @@ class MusicTable(QTableView):
         When a cell is clicked, do some stuff :)
         - this func also runs when double click happens, fyi
         """
-        debug("on_cell_clicked")
         self.set_selected_song_filepath()
+        self.set_selected_song_qmodel_index()
         self.viewport().update()  # type: ignore
 
     def on_header_resized(self, logicalIndex, oldSize, newSize):
@@ -409,7 +416,7 @@ class MusicTable(QTableView):
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
         if isinstance(self.model2, QStandardItemModel):
-            debug("on_cell_data_changed | doing the normal stuff")
+            debug("on_cell_data_changed")
             # get the ID of the row that was edited
             id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
             # get the db song_id from the row
@@ -451,6 +458,7 @@ class MusicTable(QTableView):
         # FIXME:
         # TODO: make this prettier, show a table in a window instead of raw text probably
         _, details = args[0][:2]
+        details = dict(tuple(details)[0])
         if details:
             window = DebugWindow(details)
             window.exec_()
@@ -496,7 +504,6 @@ class MusicTable(QTableView):
 
     def delete_songs(self):
         """Asks to delete the currently selected songs from the db and music table (not the filesystem)"""
-        # FIXME: need to get indexes based on the proxy model
         selected_filepaths = self.get_selected_songs_filepaths()
         formatted_selected_filepaths = "\n".join(selected_filepaths)
         question_dialog = QuestionBoxDetails(
@@ -537,6 +544,15 @@ class MusicTable(QTableView):
         window.refreshMusicTableSignal.connect(self.load_music_table)
         window.exec_()  # Display the preferences window modally
 
+
+    def jump_to_selected_song(self):
+        """Moves screen to the selected song, and selects the row"""
+        debug("jump_to_selected_song")
+        # get the proxy model index
+        proxy_index = self.proxymodel.mapFromSource(self.selected_song_qmodel_index)
+        self.scrollTo(proxy_index)
+        self.selectRow(proxy_index.row())
+
     def jump_to_current_song(self):
         """Moves screen to the currently playing song, and selects the row"""
         debug("jump_to_current_song")
@@ -564,7 +580,7 @@ class MusicTable(QTableView):
     def show_id3_tags_debug_menu(self):
         """Shows ID3 tags for a specific .mp3 file"""
         if self.get_selected_song_filepath() is not None:
-            window = DebugWindow(str(self.get_selected_song_metadata()))
+            window = DebugWindow(dict(self.get_selected_song_metadata()))
             window.exec_()
 
     def show_lyrics_menu(self):
@@ -809,7 +825,7 @@ class MusicTable(QTableView):
     def get_selected_songs_filepaths(self) -> list[str]:
         """
         Returns a list of the filepaths for the currently selected songs, based on the proxy model
-        (things could be sorted differently)
+        (because things could be sorted differently)
         """
         selected_rows = self.get_selected_rows()
         filepaths = []
@@ -861,10 +877,7 @@ class MusicTable(QTableView):
         Sets the current song filepath to the value in column 'path' with current selected row index
         also stores the QModelIndex for some useful navigation stuff
         """
-        # map proxy (sortable) model to the original model (used for interactions)
-        source_index = self.proxymodel.mapToSource(self.currentIndex())
-        # set the proxy model index
-        self.set_current_song_qmodel_index(source_index)
+        self.set_current_song_qmodel_index()
         # update the filepath
         self.current_song_filepath: str = (
             self.current_song_qmodel_index.siblingAtColumn(
@@ -872,8 +885,19 @@ class MusicTable(QTableView):
             ).data()
         )
 
-    def set_current_song_qmodel_index(self, index: QModelIndex):
+    def set_current_song_qmodel_index(self, index = None):
+        if index is None:
+            # map proxy (sortable) model to the original model (used for interactions)
+            index = self.proxymodel.mapToSource(self.currentIndex())
+        # set the proxy model index
         self.current_song_qmodel_index: QModelIndex = index
+
+    def set_selected_song_qmodel_index(self, index = None):
+        if index is None:
+            # map proxy (sortable) model to the original model (used for interactions)
+            index = self.proxymodel.mapToSource(self.currentIndex())
+        # set the proxy model index
+        self.selected_song_qmodel_index: QModelIndex = index
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""

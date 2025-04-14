@@ -30,14 +30,14 @@ class QuestionBoxDetails(QDialog):
         layout.addWidget(label)
         self.text_field = QPlainTextEdit(self.details)
         layout.addWidget(self.text_field)
-        # cancel
-        cancel_button = QPushButton("cancel")
-        cancel_button.clicked.connect(self.cancel)
-        h_layout.addWidget(cancel_button)
         # ok
         ok_button = QPushButton("ok")
         ok_button.clicked.connect(self.ok)
         h_layout.addWidget(ok_button)
+        # cancel
+        cancel_button = QPushButton("cancel")
+        cancel_button.clicked.connect(self.cancel)
+        h_layout.addWidget(cancel_button)
 
         layout.addLayout(h_layout)
         self.setLayout(layout)
