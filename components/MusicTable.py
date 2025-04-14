@@ -1,6 +1,7 @@
 from mutagen.id3 import ID3
 from json import load as jsonload
 import DBA
+from pprint import pprint
 from PyQt5.QtGui import (
     QColor,
     QDragMoveEvent,
@@ -248,7 +249,7 @@ class MusicTable(QTableView):
         if e is None:
             return
         data = e.mimeData()
-        debug(f"dropEvent data: {data}")
+        debug("dropEvent")
         if data and data.hasUrls():
             directories = []
             files = []
@@ -262,8 +263,6 @@ class MusicTable(QTableView):
                         # append 1 file
                         files.append(path)
             e.accept()
-            debug(f"directories: {directories}")
-            debug(f"files: {files}")
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
                 worker.signals.signal_progress.connect(self.handle_progress)
@@ -493,15 +492,18 @@ class MusicTable(QTableView):
 
     def delete_songs(self):
         """Asks to delete the currently selected songs from the db and music table (not the filesystem)"""
+        # FIXME: need to get indexes based on the proxy model
+        selected_filepaths = self.get_selected_songs_filepaths()
+        formatted_selected_filepaths = "\n".join(selected_filepaths)
         reply = QMessageBox.question(
             self,
             "Confirmation",
-            "Remove these songs from the library? (Files stay on your computer)",
+            f"Remove these songs from the library? (Files stay on your computer)\n{formatted_selected_filepaths}",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
         if reply == QMessageBox.Yes:
-            selected_filepaths = self.get_selected_songs_filepaths()
+            pprint(selected_filepaths)
             worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
             worker.signals.signal_progress.connect(self.qapp.handle_progress)
             worker.signals.signal_finished.connect(self.delete_selected_row_indices)
@@ -535,24 +537,10 @@ class MusicTable(QTableView):
     def jump_to_current_song(self):
         """Moves screen to the currently playing song, and selects the row"""
         debug("jump_to_current_song")
-        print(self.current_song_qmodel_index.model() == self.model2)
-        print("is it?")
-        print("current song qmodel index")
-        print(self.current_song_qmodel_index)
+        # get the proxy model index
         proxy_index = self.proxymodel.mapFromSource(self.current_song_qmodel_index)
-        print(f"proxy index: {proxy_index}")
         self.scrollTo(proxy_index)
-        row = proxy_index.row()
-        print(f"proxy index row: {row}")
         self.selectRow(proxy_index.row())
-
-        # self.scrollTo(self.current_song_qmodel_index)
-        # row = self.current_song_qmodel_index.row()
-        # self.selectRow(row)
-
-        # FIXME: this doesn't work regardless of sorting
-        # 1. play song 2. sort columns differently 3. jump to current song
-        # this will jump to table index of where the song was when it started playing (its index was set)
 
     def open_directory(self):
         """Opens the currently selected song in the system file manager"""
@@ -812,7 +800,9 @@ class MusicTable(QTableView):
         return [index.row() for index in selection_model.selectedRows()]
 
     def get_selected_songs_filepaths(self) -> list[str]:
-        """Returns a list of the filepaths for the currently selected songs"""
+        """
+        Returns a list of the filepaths for the currently selected songs
+        """
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
@@ -863,15 +853,19 @@ class MusicTable(QTableView):
         Sets the current song filepath to the value in column 'path' with current selected row index
         also stores the QModelIndex for some useful navigation stuff
         """
-        # Get
+        # map proxy (sortable) model to the original model (used for interactions)
         source_index = self.proxymodel.mapToSource(self.currentIndex())
-        self.current_song_qmodel_index: QModelIndex = source_index
-
+        # set the proxy model index
+        self.set_current_song_qmodel_index(source_index)
+        # update the filepath
         self.current_song_filepath: str = (
             self.current_song_qmodel_index.siblingAtColumn(
                 self.table_headers.index("path")
             ).data()
         )
+
+    def set_current_song_qmodel_index(self, index: QModelIndex):
+        self.current_song_qmodel_index: QModelIndex = index
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""
