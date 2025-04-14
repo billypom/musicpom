@@ -232,6 +232,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # tableView
         self.tableView.doubleClicked.connect(self.play_audio_file)
         self.tableView.enterKey.connect(self.play_audio_file)
+        self.tableView.playSignal.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
@@ -390,11 +391,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         else:
             self.status_bar.showMessage(message)
 
-    def play_audio_file(self) -> None:
+    def play_audio_file(self, filepath: str) -> None:
         """
         Start playback of `tableView.current_song_filepath` & moves playback slider
         """
-        self.tableView.set_current_song_filepath()
+        # self.tableView.set_current_song_filepath()
         # get metadata
         self.current_song_metadata = self.tableView.get_current_song_metadata()
         # read the file
@@ -568,6 +569,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             initialize_db()
             self.tableView.load_music_table()
 
+
 def update_database_file() -> bool:
     """
     Reads the database file (specified by config file)
@@ -583,7 +585,9 @@ def update_database_file() -> bool:
     # If the database location isnt set at the config location, move it
     if not db_filepath.startswith(cfg_path):
         new_path = f"{cfg_path}/{db_filepath}"
-        debug(f"Set new config [db] database path: \n> Current: {db_filepath}\n> New:{new_path}")
+        debug(
+            f"Set new config [db] database path: \n> Current: {db_filepath}\n> New:{new_path}"
+        )
         config["db"]["database"] = new_path
         # Save the config
         with open(cfg_file, "w") as configfile:
@@ -595,12 +599,11 @@ def update_database_file() -> bool:
     db_path.pop()
     db_path = "/".join(db_path)
 
-
     if os.path.exists(db_filepath):
         try:
             size = os.path.getsize(db_filepath)
         except OSError:
-            error('Database file exists but could not read.')
+            error("Database file exists but could not read.")
             return False
         if size == 0:
             initialize_db()
@@ -610,6 +613,7 @@ def update_database_file() -> bool:
         # still make the db even if the directory existed
         initialize_db()
     return True
+
 
 def update_config_file() -> ConfigParser:
     """
@@ -653,8 +657,6 @@ def update_config_file() -> ConfigParser:
     with open(cfg_file, "w") as configfile:
         config.write(configfile)
     return config
-
-
 
 
 if __name__ == "__main__":

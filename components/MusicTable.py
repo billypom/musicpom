@@ -59,9 +59,10 @@ from configparser import ConfigParser
 
 class MusicTable(QTableView):
     playPauseSignal = pyqtSignal()
+    playSignal = pyqtSignal(str)
     enterKey = pyqtSignal()
     deleteKey = pyqtSignal()
-    refreshMusicTable = pyqtSignal()
+    refreshMusicTableSignal = pyqtSignal()
     handleProgressSignal = pyqtSignal(str)
     getThreadPoolSignal = pyqtSignal()
 
@@ -81,9 +82,9 @@ class MusicTable(QTableView):
         # need a standard item model to do actions on cells
         self.model2: QStandardItemModel = QStandardItemModel()
         # proxy model for sorting i guess?
-        proxymodel = QSortFilterProxyModel()
-        proxymodel.setSourceModel(self.model2)
-        self.setModel(proxymodel)
+        self.proxymodel = QSortFilterProxyModel()
+        self.proxymodel.setSourceModel(self.model2)
+        self.setModel(self.proxymodel)
         self.setSortingEnabled(True)
 
         # Config
@@ -124,7 +125,7 @@ class MusicTable(QTableView):
         self.selected_song_filepath = ""
         self.current_song_filepath = ""
         self.current_song_db_id = None
-        self.current_song_qmodelindex: QModelIndex
+        self.current_song_qmodel_index: QModelIndex
 
         # Properties
         self.setAcceptDrops(True)
@@ -140,6 +141,7 @@ class MusicTable(QTableView):
         assert self.horizontal_header is not None  # i hate look at linting errors
         self.horizontal_header.setStretchLastSection(True)
         self.horizontal_header.setSectionResizeMode(QHeaderView.Interactive)
+        self.horizontal_header.sortIndicatorChanged.connect(self.on_sort)
         # dumb vertical estupido
         self.vertical_header: QHeaderView = self.verticalHeader()
         assert self.vertical_header is not None
@@ -148,8 +150,8 @@ class MusicTable(QTableView):
         # CONNECTIONS
         self.clicked.connect(self.on_cell_clicked)
         self.deleteKey.connect(self.delete_songs)
-        # self.doubleClicked.connect(self.set_current_song_filepath)
-        # self.enterKey.connect(self.set_current_song_filepath)
+        self.doubleClicked.connect(self.play_audio_file)
+        self.enterKey.connect(self.play_audio_file)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontal_header.sectionResized.connect(self.on_header_resized)
@@ -265,7 +267,9 @@ class MusicTable(QTableView):
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
                 worker.signals.signal_progress.connect(self.handle_progress)
-                worker.signals.signal_result.connect(self.on_get_audio_files_recursively_finished)
+                worker.signals.signal_result.connect(
+                    self.on_get_audio_files_recursively_finished
+                )
                 worker.signals.signal_finished.connect(self.load_music_table)
                 if self.qapp:
                     threadpool = self.qapp.threadpool
@@ -339,14 +343,38 @@ class MusicTable(QTableView):
     # |                    |
     # |____________________|
 
+    def find_qmodel_index_by_value(self, model, column: int, value) -> QModelIndex:
+        for row in range(model.rowCount()):
+            index = model.index(row, column)
+            if index.data() == value:
+                return index
+        return QModelIndex()  # Invalid index if not found
+
+    def on_sort(self):
+        debug("on_sort")
+        search_col_num = self.table_headers.index("path")
+        qmodel_index = self.find_qmodel_index_by_value(
+            self.model2, search_col_num, self.current_song_filepath
+        )
+        self.set_qmodel_index(qmodel_index)
+        self.jump_to_current_song()
+
+        # ```python
+        # (method) def match(
+        #     start: QModelIndex,
+        #     role: int,
+        #     value: Any,
+        #     hits: int = ...,
+        #     flags: MatchFlags | MatchFlag = ...
+        # ) -> List[QModelIndex]
+        # ```
+
     def on_cell_clicked(self, index):
         """
         When a cell is clicked, do some stuff :)
+        - this func also runs when double click happens, fyi
         """
-        current_index = self.currentIndex()
-        if index == current_index:
-            return
-        self.setCurrentIndex(index)
+        debug("on_cell_clicked")
         self.set_selected_song_filepath()
         self.viewport().update()  # type: ignore
 
@@ -431,6 +459,17 @@ class MusicTable(QTableView):
     # |                    |
     # |____________________|
 
+    def set_qmodel_index(self, index: QModelIndex):
+        self.current_song_qmodel_index = index
+
+    def play_audio_file(self):
+        """
+        Sets the current song filepath
+        Emits a signal that the current song should start playback
+        """
+        self.set_current_song_filepath()
+        self.playSignal.emit(self.current_song_filepath)
+
     def add_files_to_library(self, files: list[str]) -> None:
         """
         Spawns a worker thread - adds a list of filepaths to the library
@@ -495,13 +534,25 @@ class MusicTable(QTableView):
 
     def jump_to_current_song(self):
         """Moves screen to the currently playing song, and selects the row"""
+        debug("jump_to_current_song")
+        print(self.current_song_qmodel_index.model() == self.model2)
+        print("is it?")
+        print("current song qmodel index")
+        print(self.current_song_qmodel_index)
+        proxy_index = self.proxymodel.mapFromSource(self.current_song_qmodel_index)
+        print(f"proxy index: {proxy_index}")
+        self.scrollTo(proxy_index)
+        row = proxy_index.row()
+        print(f"proxy index row: {row}")
+        self.selectRow(proxy_index.row())
+
+        # self.scrollTo(self.current_song_qmodel_index)
+        # row = self.current_song_qmodel_index.row()
+        # self.selectRow(row)
+
         # FIXME: this doesn't work regardless of sorting
         # 1. play song 2. sort columns differently 3. jump to current song
         # this will jump to table index of where the song was when it started playing (its index was set)
-
-        self.scrollTo(self.current_song_qmodelindex)
-        row = self.current_song_qmodelindex.row()
-        self.selectRow(row)
 
     def open_directory(self):
         """Opens the currently selected song in the system file manager"""
@@ -580,7 +631,7 @@ class MusicTable(QTableView):
         debug("reorganizing files")
         # FIXME: batch update, instead of doing 1 file at a time
         # DBAccess is being instantiated for every file, boo
-        # NOTE: 
+        # NOTE:
         # is that even possible with move file function?
 
         # Get target directory
@@ -810,15 +861,17 @@ class MusicTable(QTableView):
     def set_current_song_filepath(self) -> None:
         """
         Sets the current song filepath to the value in column 'path' with current selected row index
-        also stores the QModelIndex for some useful other stuff
+        also stores the QModelIndex for some useful navigation stuff
         """
-        # NOTE:
-        # Setting the current song filepath automatically plays that song
-        # self.tableView listens to this function and plays the audio file located at self.current_song_filepath
-        self.current_song_qmodelindex: QModelIndex = self.currentIndex()
-        self.current_song_filepath: str = self.current_song_qmodelindex.siblingAtColumn(
-            self.table_headers.index("path")
-        ).data()
+        # Get
+        source_index = self.proxymodel.mapToSource(self.currentIndex())
+        self.current_song_qmodel_index: QModelIndex = source_index
+
+        self.current_song_filepath: str = (
+            self.current_song_qmodel_index.siblingAtColumn(
+                self.table_headers.index("path")
+            ).data()
+        )
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""
@@ -858,6 +911,7 @@ class MusicTable(QTableView):
             self.model2.layoutChanged.connect(self.restore_scroll_position)
         except Exception:
             pass
+
 
 # QT Roles
 
