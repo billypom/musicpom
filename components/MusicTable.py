@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
 )
 from PyQt5.QtCore import (
+    QItemSelectionModel,
     QSortFilterProxyModel,
     Qt,
     QModelIndex,
@@ -795,18 +796,23 @@ class MusicTable(QTableView):
         return audio_files
 
     def get_selected_rows(self) -> list[int]:
-        """Returns a list of indexes for every selected row"""
-        selection_model = self.selectionModel()
+        """
+        Returns a list of indexes for every selected row, agnostic of proxy model
+        This gets the actual index in the root table
+        """
+        selection_model: QItemSelectionModel | None = self.selectionModel()
+        assert selection_model is not None  # begone linter error
         return [index.row() for index in selection_model.selectedRows()]
 
     def get_selected_songs_filepaths(self) -> list[str]:
         """
-        Returns a list of the filepaths for the currently selected songs
+        Returns a list of the filepaths for the currently selected songs, based on the proxy model
+        (things could be sorted differently)
         """
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
-            idx = self.model2.index(row, self.table_headers.index("path"))
+            idx = self.proxymodel.index(row, self.table_headers.index("path"))
             filepaths.append(idx.data())
         return filepaths
 
