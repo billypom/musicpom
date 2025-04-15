@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
     QMessageBox,
     QStatusBar,
+    QStyle,
 )
 from PyQt5.QtCore import (
     QSize,
@@ -177,6 +178,22 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.player, self.probe, self.PlotWidget
         )
         self.timer = QTimer(self)  # for playback slider and such
+
+        # Button styles
+        if not self.style():
+            style = QStyle()
+        else:
+            style = self.style()
+        assert style is not None  # i hate linting errors
+        pixmapi = QStyle.StandardPixmap.SP_MediaSkipForward
+        icon = style.standardIcon(pixmapi)
+        self.nextButton.setIcon(icon)
+        pixmapi = QStyle.StandardPixmap.SP_MediaSkipBackward
+        icon = style.standardIcon(pixmapi)
+        self.previousButton.setIcon(icon)
+        pixmapi = QStyle.StandardPixmap.SP_MediaPlay
+        icon = style.standardIcon(pixmapi)
+        self.playButton.setIcon(icon)
 
         # sharing functions with other classes and that
         self.tableView.load_qapp(self)

@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QListWidget,
     QWidget,
     QDial,
+    QStyle,
 )
 from logging import debug
 from PyQt5.QtGui import QFont
@@ -100,7 +101,13 @@ class PreferencesWindow(QDialog):
             self.input_fields[key] = input_field
 
         # Save button
+        pixmapi = QStyle.StandardPixmap.SP_DialogSaveButton
+        style = self.style()
+        if not style:
+            style = QStyle()
+        icon = style.standardIcon(pixmapi)
         save_button = QPushButton("Save")
+        save_button.setIcon(icon)
         save_button.clicked.connect(self.save_preferences)
         self.content_layout.addWidget(save_button)
 
@@ -125,7 +132,7 @@ class PreferencesWindow(QDialog):
                 child.widget().deleteLater()
 
     def save_preferences(self):
-        """Save preferences, reload the config, then reload the database"""
+        """Save preferences, reload the config, then reload the database if necessary"""
 
         # Upcate the config fields
         try:
@@ -140,6 +147,7 @@ class PreferencesWindow(QDialog):
                 self.config.write(configfile)
 
             self.reloadConfigSignal.emit()
+            # only reload db if we changed the db
             if self.current_category_str == "db":
                 self.reloadDatabaseSignal.emit()
         except Exception as e:
