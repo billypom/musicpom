@@ -59,18 +59,14 @@ config.ini db/
 - ~~automatically fix broken config before loading app (new config options added)~~
 - ~~allow spectrum analyzer to fall when playback stops or song is paused~~
 - ~~ability to delete playlist~~
+- ~~jump to currently playing song~~
 ##### QMediaPlaylist
 https://doc.qt.io/qtforpython-5/PySide2/QtMultimedia/QMediaPlaylist.html#PySide2.QtMultimedia.PySide2.QtMultimedia.QMediaPlaylist
 - playback modes (normal, repeat playlist, repeat 1 song, shuffle)
 > Use `PySide2.QtMultimedia.QMediaPlaylist.PlaybackMode` ?
 > Use `PySide2.QtMultimedia.QMediaPlaylist.shuffle()` ?
-- jump to currently playing song - how do i make this work regardless of current sort params?
 - autoplay next song in all modes
 > Use `PySide2.QtMultimedia.QMediaPlaylist.next()` after implementing playlist?
-##### misc
-- database playlist autoexporting
-- .wav, .ogg, .flac convertor
-- automatic "radio" based on artist or genre
 - playback rate audio quality fix?
 > https://doc.qt.io/qtforpython-5/PySide2/QtMultimedia/QAudioDecoder.html#qaudiodecoder
 > Since Qt 5.12.2, the url scheme gst-pipeline provides custom pipelines for the GStreamer backend.
@@ -79,4 +75,7 @@ player = new QMediaPlayer;
 player->setMedia(QUrl("gst-pipeline: videotestsrc ! autovideosink"));
 player->play();
 ```
-
+##### misc
+- database playlist autoexporting
+- .wav, .ogg, .flac convertor
+- automatic "radio" based on artist or genre

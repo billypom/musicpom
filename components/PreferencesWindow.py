@@ -25,7 +25,7 @@ class PreferencesWindow(QDialog):
         self.reloadConfigSignal = reloadConfigSignal
         self.reloadDatabaseSignal = reloadDatabaseSignal
         self.setWindowTitle("Preferences")
-        self.setMinimumSize(800, 800)
+        self.setMinimumSize(800, 600)
         self.cfg_file = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
@@ -34,7 +34,8 @@ class PreferencesWindow(QDialog):
         self.config.read(self.cfg_file)
         self.current_category = ""
         # # Labels & input fields
-        self.input_fields = {}
+        self.input_fields: dict[str, QLineEdit] = {}
+        self.edit_button: QPushButton
 
         # Widgets
         self.content_area = QWidget()
@@ -70,7 +71,16 @@ class PreferencesWindow(QDialog):
     def on_nav_item_clicked(self, item: QListWidgetItem):
         self.current_category = item
         self.clear_layout(self.content_layout)
-        self.input_fields = {}
+
+        # Edit toggle button
+        edit_button = QPushButton()
+        self.edit_button: QPushButton = edit_button
+        self.edit_button.setText("view mode")
+        self.edit_button.clicked.connect(self.on_edit_toggled)
+        self.content_layout.addWidget(edit_button)
+
+        # dict of text input fields
+        self.input_fields: dict[str, QLineEdit] = {}
         if isinstance(item, str):
             self.current_category_str = item
         else:
@@ -84,6 +94,7 @@ class PreferencesWindow(QDialog):
         for key in self.config[self.current_category_str]:
             label = QLabel(key)
             input_field = QLineEdit(self.config[self.current_category_str][key])
+            input_field.setEnabled(False)
             self.content_layout.addWidget(label)
             self.content_layout.addWidget(input_field)
             self.input_fields[key] = input_field
@@ -93,7 +104,21 @@ class PreferencesWindow(QDialog):
         save_button.clicked.connect(self.save_preferences)
         self.content_layout.addWidget(save_button)
 
+    def on_edit_toggled(self):
+        """Toggle editable text or not"""
+        # kinda ugly
+        is_button_on: bool = True
+        for _, field in self.input_fields.items():
+            if field.isEnabled():
+                is_button_on = False
+            field.setEnabled(not field.isEnabled())
+        if is_button_on:
+            self.edit_button.setText("edit mode")
+        else:
+            self.edit_button.setText("view mode")
+
     def clear_layout(self, layout):
+        """Clears all widgets in the current layout"""
         while layout.count():
             child = layout.takeAt(0)
             if child.widget():
