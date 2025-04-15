@@ -41,6 +41,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
 from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
 from utils import (
     delete_album_art,
+    get_id3_tags,
     scan_for_music,
     initialize_db,
     add_files_to_database,
@@ -323,15 +324,20 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def on_play_clicked(self) -> None:
         """Updates the Play & Pause buttons when clicked"""
+        pixmapi = QStyle.StandardPixmap.SP_MediaPlay
+        play_icon = self.style().standardIcon(pixmapi)  # type: ignore
+        pixmapi = QStyle.StandardPixmap.SP_MediaPause
+        pause_icon = self.style().standardIcon(pixmapi)  # type: ignore
         if self.player.state() == QMediaPlayer.State.PlayingState:
             self.player.pause()
-            self.playButton.setText("▶️")
+            self.playButton.setText(None)
+            self.playButton.setIcon(pause_icon)
         else:
             if self.player.state() == QMediaPlayer.State.PausedState:
                 self.player.play()
-                self.playButton.setText("⏸️")
+                self.playButton.setText(None)
+                self.playButton.setIcon(play_icon)
             else:
-                self.play_audio_file()
                 self.playButton.setText("👽")
 
     def on_previous_clicked(self) -> None:
@@ -354,7 +360,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def setup_fonts(self):
         """Initializes font sizes and behaviors for various UI components"""
         font: QFont = QFont()
-        font.setPointSize(16)
+        font.setPointSize(12)
         font.setBold(True)
         self.artistLabel: QLabel
         self.artistLabel.setFont(font)
@@ -363,7 +369,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
 
         font: QFont = QFont()
-        font.setPointSize(16)
+        font.setPointSize(12)
         font.setBold(False)
         self.titleLabel.setFont(font)
         self.titleLabel.setTextInteractionFlags(
@@ -371,7 +377,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
 
         font: QFont = QFont()
-        font.setPointSize(16)
+        font.setPointSize(12)
         font.setItalic(True)
         self.albumLabel.setFont(font)
         self.albumLabel.setTextInteractionFlags(
@@ -385,7 +391,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             / "config.ini"
         )
         self.config.read(cfg_file)
-        debug("CONFIG LOADED")
+        debug("load_config()")
 
     def get_thread_pool(self) -> QThreadPool:
         """Returns the threadpool instance"""
@@ -408,15 +414,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         else:
             self.status_bar.showMessage(message)
 
-    def play_audio_file(self, filepath: str) -> None:
+    def play_audio_file(self, filepath=None) -> None:
         """
         Start playback of `tableView.current_song_filepath` & moves playback slider
         """
-        # self.tableView.set_current_song_filepath()
+        if not filepath:
+            filepath = self.tableView.set_current_song_filepath()
         # get metadata
-        self.current_song_metadata = self.tableView.get_current_song_metadata()
+        metadata = get_id3_tags(filepath)[0]
         # read the file
-        url = QUrl.fromLocalFile(self.tableView.get_current_song_filepath())
+        url = QUrl.fromLocalFile(filepath)
         # load the audio content
         content = QMediaContent(url)
         # set the player to play the content
@@ -424,25 +431,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # self.player.setMedia(QUrl("gst-pipeline: videotestsrc ! autovideosink"))
         self.player.play()  # play
         self.move_slider()  # mover
-        # self.player.setPlaybackRate(1.5)
 
         # assign "now playing" labels & album artwork
-        if self.current_song_metadata is not None:
-            artist = (
-                self.current_song_metadata["TPE1"][0]
-                if "TPE1" in self.current_song_metadata
-                else None
-            )
-            album = (
-                self.current_song_metadata["TALB"][0]
-                if "TALB" in self.current_song_metadata
-                else None
-            )
-            title = (
-                self.current_song_metadata["TIT2"][0]
-                if "TIT2" in self.current_song_metadata
-                else None
-            )
+        if metadata is not None:
+            artist = metadata["TPE1"][0] if "TPE1" in metadata else None
+            album = metadata["TALB"][0] if "TALB" in metadata else None
+            title = metadata["TIT2"][0] if "TIT2" in metadata else None
             self.artistLabel.setText(artist)
             self.albumLabel.setText(album)
             self.titleLabel.setText(title)
