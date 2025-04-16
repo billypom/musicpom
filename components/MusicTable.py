@@ -156,8 +156,8 @@ class MusicTable(QTableView):
         # CONNECTIONS
         self.clicked.connect(self.on_cell_clicked)
         self.deleteKey.connect(self.delete_songs)
-        self.doubleClicked.connect(self.play_audio_file)
-        self.enterKey.connect(self.play_audio_file)
+        self.doubleClicked.connect(self.play_selected_audio_file)
+        self.enterKey.connect(self.play_selected_audio_file)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontal_header.sectionResized.connect(self.on_header_resized)
@@ -367,17 +367,6 @@ class MusicTable(QTableView):
         self.set_selected_song_qmodel_index(selected_qmodel_index)
         self.set_current_song_qmodel_index(current_qmodel_index)
         self.jump_to_selected_song()
-        self.jump_to_current_song()
-
-        # ```python
-        # (method) def match(
-        #     start: QModelIndex,
-        #     role: int,
-        #     value: Any,
-        #     hits: int = ...,
-        #     flags: MatchFlags | MatchFlag = ...
-        # ) -> List[QModelIndex]
-        # ```
 
     def on_cell_clicked(self, index):
         """
@@ -473,7 +462,7 @@ class MusicTable(QTableView):
     def set_qmodel_index(self, index: QModelIndex):
         self.current_song_qmodel_index = index
 
-    def play_audio_file(self):
+    def play_selected_audio_file(self):
         """
         Sets the current song filepath
         Emits a signal that the current song should start playback
@@ -544,9 +533,8 @@ class MusicTable(QTableView):
         window.refreshMusicTableSignal.connect(self.load_music_table)
         window.exec_()  # Display the preferences window modally
 
-
     def jump_to_selected_song(self):
-        """Moves screen to the selected song, and selects the row"""
+        """Moves screen to the selected song, then selects the row"""
         debug("jump_to_selected_song")
         # get the proxy model index
         proxy_index = self.proxymodel.mapFromSource(self.selected_song_qmodel_index)
@@ -554,7 +542,7 @@ class MusicTable(QTableView):
         self.selectRow(proxy_index.row())
 
     def jump_to_current_song(self):
-        """Moves screen to the currently playing song, and selects the row"""
+        """Moves screen to the currently playing song, then selects the row"""
         debug("jump_to_current_song")
         # get the proxy model index
         proxy_index = self.proxymodel.mapFromSource(self.current_song_qmodel_index)
@@ -562,7 +550,7 @@ class MusicTable(QTableView):
         self.selectRow(proxy_index.row())
 
     def open_directory(self):
-        """Opens the currently selected song in the system file manager"""
+        """Opens the containing directory of the currently selected song, in the system file manager"""
         if self.get_selected_song_filepath() is None:
             QMessageBox.warning(
                 self,
@@ -874,8 +862,9 @@ class MusicTable(QTableView):
 
     def set_current_song_filepath(self) -> None:
         """
-        Sets the current song filepath to the value in column 'path' with current selected row index
-        also stores the QModelIndex for some useful navigation stuff
+        - Sets the current song filepath to the value in column 'path'
+        from the current selected row index
+        - Store the QModelIndex for navigation
         """
         self.set_current_song_qmodel_index()
         # update the filepath
@@ -885,14 +874,14 @@ class MusicTable(QTableView):
             ).data()
         )
 
-    def set_current_song_qmodel_index(self, index = None):
+    def set_current_song_qmodel_index(self, index=None):
         if index is None:
             # map proxy (sortable) model to the original model (used for interactions)
             index = self.proxymodel.mapToSource(self.currentIndex())
         # set the proxy model index
         self.current_song_qmodel_index: QModelIndex = index
 
-    def set_selected_song_qmodel_index(self, index = None):
+    def set_selected_song_qmodel_index(self, index=None):
         if index is None:
             # map proxy (sortable) model to the original model (used for interactions)
             index = self.proxymodel.mapToSource(self.currentIndex())
