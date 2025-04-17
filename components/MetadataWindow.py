@@ -85,8 +85,8 @@ class MetadataWindow(QDialog):
                     tag_sets[tag].append(song_data[tag].text[0])
                 except KeyError:
                     pass
-        debug("tag sets:")
-        debug(tag_sets)
+        # debug("tag sets:")
+        # debug(tag_sets)
 
         # UI Creation
         current_layout = QHBoxLayout()

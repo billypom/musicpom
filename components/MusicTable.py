@@ -379,6 +379,8 @@ class MusicTable(QTableView):
 
     def on_header_resized(self, logicalIndex, oldSize, newSize):
         """Handles keeping headers inside the viewport"""
+        # FIXME: how resize good
+
         # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
         col_count = self.model2.columnCount()
         qtableview_width = self.size().width()
@@ -444,13 +446,16 @@ class MusicTable(QTableView):
             - data returned from the original worker process function are returned here
               as the first item in a tuple
         """
-        # FIXME:
-        # TODO: make this prettier, show a table in a window instead of raw text probably
         _, details = args[0][:2]
-        details = dict(tuple(details)[0])
-        if details:
-            window = DebugWindow(details)
-            window.exec_()
+        try:
+            details = dict(tuple(details)[0])
+            if details:
+                window = DebugWindow(details)
+                window.exec_()
+        except IndexError:
+            pass
+        except Exception as e:
+            debug(f'on_add_files_to_database_finished() | Something went wrong: {e}')
 
     #  ____________________
     # |                    |
@@ -498,7 +503,7 @@ class MusicTable(QTableView):
         question_dialog = QuestionBoxDetails(
             title="Delete songs",
             description="Remove these songs from the library?",
-            details=formatted_selected_filepaths,
+            data=selected_filepaths,
         )
         reply = question_dialog.execute()
         if reply:
@@ -734,8 +739,7 @@ class MusicTable(QTableView):
         Loads the header widths from the last application close.
         """
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        if not isinstance(table_view_column_widths[0], int):
-            return
+        debug(f'loaded header widths: {table_view_column_widths}')
         if not isinstance(table_view_column_widths, list):
             for i in range(self.model2.columnCount() - 1):
                 self.setColumnWidth(i, int(table_view_column_widths[i]))

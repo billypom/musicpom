@@ -14,11 +14,12 @@ def delete_album_art(file: str) -> bool:
         True on success, False on failure
     """
     try:
+        debug("Deleting album art")
         audio = ID3(file)
         debug(audio)
         if "APIC:" in audio:
             del audio["APIC:"]
-            debug("Deleting album art")
+            debug("Deleting album art for real this time")
             audio.save()
         else:
             warning("delete_album_art_for_current_song() | no tag called APIC")

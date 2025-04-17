@@ -92,7 +92,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
 
     Returns:
         True / False"""
-    debug(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
+    # debug(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
 
     try:
         try:  # Load existing tags
@@ -124,7 +124,7 @@ def set_id3_tag(filepath: str, tag_name: str, value: str):
             tag_name = id3_tag_mapping[tag_name]
             # Other
         if tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
-            debug(f"tag_name = {tag_name}")
+            # debug(f"tag_name = {tag_name}")
             tag_class = mutagen_id3_tag_mapping[tag_name]
             if issubclass(tag_class, Frame):
                 frame = tag_class(encoding=3, text=[value])

@@ -289,6 +289,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         for i in range(self.tableView.model2.columnCount()):
             list_of_column_widths.append(str(self.tableView.columnWidth(i)))
         column_widths_as_string = ",".join(list_of_column_widths)
+        debug(f'saving column widths: {column_widths_as_string}')
         self.config["table"]["column_widths"] = column_widths_as_string
         self.config["settings"]["volume"] = str(self.current_volume)
         self.config["settings"]["window_size"] = (
@@ -296,8 +297,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
 
         # Save the config
-        with open(self.cfg_file, "w") as configfile:
-            self.config.write(configfile)
+        try:
+            with open(self.cfg_file, "w") as configfile:
+                self.config.write(configfile)
+        except Exception as e:
+            debug(f'wtf man {e}')
         if a0 is not None:
             super().closeEvent(a0)
 
