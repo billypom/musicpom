@@ -19,7 +19,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="20">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0">
+     <layout class="QVBoxLayout" name="verticalLayout">
       <property name="spacing">
        <number>6</number>
       </property>
@@ -65,120 +65,8 @@
         </item>
         <item>
          <layout class="QVBoxLayout" name="vLayoutPlaybackVisuals">
-          <property name="sizeConstraint">
-           <enum>QLayout::SetMaximumSize</enum>
-          </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,0,4,1">
-            <property name="sizeConstraint">
-             <enum>QLayout::SetMaximumSize</enum>
-            </property>
-            <item>
-             <widget class="QSlider" name="playbackSlider">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="timeHorizontalLayout2">
-              <item>
-               <widget class="QLabel" name="startTimeLabel">
-                <property name="font">
-                 <font>
-                  <family>Monospace</family>
-                  <italic>false</italic>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>00:00</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="slashLabel">
-                <property name="font">
-                 <font>
-                  <family>Monospace</family>
-                  <italic>false</italic>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>/</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="endTimeLabel">
-                <property name="font">
-                 <font>
-                  <family>Monospace</family>
-                  <weight>75</weight>
-                  <italic>false</italic>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>00:00</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QSlider" name="speedSlider">
-              <property name="minimum">
-               <number>0</number>
-              </property>
-              <property name="maximum">
-               <number>100</number>
-              </property>
-              <property name="singleStep">
-               <number>1</number>
-              </property>
-              <property name="value">
-               <number>50</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="invertedAppearance">
-               <bool>false</bool>
-              </property>
-              <property name="tickPosition">
-               <enum>QSlider::TicksAbove</enum>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="speedLabel">
-              <property name="font">
-               <font>
-                <family>Monospace</family>
-               </font>
-              </property>
-              <property name="text">
-               <string>1.00</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="PlotWidget" name="PlotWidget" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>150</height>
-             </size>
-            </property>
-           </widget>
+           <widget class="PlotWidget" name="PlotWidget" native="true"/>
           </item>
          </layout>
         </item>
@@ -204,67 +92,86 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="hLayoutControls" stretch="1,2,2,2,1">
+       <layout class="QHBoxLayout" name="hLayoutCurrentSongDetails" stretch="0">
         <property name="spacing">
          <number>6</number>
         </property>
         <item>
-         <spacer name="horizontalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="previousButton">
-          <property name="font">
-           <font>
-            <pointsize>28</pointsize>
-           </font>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="playButton">
-          <property name="font">
-           <font>
-            <pointsize>28</pointsize>
-           </font>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="nextButton">
-          <property name="font">
-           <font>
-            <pointsize>28</pointsize>
-           </font>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
+         <layout class="QHBoxLayout" name="hLayoutSongDetails" stretch="0,0,0">
+          <item>
+           <widget class="QLabel" name="artistLabel"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="titleLabel"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="albumLabel"/>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="hLayoutControls2" stretch="1,0,5,0,1">
+       <layout class="QHBoxLayout" name="hLayoutPlayback" stretch="4,0">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetMaximumSize</enum>
+        </property>
+        <item>
+         <widget class="QSlider" name="playbackSlider">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="timeHorizontalLayout2">
+          <item>
+           <widget class="QLabel" name="startTimeLabel">
+            <property name="font">
+             <font>
+              <family>Monospace</family>
+              <italic>false</italic>
+             </font>
+            </property>
+            <property name="text">
+             <string>00:00</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="slashLabel">
+            <property name="font">
+             <font>
+              <family>Monospace</family>
+              <italic>false</italic>
+             </font>
+            </property>
+            <property name="text">
+             <string>/</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="endTimeLabel">
+            <property name="font">
+             <font>
+              <family>Monospace</family>
+              <weight>75</weight>
+              <italic>false</italic>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>00:00</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hLayoutControls" stretch="1,0,1,1,1,0,1">
         <property name="spacing">
          <number>6</number>
         </property>
@@ -312,17 +219,31 @@
          </spacer>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="hLayoutSongDetails">
-          <item>
-           <widget class="QLabel" name="artistLabel"/>
-          </item>
-          <item>
-           <widget class="QLabel" name="titleLabel"/>
-          </item>
-          <item>
-           <widget class="QLabel" name="albumLabel"/>
-          </item>
-         </layout>
+         <widget class="QPushButton" name="previousButton">
+          <property name="font">
+           <font>
+            <pointsize>28</pointsize>
+           </font>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="playButton">
+          <property name="font">
+           <font>
+            <pointsize>28</pointsize>
+           </font>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="nextButton">
+          <property name="font">
+           <font>
+            <pointsize>28</pointsize>
+           </font>
+          </property>
+         </widget>
         </item>
         <item>
          <spacer name="horizontalSpacer">
@@ -338,11 +259,45 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton">
-          <property name="text">
-           <string>nothing</string>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QSlider" name="speedSlider">
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
+            </property>
+            <property name="value">
+             <number>50</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="invertedAppearance">
+             <bool>false</bool>
+            </property>
+            <property name="tickPosition">
+             <enum>QSlider::TicksAbove</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="speedLabel">
+            <property name="font">
+             <font>
+              <family>Monospace</family>
+             </font>
+            </property>
+            <property name="text">
+             <string>1.00</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
@@ -356,7 +311,7 @@
      <x>0</x>
      <y>0</y>
      <width>1152</width>
-     <height>21</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

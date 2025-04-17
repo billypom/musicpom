@@ -1,13 +1,15 @@
 from collections.abc import Iterable
 from PyQt5.QtWidgets import (
+    QAbstractScrollArea,
     QDialog,
+    QHeaderView,
     QPlainTextEdit,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
 from pprint import pformat
-from logging import debug
+from logging import debug, error
 
 
 class DebugWindow(QDialog):
@@ -27,29 +29,33 @@ class DebugWindow(QDialog):
         if isinstance(self.data, str):
             self.input_field = QPlainTextEdit(pformat(self.data))
             layout.addWidget(self.input_field)
-        elif isinstance(self.data, list):
-            table = QTableWidget()
-            table.setRowCount(len(data))
-            table.setColumnCount(len(data[0]))
-            for ri, row_data in enumerate(data):
-                for ci, item in enumerate(row_data):
-                    table.setItem(ri, ci, QTableWidgetItem(str(item)))
-            layout.addWidget(table)
-        elif isinstance(self.data, dict):
-            # FIXME: i wanna grow....woah
-            try:
-                table = QTableWidget()
-                rows = max(len(value) for value in data.keys())
-                table.setRowCount(rows)
-                table.setColumnCount(len(data))
-                table.setHorizontalHeaderLabels(data.keys())
-                for ci, (key, values) in enumerate(data.items()):
-                    for ri, value in enumerate(values):
-                        table.setItem(ri, ci, QTableWidgetItem(str(value)))
+        else:
+            table: QTableWidget = QTableWidget()
+            table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+            table.horizontalHeader().setStretchLastSection(True)
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+            if isinstance(self.data, list):
+                # big ol column
+                table.setRowCount(len(data))
+                table.setColumnCount(1)
+                for i, item in enumerate(self.data):
+                    table.setItem(i, 0, QTableWidgetItem(str(item)))
                 layout.addWidget(table)
-            except Exception as e:
-                data = str(self.data)
-                self.input_field = QPlainTextEdit(pformat(data + "\n\n" + str(e)))
-                layout.addWidget(self.input_field)
+            elif isinstance(self.data, dict):
+                try:
+                    # | TIT2 | title goes here |
+                    # | TDRC | 2025-05-05      |
+                    table.setRowCount(len(data.keys()))
+                    table.setColumnCount(2)
+                    table.setHorizontalHeaderLabels(['Tag', 'Value'])
+                    for i, (k, v) in enumerate(data.items()):
+                        table.setItem(i, 0, QTableWidgetItem(str(k)))
+                        table.setItem(i, 1, QTableWidgetItem(str(v)))
+                    layout.addWidget(table)
+                except Exception as e:
+                    data = str(self.data)
+                    self.input_field = QPlainTextEdit(pformat(data + "\n\n" + str(e)))
+                    layout.addWidget(self.input_field)
+                    error(f'Tried to load self.data as dict but could not. {e}')
 
         self.setLayout(layout)

@@ -44,7 +44,7 @@ class AudioVisualizer(QtWidgets.QWidget):
         # Graphics plot
         # Make sure PlotWidget doesn't exceed album art height
         # Adjust to leave room for playback controls
-        self.PlotWidget.setFixedHeight(225)
+        self.PlotWidget.setFixedHeight(250)
         # x range
         self.PlotWidget.setXRange(
             0, self.get_x_resolution(), padding=0

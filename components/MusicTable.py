@@ -221,7 +221,7 @@ class MusicTable(QTableView):
         menu.addAction(open_containing_folder_action)
         # view id3 tags (debug)
         view_id3_tags_debug = QAction("View ID3 tags (debug)", self)
-        view_id3_tags_debug.triggered.connect(self.show_id3_tags_debug_menu)
+        view_id3_tags_debug.triggered.connect(self.view_id3_tags_debug_menu)
         menu.addAction(view_id3_tags_debug)
         # delete song
         delete_action = QAction("Delete", self)
@@ -292,7 +292,7 @@ class MusicTable(QTableView):
         if key == Qt.Key.Key_Space:
             self.toggle_play_pause()
 
-        elif key == Qt.Key.Key_Right:
+        if key == Qt.Key.Key_Right:
             index = self.currentIndex()
             new_index = self.model2.index(index.row(), index.column() + 1)
             if new_index.isValid():
@@ -565,7 +565,7 @@ class MusicTable(QTableView):
         path = "/".join(filepath)
         Popen(["xdg-open", path])
 
-    def show_id3_tags_debug_menu(self):
+    def view_id3_tags_debug_menu(self):
         """Shows ID3 tags for a specific .mp3 file"""
         if self.get_selected_song_filepath() is not None:
             window = DebugWindow(dict(self.get_selected_song_metadata()))
