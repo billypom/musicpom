@@ -49,7 +49,7 @@ from utils.delete_song_id_from_database import delete_song_id_from_database
 from utils.add_files_to_database import add_files_to_database
 from utils.get_reorganize_vars import get_reorganize_vars
 from utils.update_song_in_database import update_song_in_database
-from utils.get_id3_tags import get_id3_tags
+from utils.get_id3_tags import get_id3_tags, id3_remap
 from utils.get_album_art import get_album_art
 from utils import set_id3_tag
 from subprocess import Popen
@@ -582,7 +582,8 @@ class MusicTable(QTableView):
         selected_song_filepath = self.get_selected_song_filepath()
         if selected_song_filepath is None:
             return
-        current_song = self.get_selected_song_metadata()
+        # current_song = self.get_selected_song_metadata()
+        current_song = get_id3_tags(selected_song_filepath)[0]
         try:
             uslt_tags = [tag for tag in current_song.keys() if tag.startswith("USLT::")]
             if uslt_tags:
@@ -848,13 +849,13 @@ class MusicTable(QTableView):
         """Returns the currently playing song filepath"""
         return self.current_song_filepath
 
-    def get_current_song_metadata(self) -> ID3 | dict:
+    def get_current_song_metadata(self) -> dict:
         """Returns the currently playing song's ID3 tags"""
-        return get_id3_tags(self.current_song_filepath)[0]
+        return id3_remap(get_id3_tags(self.current_song_filepath)[0])
 
-    def get_selected_song_metadata(self) -> ID3 | dict:
+    def get_selected_song_metadata(self) -> dict:
         """Returns the selected song's ID3 tags"""
-        return get_id3_tags(self.selected_song_filepath)[0]
+        return id3_remap(get_id3_tags(self.selected_song_filepath)[0])
 
     def get_current_song_album_art(self) -> bytes:
         """Returns the APIC data (album art lol) for the currently playing song"""

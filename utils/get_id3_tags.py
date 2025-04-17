@@ -36,18 +36,22 @@ def get_mp3_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
 
 def id3_remap(audio: MP3 | ID3 | FLAC) -> dict:
     """
-    Turns an ID3 dict into a normal dict that I the human can use.
-    with words...
+    Turns an ID3 dict into a normal dict that I, the human, can use.
+    Add extra fields as well
     """
-    return {
-        "title": audio["TIT2"].text[0],
-        "artist": audio["TPE1"].text[0],
-        "album": audio["TALB"].text[0],
-        "track_number": audio["TRCK"].text[0],
-        "genre": audio["TCON"].text[0],
-        "date": convert_id3_timestamp_to_datetime(audio["TDRC"].text[0]),
-        "bitrate": audio["TBIT"].text[0],
+    remap = {
+        "title": audio.get("TIT2"),
+        "artist": audio.get("TPE1"),
+        "album": audio.get("TALB"),
+        "track_number": audio.get("TRCK"),
+        "genre": audio.get("TCON"),
+        "date": convert_id3_timestamp_to_datetime(audio.get("TDRC")),
+        "bitrate": audio.get("TBIT"),
+        "lyrics": audio.get("USLT"),
     }
+    if isinstance(audio, MP3):
+        remap["length"] = int(round(audio.info.length, 0))
+    return remap
 
 
 def get_id3_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
@@ -61,8 +65,13 @@ def get_id3_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
         - filename
     Returns
         - tuple(ID3/dict, fail_reason)
-        ID3 dict looks like this:
-        {'TIT2': TIT2(encoding=<Encoding.UTF8: 3>, text=['song title']), 'TSSE': TSSE(encoding=<Encoding.UTF8: 3>, text=['Lavf59.27.100'])}
+
+    ID3 dict looks like this:
+    {
+        'TIT2': TIT2(encoding=<Encoding.UTF8: 3>, text=['song title']),
+        'TSSE': TSSE(encoding=<Encoding.UTF8: 3>, text=['Lavf59.27.100'],
+        ...
+    }
     """
     if filename.endswith(".mp3"):
         tags, details = get_mp3_tags(filename)
