@@ -54,7 +54,7 @@ mutagen_id3_tag_mapping = {
     # "year": TYER,  # Year of recording
     # "date": TDAT,  # Date
     "lyrics": USLT,  # Unsynchronized lyric/text transcription
-    "track_number": TRCK,  # Track number/Position in set
+    "track": TRCK,  # Track number/Position in set
     "album_cover": APIC,  # Attached picture
     "composer": TCOM,  # Composer
     "conductor": TPE3,  # Conductor/performer refinement

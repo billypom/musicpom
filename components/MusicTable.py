@@ -62,6 +62,43 @@ from appdirs import user_config_dir
 from configparser import ConfigParser
 
 
+class TableHeader:
+    def __init__(self):
+        self.db = {
+            "title": "title",
+            "artist": "artist",
+            "album": "album",
+            "track_number": "track_number",
+            "genre": "genre",
+            "codec": "codec",
+            "length_seconds": "length_seconds",
+            "album_date": "album_date",
+            "filepath": "filepath",
+        }
+        self.gui = {
+            "title": "Title",
+            "artist": "Artist",
+            "album": "Album",
+            "track_number": "Track",
+            "genre": "Genre",
+            "codec": "Codec",
+            "length_seconds": "Length",
+            "album_date": "Year",
+            "filepath": "Path",
+        }
+        self.id3 = {
+            "title": "TIT2",
+            "artist": "TPE1",
+            "album": "TALB",
+            "track_number": "TRCK",
+            "genre": "content_type",
+            "codec": None,
+            "length_seconds": "TLEN",
+            "album_date": "TDRC",
+            "filepath": None,
+        }
+
+
 class MusicTable(QTableView):
     playlistStatsSignal = pyqtSignal(str)
     playPauseSignal = pyqtSignal()
@@ -103,28 +140,9 @@ class MusicTable(QTableView):
 
         # Threads
         self.threadpool = QThreadPool
-        # gui names of headers
-        self.table_headers = [
-            "title",
-            "artist",
-            "album",
-            "track",
-            "genre",
-            "codec",
-            "year",
-            "path",
-        ]
-        # id3 names of headers
-        self.id3_headers = [
-            "TIT2",
-            "TPE1",
-            "TALB",
-            "TRCK",
-            "content_type",
-            None,
-            "TDRC",
-            None,
-        ]
+        # headers class thing
+        self.headers = TableHeader()
+
         # db names of headers
         self.database_columns = str(self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
@@ -582,17 +600,8 @@ class MusicTable(QTableView):
         selected_song_filepath = self.get_selected_song_filepath()
         if selected_song_filepath is None:
             return
-        # current_song = self.get_selected_song_metadata()
-        current_song = get_id3_tags(selected_song_filepath)[0]
-        try:
-            uslt_tags = [tag for tag in current_song.keys() if tag.startswith("USLT::")]
-            if uslt_tags:
-                lyrics = next((current_song[tag].text for tag in uslt_tags), "")
-            else:
-                raise RuntimeError("No USLT tags found in song metadata")
-        except Exception as e:
-            error(f"show_lyrics_menu() | could not retrieve lyrics | {e}")
-            lyrics = ""
+        dic = id3_remap(get_id3_tags(selected_song_filepath)[0])
+        lyrics = dic["lyrics"]
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
 
@@ -687,7 +696,7 @@ class MusicTable(QTableView):
         self.disconnect_layout_changed()
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
         self.model2.clear()
-        self.model2.setHorizontalHeaderLabels(self.table_headers)
+        self.model2.setHorizontalHeaderLabels(self.headers.gui.values())
         if playlist_id:  # Load a playlist
             # Fetch playlist data
             selected_playlist_id = playlist_id[0]

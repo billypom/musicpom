@@ -37,20 +37,25 @@ def get_mp3_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
 def id3_remap(audio: MP3 | ID3 | FLAC) -> dict:
     """
     Turns an ID3 dict into a normal dict that I, the human, can use.
-    Add extra fields as well
+    Add extra fields too :D yahooo
     """
-    remap = {
-        "title": audio.get("TIT2"),
-        "artist": audio.get("TPE1"),
-        "album": audio.get("TALB"),
-        "track_number": audio.get("TRCK"),
-        "genre": audio.get("TCON"),
-        "date": convert_id3_timestamp_to_datetime(audio.get("TDRC")),
-        "bitrate": audio.get("TBIT"),
-        "lyrics": audio.get("USLT"),
-    }
+    remap = {}
     if isinstance(audio, MP3):
-        remap["length"] = int(round(audio.info.length, 0))
+        # so ugly
+        uslt_tags = [tag for tag in audio.keys() if tag.startswith("USLT::")]
+        lyrics = next((audio[tag].text for tag in uslt_tags), "")
+        # so ugly
+        remap = {
+            "title": audio.get("TIT2"),
+            "artist": audio.get("TPE1"),
+            "album": audio.get("TALB"),
+            "track_number": audio.get("TRCK"),
+            "genre": audio.get("TCON"),
+            "date": convert_id3_timestamp_to_datetime(audio.get("TDRC")),
+            "bitrate": audio.get("TBIT"),
+            "lyrics": lyrics,
+            "length": int(round(audio.info.length, 0)),
+        }
     return remap
 
 
