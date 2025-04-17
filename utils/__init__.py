@@ -3,7 +3,7 @@ from .convert_id3_timestamp_to_datetime import convert_id3_timestamp_to_datetime
 from .initialize_db import initialize_db
 from .safe_get import safe_get
 from .get_album_art import get_album_art
-from .get_id3_tags import get_id3_tags
+from .get_id3_tags import get_id3_tags, id3_remap
 from .get_reorganize_vars import get_reorganize_vars
 from .set_id3_tag import set_id3_tag
 from .delete_song_id_from_database import delete_song_id_from_database

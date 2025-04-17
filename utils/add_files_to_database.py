@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMessageBox
 from mutagen.id3 import ID3
 import DBA
 from logging import debug
-from utils import get_id3_tags, convert_id3_timestamp_to_datetime
+from utils import get_id3_tags, convert_id3_timestamp_to_datetime, id3_remap
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
@@ -14,8 +14,12 @@ def add_files_to_database(files, progress_callback=None):
     Args:
         files: list() of fully qualified paths to audio file(s)
         progress_callback: emit data for user feedback
-    Returns:
-        True on success, else False
+
+    Returns a tuple where the first value is the success state
+    and the second value is a list of failed to add items
+    ```
+    (True, {"filename.mp3":"failed because i said so"})
+    ```
     """
     config = ConfigParser()
     cfg_file = (
@@ -23,7 +27,7 @@ def add_files_to_database(files, progress_callback=None):
     )
     config.read(cfg_file)
     if not files:
-        return False, {'Failure': 'All operations failed in add_files_to_database()'}
+        return False, {"Failure": "All operations failed in add_files_to_database()"}
     extensions = config.get("settings", "extensions").split(",")
     failed_dict = {}
     insert_data = []  # To store data for batch insert
@@ -33,55 +37,24 @@ def add_files_to_database(files, progress_callback=None):
                 progress_callback.emit(filepath)
             filename = filepath.split("/")[-1]
 
-            audio, details = get_id3_tags(filepath)
-            # print('got id3 tags')
-            # print(type(audio))
-            # print(audio)
-            if not isinstance(audio, ID3):
+            tags, details = get_id3_tags(filepath)
+            if details:
                 failed_dict[filepath] = details
                 continue
-
-            try:
-                title = audio["TIT2"].text[0]
-            except KeyError:
-                title = filename
-            try:
-                artist = audio["TPE1"].text[0]
-            except KeyError:
-                artist = ""
-            try:
-                album = audio["TALB"].text[0]
-            except KeyError:
-                album = ""
-            try:
-                track_number = audio["TRCK"].text[0]
-            except KeyError:
-                track_number = None
-            try:
-                genre = audio["TCON"].text[0]
-            except KeyError:
-                genre = ""
-            try:
-                date = convert_id3_timestamp_to_datetime(audio["TDRC"].text[0])
-            except KeyError:
-                date = ""
-            try:
-                bitrate = audio["TBIT"].text[0]
-            except KeyError:
-                bitrate = ""
+            audio = id3_remap(tags)
 
             # Append data tuple to insert_data list
             insert_data.append(
                 (
                     filepath,
-                    title,
-                    album,
-                    artist,
-                    track_number,
-                    genre,
+                    audio["title"],
+                    audio["album"],
+                    audio["artist"],
+                    audio["track_number"],
+                    audio["genre"],
                     filename.split(".")[-1],
-                    date,
-                    bitrate,
+                    audio["date"],
+                    audio["bitrate"],
                 )
             )
             # Check if batch size is reached

@@ -37,7 +37,7 @@ from PyQt5.QtCore import (
     QThreadPool,
     QRunnable,
 )
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe, QMediaPlaylist
 from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
 from utils import (
     delete_album_art,
@@ -162,7 +162,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # self.vLayoutAlbumArt.SetFixedSize()
         self.status_bar = QStatusBar()
-        self.permanent_status_label = QLabel("Status...")
+        self.permanent_status_label = QLabel("")
         self.status_bar.addPermanentWidget(self.permanent_status_label)
         self.setStatusBar(self.status_bar)
 
@@ -174,6 +174,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # widget bits
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
         self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
+        self.playlist: QMediaPlaylist = QMediaPlaylist()
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio buffer data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(
             self.player, self.probe, self.PlotWidget
@@ -248,13 +249,15 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         ## CONNECTIONS
         # tableView
-        # self.tableView.doubleClicked.connect(self.play_audio_file)
-        # self.tableView.enterKey.connect(self.play_audio_file)
         self.tableView.playSignal.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
         self.tableView.handleProgressSignal.connect(self.handle_progress)
+        self.tableView.playlistStatsSignal.connect(
+            self.set_permanent_status_bar_message
+        )
+        self.tableView.load_music_table()
 
         # playlistTreeView
         self.playlistTreeView.playlistChoiceSignal.connect(
@@ -289,7 +292,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         for i in range(self.tableView.model2.columnCount()):
             list_of_column_widths.append(str(self.tableView.columnWidth(i)))
         column_widths_as_string = ",".join(list_of_column_widths)
-        debug(f'saving column widths: {column_widths_as_string}')
+        debug(f"saving column widths: {column_widths_as_string}")
         self.config["table"]["column_widths"] = column_widths_as_string
         self.config["settings"]["volume"] = str(self.current_volume)
         self.config["settings"]["window_size"] = (
@@ -301,7 +304,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             with open(self.cfg_file, "w") as configfile:
                 self.config.write(configfile)
         except Exception as e:
-            debug(f'wtf man {e}')
+            debug(f"wtf man {e}")
         if a0 is not None:
             super().closeEvent(a0)
 
@@ -327,7 +330,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.speedLabel.setText("{:.2f}".format(rate / 50))
 
     def on_play_clicked(self) -> None:
-        """Updates the Play & Pause buttons when clicked"""
+        """
+        Plays & pauses the song
+        Updates the button icons
+        """
         pixmapi = QStyle.StandardPixmap.SP_MediaPlay
         play_icon = self.style().standardIcon(pixmapi)  # type: ignore
         pixmapi = QStyle.StandardPixmap.SP_MediaPause
@@ -405,7 +411,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """
         Sets the permanent message label in the status bar
         """
-        # what does this do?
         self.permanent_status_label.setText(message)
 
     def show_status_bar_message(self, message: str, timeout: int | None = None) -> None:

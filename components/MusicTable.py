@@ -63,6 +63,7 @@ from configparser import ConfigParser
 
 
 class MusicTable(QTableView):
+    playlistStatsSignal = pyqtSignal(str)
     playPauseSignal = pyqtSignal()
     playSignal = pyqtSignal(str)
     enterKey = pyqtSignal()
@@ -162,7 +163,7 @@ class MusicTable(QTableView):
         self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontal_header.sectionResized.connect(self.on_header_resized)
         # Final actions
-        self.load_music_table()
+        # self.load_music_table()
         self.setup_keyboard_shortcuts()
         self.load_header_widths()
 
@@ -455,7 +456,7 @@ class MusicTable(QTableView):
         except IndexError:
             pass
         except Exception as e:
-            debug(f'on_add_files_to_database_finished() | Something went wrong: {e}')
+            debug(f"on_add_files_to_database_finished() | Something went wrong: {e}")
 
     #  ____________________
     # |                    |
@@ -690,9 +691,6 @@ class MusicTable(QTableView):
             # Fetch playlist data
             selected_playlist_id = playlist_id[0]
             try:
-                debug(
-                    f"load_music_table() | selected_playlist_id: {selected_playlist_id}"
-                )
                 with DBA.DBAccess() as db:
                     data = db.query(
                         "SELECT s.id, s.title, s.artist, s.album, s.track_number, s.genre, s.codec, s.album_date, s.filepath FROM song s JOIN song_playlist sp ON s.id = sp.song_id WHERE sp.playlist_id = ?",
@@ -712,7 +710,10 @@ class MusicTable(QTableView):
                 error(f"load_music_table() | Unhandled exception: {e}")
                 return
         # Populate the model
+        row_count: int = 0
+        total_time: int = 0  # total time of all songs in seconds
         for row_data in data:
+            row_count += 1
             id, *rest_of_data = row_data
             # handle different datatypes
             items = []
@@ -731,6 +732,7 @@ class MusicTable(QTableView):
             for item in items:
                 item.setData(id, Qt.ItemDataRole.UserRole)
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
+        self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time}")
         self.connect_data_changed()
         self.connect_layout_changed()
 
@@ -739,7 +741,7 @@ class MusicTable(QTableView):
         Loads the header widths from the last application close.
         """
         table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
-        debug(f'loaded header widths: {table_view_column_widths}')
+        debug(f"loaded header widths: {table_view_column_widths}")
         if not isinstance(table_view_column_widths, list):
             for i in range(self.model2.columnCount() - 1):
                 self.setColumnWidth(i, int(table_view_column_widths[i]))
@@ -830,10 +832,6 @@ class MusicTable(QTableView):
         """Returns the selected songs filepath"""
         return self.selected_song_filepath
 
-    def get_selected_song_metadata(self) -> ID3 | dict:
-        """Returns the selected song's ID3 tags"""
-        return get_id3_tags(self.selected_song_filepath)[0]
-
     def get_selected_songs_db_ids(self) -> list:
         """Returns a list of id's for the selected songs"""
         indexes = self.selectedIndexes()
@@ -853,6 +851,10 @@ class MusicTable(QTableView):
     def get_current_song_metadata(self) -> ID3 | dict:
         """Returns the currently playing song's ID3 tags"""
         return get_id3_tags(self.current_song_filepath)[0]
+
+    def get_selected_song_metadata(self) -> ID3 | dict:
+        """Returns the selected song's ID3 tags"""
+        return get_id3_tags(self.selected_song_filepath)[0]
 
     def get_current_song_album_art(self) -> bytes:
         """Returns the APIC data (album art lol) for the currently playing song"""
