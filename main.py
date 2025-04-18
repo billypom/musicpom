@@ -23,11 +23,13 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsPixmapItem,
     QMessageBox,
+    QPushButton,
     QStatusBar,
     QStyle,
 )
 from PyQt5.QtCore import (
     QSize,
+    QThread,
     QUrl,
     QTimer,
     Qt,
@@ -140,29 +142,22 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self, clipboard):
         super(ApplicationWindow, self).__init__()
-
-        # clipboard good
         self.clipboard = clipboard
-
-        # Config
         self.config: ConfigParser = ConfigParser()
         self.cfg_file = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
         )
         self.config.read(self.cfg_file)
-
-        # Multithreading stuff...
-        self.threadpool = QThreadPool()
+        self.threadpool: QThreadPool = QThreadPool()
         # UI
         self.setupUi(self)
         self.setWindowTitle("musicpom")
-
         self.setup_fonts()
 
         # self.vLayoutAlbumArt.SetFixedSize()
-        self.status_bar = QStatusBar()
-        self.permanent_status_label = QLabel("")
+        self.status_bar: QStatusBar = QStatusBar()
+        self.permanent_status_label: QLabel = QLabel("")
         self.status_bar.addPermanentWidget(self.permanent_status_label)
         self.setStatusBar(self.status_bar)
 
@@ -195,6 +190,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.previousButton.setIcon(icon)
         pixmapi = QStyle.StandardPixmap.SP_MediaPlay
         icon = style.standardIcon(pixmapi)
+        self.playButton: QPushButton
         self.playButton.setIcon(icon)
 
         # sharing functions with other classes and that

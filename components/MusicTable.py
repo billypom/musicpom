@@ -689,8 +689,13 @@ class MusicTable(QTableView):
                 return
         # Populate the model
         row_count: int = 0
+        # TODO: total time of playlist
+        # but how do i want to do this if user doesn't choose to see length field?
+        # spawn new thread and calculate myself?
         total_time: int = 0  # total time of all songs in seconds
         for row_data in data:
+            print(row_data)
+            # if "length" in fields:
             row_count += 1
             id, *rest_of_data = row_data
             # handle different datatypes
