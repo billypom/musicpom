@@ -663,8 +663,8 @@ class MusicTable(QTableView):
         self.disconnect_layout_changed()
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
         self.model2.clear()
-        self.model2.setHorizontalHeaderLabels(list(self.headers.gui.values()))
-        fields = ", ".join(list(self.headers.db.values()))
+        self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
+        fields = ", ".join(self.headers.user_headers)
         if playlist_id:  # Load a playlist
             # Fetch playlist data
             selected_playlist_id = playlist_id[0]

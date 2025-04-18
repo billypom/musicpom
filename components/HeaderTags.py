@@ -1,9 +1,28 @@
+from configparser import ConfigParser
+from pathlib import Path
+from appdirs import user_config_dir
+
+
 class HeaderTags:
     """
     Utility class to converting between different "standards" for tags (headers, id3, etc)
+
+    `db`: dict = "db name": "db name string"
+    `gui`: dict = "db name": "gui string"
+    `id3`: dict = "db name": "id3 tag string"
+    `id3_keys`: dict = "id3 tag string": "db name"
+    `editable_db_tags`: list = "list of db names that are user editable"
+    `user_headers`: list = "list of db headers that the user has chosen to see in gui"
     """
 
     def __init__(self):
+        cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config = ConfigParser()
+        self.config.read(cfg_file)
+        self.user_headers = str(self.config["table"]["columns"]).split(",")
         self.db: dict = {
             "title": "title",
             "artist": "artist",
@@ -55,3 +74,11 @@ class HeaderTags:
             "genre",
             "album_date",
         ]
+
+    def get_user_gui_headers(self) -> list:
+        """Returns a list of headers for the GUI"""
+        gui_headers = []
+        for db, gui in self.gui.items():
+            if db in self.user_headers:
+                gui_headers.append(gui)
+        return gui_headers
