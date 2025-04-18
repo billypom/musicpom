@@ -12,10 +12,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal
 from mutagen.id3 import ID3
 from components.ErrorDialog import ErrorDialog
-from utils.get_id3_tags import get_id3_tags
-from utils.set_id3_tag import set_id3_tag
-from utils.update_song_in_database import update_song_in_database
-from utils.id3_tag_mapping import id3_tag_mapping
+from utils import set_tag, get_tag, update_song_in_database, id3_tag_mapping
 from logging import debug
 # import re
 
@@ -65,7 +62,7 @@ class MetadataWindow(QDialog):
         # Get a dict of all tags for all songs
         # e.g.,  { "TIT2": ["song_title1", "song_title2"], ... }
         for song in self.songs:
-            song_data = get_id3_tags(song[0])
+            song_data = get_tags(song[0])
             if not song_data:
                 QMessageBox.error(
                     self,
@@ -135,7 +132,7 @@ class MetadataWindow(QDialog):
                     if field.has_changed():
                         # Update the ID3 tag if the tag is not blank,
                         #   and has been edited
-                        success = set_id3_tag(
+                        success = set_tag(
                             filepath=song[0], tag_name=tag, value=field.text()
                         )
                         if success:

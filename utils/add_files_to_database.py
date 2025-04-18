@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMessageBox
 from mutagen.id3 import ID3
 import DBA
 from logging import debug
-from utils import get_id3_tags, convert_id3_timestamp_to_datetime, id3_remap
+from utils import get_tags, convert_id3_timestamp_to_datetime, id3_remap
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
@@ -37,7 +37,7 @@ def add_files_to_database(files, progress_callback=None):
                 progress_callback.emit(filepath)
             filename = filepath.split("/")[-1]
 
-            tags, details = get_id3_tags(filepath)
+            tags, details = get_tags(filepath)
             if details:
                 failed_dict[filepath] = details
                 continue
@@ -55,6 +55,7 @@ def add_files_to_database(files, progress_callback=None):
                     filename.split(".")[-1],
                     audio["date"],
                     audio["bitrate"],
+                    audio["length"]
                 )
             )
             # Check if batch size is reached
@@ -62,7 +63,7 @@ def add_files_to_database(files, progress_callback=None):
                 debug(f"inserting a LOT of songs: {len(insert_data)}")
                 with DBA.DBAccess() as db:
                     db.executemany(
-                        "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         insert_data,
                     )
                 insert_data = []  # Reset the insert_data list
@@ -75,20 +76,9 @@ def add_files_to_database(files, progress_callback=None):
         debug(f"inserting some songs: {len(insert_data)}")
         with DBA.DBAccess() as db:
             db.executemany(
-                "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 insert_data,
             )
     return True, failed_dict
 
 
-# id int unsigned auto_increment,
-# title varchar(255),
-# album varchar(255),
-# artist varchar(255),
-# genre varchar(255),
-# codec varchar(15),
-# album_date date,
-# bitrate int unsigned,
-# date_added TIMESTAMP default CURRENT_TIMESTAMP,
-
-# scan_for_music(config.get('directories', 'library1'))

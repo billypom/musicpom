@@ -42,16 +42,17 @@ from components.MetadataWindow import MetadataWindow
 from components.QuestionBoxDetails import QuestionBoxDetails
 
 from main import Worker
-from utils.batch_delete_filepaths_from_database import (
+from utils import (
     batch_delete_filepaths_from_database,
+    delete_song_id_from_database,
+    add_files_to_database,
+    get_reorganize_vars,
+    update_song_in_database,
+    get_album_art,
+    id3_remap,
+    get_tags,
+    set_tag
 )
-from utils.delete_song_id_from_database import delete_song_id_from_database
-from utils.add_files_to_database import add_files_to_database
-from utils.get_reorganize_vars import get_reorganize_vars
-from utils.update_song_in_database import update_song_in_database
-from utils.get_id3_tags import get_id3_tags, id3_remap
-from utils.get_album_art import get_album_art
-from utils import set_id3_tag
 from subprocess import Popen
 from logging import debug, error
 import os
@@ -91,7 +92,7 @@ class TableHeader:
             "artist": "TPE1",
             "album": "TALB",
             "track_number": "TRCK",
-            "genre": "content_type",
+            "genre": "TCON",
             "codec": None,
             "length_seconds": "TLEN",
             "album_date": "TDRC",
@@ -440,7 +441,7 @@ class MusicTable(QTableView):
             user_input_data = topLeft.data()
             edited_column_name = self.database_columns[topLeft.column()]
             debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
-            response = set_id3_tag(filepath, edited_column_name, user_input_data)
+            response = set_tag(filepath, edited_column_name, user_input_data)
             if response:
                 # Update the library with new metadata
                 update_song_in_database(song_id, edited_column_name, user_input_data)
@@ -600,7 +601,7 @@ class MusicTable(QTableView):
         selected_song_filepath = self.get_selected_song_filepath()
         if selected_song_filepath is None:
             return
-        dic = id3_remap(get_id3_tags(selected_song_filepath)[0])
+        dic = id3_remap(get_tags(selected_song_filepath)[0])
         lyrics = dic["lyrics"]
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
@@ -860,11 +861,11 @@ class MusicTable(QTableView):
 
     def get_current_song_metadata(self) -> dict:
         """Returns the currently playing song's ID3 tags"""
-        return id3_remap(get_id3_tags(self.current_song_filepath)[0])
+        return id3_remap(get_tags(self.current_song_filepath)[0])
 
     def get_selected_song_metadata(self) -> dict:
         """Returns the selected song's ID3 tags"""
-        return id3_remap(get_id3_tags(self.selected_song_filepath)[0])
+        return id3_remap(get_tags(self.selected_song_filepath)[0])
 
     def get_current_song_album_art(self) -> bytes:
         """Returns the APIC data (album art lol) for the currently playing song"""

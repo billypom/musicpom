@@ -41,7 +41,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe, QMediaP
 from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
 from utils import (
     delete_album_art,
-    get_id3_tags,
+    get_tags,
     scan_for_music,
     initialize_db,
     add_files_to_database,
@@ -430,7 +430,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         if not filepath:
             filepath = self.tableView.get_current_song_filepath()
         # get metadata
-        metadata = get_id3_tags(filepath)[0]
+        metadata = get_tags(filepath)[0]
         # read the file
         url = QUrl.fromLocalFile(filepath)
         # load the audio content

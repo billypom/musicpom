@@ -9,6 +9,8 @@ def get_reorganize_vars(filepath: str) -> tuple[str, str]:
     if no artist or album or ID3 tags at all are found,
     function will return ("Unknown Artist", "Unknown Album")
     """
+    # TODO: fix this func. id3_remap(get_tags())
+    # or is what i have less memory so more better? :shrug:
     audio = ID3(filepath)
     try:
         artist = str(audio["TPE1"].text[0])

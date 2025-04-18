@@ -36,7 +36,7 @@ def get_mp3_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
 
 def id3_remap(audio: MP3 | ID3 | FLAC) -> dict:
     """
-    Turns an ID3 dict into a normal dict that I, the human, can use.
+    Turns the ID3 dict of an audio file into a normal dict that I, the human, can use.
     Add extra fields too :D yahooo
     """
     remap = {}
@@ -59,9 +59,9 @@ def id3_remap(audio: MP3 | ID3 | FLAC) -> dict:
     return remap
 
 
-def get_id3_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
+def get_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
     """
-    Get the ID3 tags for an audio file
+    Get the "ID3" tags for an audio file
     Returns a tuple of:
     - mutagen ID3 object OR python dictionary
     - string reason for failure (failure = empty dict above)

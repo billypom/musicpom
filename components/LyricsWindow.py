@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont
 from components.ErrorDialog import ErrorDialog
-from utils import set_id3_tag
+from utils import set_tag
 from logging import debug
 
 
@@ -32,7 +32,7 @@ class LyricsWindow(QDialog):
 
     def save(self):
         """Saves the current lyrics text to the USLT/lyrics ID3 tag"""
-        success = set_id3_tag(
+        success = set_tag(
             filepath=self.song_filepath,
             tag_name="lyrics",
             value=self.input_field.toPlainText(),
