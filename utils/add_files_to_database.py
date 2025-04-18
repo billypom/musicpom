@@ -55,7 +55,7 @@ def add_files_to_database(files, progress_callback=None):
                     filename.split(".")[-1],
                     audio["date"],
                     audio["bitrate"],
-                    audio["length"]
+                    audio["length"],
                 )
             )
             # Check if batch size is reached
@@ -80,5 +80,3 @@ def add_files_to_database(files, progress_callback=None):
                 insert_data,
             )
     return True, failed_dict
-
-

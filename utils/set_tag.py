@@ -1,9 +1,7 @@
 from logging import debug, error
-from components import ErrorDialog
-from utils.id3_tag_mapping import id3_tag_mapping
-from utils.convert_date_str_to_tyer_tdat_id3_tag import (
-    convert_date_str_to_tyer_tdat_id3_tag,
-)
+from components import ErrorDialog, HeaderTags
+
+# from utils import convert_date_str_to_tyer_tdat_id3_tag
 from mutagen.id3 import ID3
 from mutagen.id3._util import ID3NoHeaderError
 from mutagen.id3._frames import (
@@ -54,7 +52,7 @@ mutagen_id3_tag_mapping = {
     # "year": TYER,  # Year of recording
     # "date": TDAT,  # Date
     "lyrics": USLT,  # Unsynchronized lyric/text transcription
-    "track": TRCK,  # Track number/Position in set
+    "track_number": TRCK,  # Track number/Position in set
     "album_cover": APIC,  # Attached picture
     "composer": TCOM,  # Composer
     "conductor": TPE3,  # Conductor/performer refinement
@@ -92,6 +90,7 @@ def set_tag(filepath: str, tag_name: str, value: str):
 
     Returns:
         True / False"""
+    headers = HeaderTags()
     # debug(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
 
     try:
@@ -119,13 +118,14 @@ def set_tag(filepath: str, tag_name: str, value: str):
             audio.add(frame)
             audio.save()
             return True
-        # Convert any tag (as string or name, or whatever) into the Mutagen Frame object
-        if tag_name in id3_tag_mapping:
-            tag_name = id3_tag_mapping[tag_name]
+        # Convert any ID3 tag or nice name (that i chose) into into the Mutagen Frame object
+        if tag_name in list(headers.id3_keys.values()):
+            tag_nice_name = headers.id3_keys[tag_name]
+        else:
+            tag_nice_name = tag_name
             # Other
-        if tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
-            # debug(f"tag_name = {tag_name}")
-            tag_class = mutagen_id3_tag_mapping[tag_name]
+        if tag_nice_name in mutagen_id3_tag_mapping:  # Tag accounted for
+            tag_class = mutagen_id3_tag_mapping[tag_nice_name]
             if issubclass(tag_class, Frame):
                 frame = tag_class(encoding=3, text=[value])
                 audio_file.add(frame)  # Add the tag

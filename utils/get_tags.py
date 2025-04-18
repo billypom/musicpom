@@ -56,6 +56,13 @@ def id3_remap(audio: MP3 | ID3 | FLAC) -> dict:
             "lyrics": lyrics,
             "length": int(round(audio.info.length, 0)),
         }
+        for k, v in remap.items():
+            # we get crap like this if the tag exists
+            # {'title': TIT2(encoding=<Encoding.UTF8: 3>, text=['18']),
+            if v is None:
+                continue
+            if not isinstance(v, str) and not isinstance(v, int):
+                remap[k] = v.text[0]
     return remap
 
 

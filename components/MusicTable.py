@@ -40,6 +40,7 @@ from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 from components.QuestionBoxDetails import QuestionBoxDetails
+from components.HeaderTags import HeaderTags
 
 from main import Worker
 from utils import (
@@ -51,7 +52,7 @@ from utils import (
     get_album_art,
     id3_remap,
     get_tags,
-    set_tag
+    set_tag,
 )
 from subprocess import Popen
 from logging import debug, error
@@ -61,43 +62,6 @@ import typing
 from pathlib import Path
 from appdirs import user_config_dir
 from configparser import ConfigParser
-
-
-class TableHeader:
-    def __init__(self):
-        self.db = {
-            "title": "title",
-            "artist": "artist",
-            "album": "album",
-            "track_number": "track_number",
-            "genre": "genre",
-            "codec": "codec",
-            "length_seconds": "length_seconds",
-            "album_date": "album_date",
-            "filepath": "filepath",
-        }
-        self.gui = {
-            "title": "Title",
-            "artist": "Artist",
-            "album": "Album",
-            "track_number": "Track",
-            "genre": "Genre",
-            "codec": "Codec",
-            "length_seconds": "Length",
-            "album_date": "Year",
-            "filepath": "Path",
-        }
-        self.id3 = {
-            "title": "TIT2",
-            "artist": "TPE1",
-            "album": "TALB",
-            "track_number": "TRCK",
-            "genre": "TCON",
-            "codec": None,
-            "length_seconds": "TLEN",
-            "album_date": "TDRC",
-            "filepath": None,
-        }
 
 
 class MusicTable(QTableView):
@@ -142,7 +106,7 @@ class MusicTable(QTableView):
         # Threads
         self.threadpool = QThreadPool
         # headers class thing
-        self.headers = TableHeader()
+        self.headers = HeaderTags()
 
         # db names of headers
         self.database_columns = str(self.config["table"]["columns"]).split(",")
@@ -376,7 +340,7 @@ class MusicTable(QTableView):
 
     def on_sort(self):
         debug("on_sort")
-        search_col_num = self.table_headers.index("path")
+        search_col_num = list(self.headers.gui.values()).index("path")
         selected_qmodel_index = self.find_qmodel_index_by_value(
             self.model2, search_col_num, self.selected_song_filepath
         )
@@ -554,7 +518,9 @@ class MusicTable(QTableView):
         """Opens a form with metadata from the selected audio files"""
         files = self.get_selected_songs_filepaths()
         song_ids = self.get_selected_songs_db_ids()
-        window = MetadataWindow(self.refreshMusicTable, files, song_ids)
+        window = MetadataWindow(
+            self.refreshMusicTableSignal, self.headers, files, song_ids
+        )
         window.refreshMusicTableSignal.connect(self.load_music_table)
         window.exec_()  # Display the preferences window modally
 
@@ -697,14 +663,15 @@ class MusicTable(QTableView):
         self.disconnect_layout_changed()
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
         self.model2.clear()
-        self.model2.setHorizontalHeaderLabels(self.headers.gui.values())
+        self.model2.setHorizontalHeaderLabels(list(self.headers.gui.values()))
+        fields = ", ".join(list(self.headers.db.values()))
         if playlist_id:  # Load a playlist
             # Fetch playlist data
             selected_playlist_id = playlist_id[0]
             try:
                 with DBA.DBAccess() as db:
                     data = db.query(
-                        "SELECT s.id, s.title, s.artist, s.album, s.track_number, s.genre, s.codec, s.album_date, s.filepath FROM song s JOIN song_playlist sp ON s.id = sp.song_id WHERE sp.playlist_id = ?",
+                        f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?",
                         (selected_playlist_id,),
                     )
             except Exception as e:
@@ -714,7 +681,7 @@ class MusicTable(QTableView):
             try:
                 with DBA.DBAccess() as db:
                     data = db.query(
-                        "SELECT id, title, artist, album, track_number, genre, codec, album_date, filepath FROM song;",
+                        f"SELECT id, {fields} FROM song;",
                         (),
                     )
             except Exception as e:
@@ -835,7 +802,9 @@ class MusicTable(QTableView):
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
-            idx = self.proxymodel.index(row, self.table_headers.index("path"))
+            idx = self.proxymodel.index(
+                row, list(self.headers.gui.values()).index("path")
+            )
             filepaths.append(idx.data())
         return filepaths
 
@@ -874,7 +843,9 @@ class MusicTable(QTableView):
     def set_selected_song_filepath(self) -> None:
         """Sets the filepath of the currently selected song"""
         self.selected_song_filepath = (
-            self.currentIndex().siblingAtColumn(self.table_headers.index("path")).data()
+            self.currentIndex()
+            .siblingAtColumn(list(self.headers.gui.values()).index("path"))
+            .data()
         )
 
     def set_current_song_filepath(self) -> None:
@@ -887,7 +858,7 @@ class MusicTable(QTableView):
         # update the filepath
         self.current_song_filepath: str = (
             self.current_song_qmodel_index.siblingAtColumn(
-                self.table_headers.index("path")
+                list(self.headers.gui.values()).index("path")
             ).data()
         )
 
