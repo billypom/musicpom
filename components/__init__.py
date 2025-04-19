@@ -11,3 +11,4 @@ from .PlaylistsPane import PlaylistsPane
 from .ExportPlaylistWindow import ExportPlaylistWindow
 from .QuestionBoxDetails import QuestionBoxDetails
 from .HeaderTags import HeaderTags
+from .MediaPlayer import MediaPlayer

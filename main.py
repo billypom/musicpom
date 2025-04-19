@@ -50,6 +50,7 @@ from utils import (
     set_album_art,
 )
 from components import (
+    MediaPlayer,
     PreferencesWindow,
     AudioVisualizer,
     CreatePlaylistWindow,
@@ -168,8 +169,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # widget bits
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
-        self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
+        # self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
+        self.player: QMediaPlayer = MediaPlayer()
         self.playlist: QMediaPlaylist = QMediaPlaylist()
+        # set index on choose song
+        # index is the model2's row number? i guess?
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio buffer data
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(
             self.player, self.probe, self.PlotWidget
@@ -253,6 +257,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.playlistStatsSignal.connect(
             self.set_permanent_status_bar_message
         )
+        self.tableView.loadMusicTableSignal.connect(self.load_media_playlist)
         self.tableView.load_music_table()
 
         # playlistTreeView
@@ -363,6 +368,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     # |                    |
     # |____________________|
 
+    def load_media_playlist(self):
+        self.proxymodel.row
+        pass
+        # self.playlist.
+
     def setup_fonts(self):
         """Initializes font sizes and behaviors for various UI components"""
         font: QFont = QFont()
@@ -421,7 +431,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def play_audio_file(self, filepath=None) -> None:
         """
-        Start playback of `tableView.current_song_filepath` & moves playback slider
+        Start playback of filepath & moves playback slider
+
+        filepath default value = `tableView.current_song_filepath`
         """
         if not filepath:
             filepath = self.tableView.get_selected_song_filepath()

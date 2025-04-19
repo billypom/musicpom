@@ -66,6 +66,7 @@ from configparser import ConfigParser
 
 class MusicTable(QTableView):
     playlistStatsSignal = pyqtSignal(str)
+    loadMusicTableSignal = pyqtSignal()
     playPauseSignal = pyqtSignal()
     playSignal = pyqtSignal(str)
     enterKey = pyqtSignal()
@@ -698,7 +699,7 @@ class MusicTable(QTableView):
         # spawn new thread and calculate myself?
         total_time: int = 0  # total time of all songs in seconds
         for row_data in data:
-            print(row_data)
+            # print(row_data)
             # if "length" in fields:
             row_count += 1
             id, *rest_of_data = row_data
@@ -720,6 +721,7 @@ class MusicTable(QTableView):
 
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
         self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time}")
+        self.loadMusicTableSignal.emit()
         self.connect_data_changed()
         self.connect_layout_changed()
 
