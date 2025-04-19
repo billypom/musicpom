@@ -26,8 +26,10 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QStatusBar,
     QStyle,
+    QTableView,
 )
 from PyQt5.QtCore import (
+    QModelIndex,
     QSize,
     QThread,
     QUrl,
@@ -39,7 +41,7 @@ from PyQt5.QtCore import (
     QThreadPool,
     QRunnable,
 )
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe, QMediaPlaylist
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe, QMediaPlaylist, QMultimedia
 from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
 from utils import (
     delete_album_art,
@@ -48,9 +50,12 @@ from utils import (
     initialize_db,
     add_files_to_database,
     set_album_art,
+    id3_remap
 )
 from components import (
+    HeaderTags,
     MediaPlayer,
+    MusicTable,
     PreferencesWindow,
     AudioVisualizer,
     CreatePlaylistWindow,
@@ -168,10 +173,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.current_song_album_art: bytes | None = None
 
         # widget bits
+        self.tableView: MusicTable
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
         # self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.player: QMediaPlayer = MediaPlayer()
-        self.playlist: QMediaPlaylist = QMediaPlaylist()
         # set index on choose song
         # index is the model2's row number? i guess?
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio buffer data
@@ -200,6 +205,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # sharing functions with other classes and that
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
+        self.headers = HeaderTags()
 
         # Settings init
         self.current_volume: int = int(self.config["settings"]["volume"])
@@ -224,7 +230,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         )
         # self.speedSlider.doubleClicked.connect(lambda: self.on_speed_changed(1))
         self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
-        self.previousButton.clicked.connect(self.on_previous_clicked)
+        self.previousButton.clicked.connect(self.on_prev_clicked)
         self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
 
         # FILE MENU
@@ -257,8 +263,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.playlistStatsSignal.connect(
             self.set_permanent_status_bar_message
         )
-        self.tableView.loadMusicTableSignal.connect(self.load_media_playlist)
         self.tableView.load_music_table()
+        self.player.playlistNextSignal.connect(self.on_next_clicked)
 
         # playlistTreeView
         self.playlistTreeView.playlistChoiceSignal.connect(
@@ -316,6 +322,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     # |                    |
     # |____________________|
 
+    def on_playlist_media_changed(self, media: QMediaContent):
+        """Update stuff when the song changes"""
+        if not media.isNull():
+            file_url = media.canonicalUrl().toLocalFile()
+            metadata = id3_remap(get_tags(file_url)[0])
+            if metadata is not None:
+                self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"])
+
     def on_volume_changed(self) -> None:
         """Handles volume changes"""
         try:
@@ -351,15 +365,29 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             else:
                 self.playButton.setText("👽")
 
-    def on_previous_clicked(self) -> None:
-        """"""
-        # TODO: implement this
-        debug("main.py on_previous_clicked()")
+    def on_prev_clicked(self) -> None:
+        """click previous - go to previous song"""
+        current_real_index = self.tableView.current_song_qmodel_index
+        index = self.tableView.proxymodel.mapFromSource(current_real_index)
+        row: int = index.row()
+        prev_row: int = row - 1
+        prev_index: QModelIndex = self.tableView.proxymodel.index(prev_row, index.column())
+        prev_filepath = prev_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+
+        self.play_audio_file(prev_filepath)
+        self.tableView.set_current_song_qmodel_index(prev_index)
 
     def on_next_clicked(self) -> None:
-        """"""
-        # TODO: implement this
-        debug("main.py on_next_clicked()")
+        """click next (or song ended) - go to next song"""
+        current_real_index = self.tableView.current_song_qmodel_index
+        index = self.tableView.proxymodel.mapFromSource(current_real_index)
+        row: int = index.row()
+        next_row: int = row + 1
+        next_index: QModelIndex = self.tableView.proxymodel.index(next_row, index.column())
+        next_filepath = next_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+
+        self.play_audio_file(next_filepath)
+        self.tableView.set_current_song_qmodel_index(next_index)
 
     #  ____________________
     # |                    |
@@ -367,11 +395,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     # |       Verbs        |
     # |                    |
     # |____________________|
-
-    def load_media_playlist(self):
-        self.proxymodel.row
-        pass
-        # self.playlist.
 
     def setup_fonts(self):
         """Initializes font sizes and behaviors for various UI components"""
@@ -437,8 +460,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         """
         if not filepath:
             filepath = self.tableView.get_selected_song_filepath()
-        # get metadata
-        metadata = get_tags(filepath)[0]
+        file_url = QUrl.fromLocalFile(filepath)
+        metadata = id3_remap(get_tags(filepath)[0])
         # read the file
         url = QUrl.fromLocalFile(filepath)
         # load the audio content
@@ -451,15 +474,20 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # assign "now playing" labels & album artwork
         if metadata is not None:
-            artist = metadata["TPE1"][0] if "TPE1" in metadata else None
-            album = metadata["TALB"][0] if "TALB" in metadata else None
-            title = metadata["TIT2"][0] if "TIT2" in metadata else None
-            self.artistLabel.setText(artist)
-            self.albumLabel.setText(album)
-            self.titleLabel.setText(title)
-            # set album artwork
-            album_art_data = self.tableView.get_current_song_album_art()
-            self.albumGraphicsView.load_album_art(album_art_data)
+            self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"], filepath)
+
+    def set_ui_metadata(self, title, artist, album, filepath):
+        """
+        Loads metadata into UI, presumably for current song
+        But you could pass any text here i guess
+        album art will always try to be current song
+        """
+        self.artistLabel.setText(artist)
+        self.albumLabel.setText(album)
+        self.titleLabel.setText(title)
+        # set album artwork
+        album_art_data = get_album_art(filepath)
+        self.albumGraphicsView.load_album_art(album_art_data)
 
     def set_album_art_for_selected_songs(self, album_art_path: str) -> None:
         """Sets the ID3 tag APIC (album art) for all selected song filepaths"""

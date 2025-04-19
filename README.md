@@ -75,6 +75,7 @@ player = new QMediaPlayer;
 player->setMedia(QUrl("gst-pipeline: videotestsrc ! autovideosink"));
 player->play();
 ```
+QMultimedia.EncodingMode / Encoding quality...
 ##### misc
 - database playlist autoexporting
 - .wav, .ogg, .flac convertor

@@ -67,6 +67,7 @@ from configparser import ConfigParser
 class MusicTable(QTableView):
     playlistStatsSignal = pyqtSignal(str)
     loadMusicTableSignal = pyqtSignal()
+    sortSignal = pyqtSignal()
     playPauseSignal = pyqtSignal()
     playSignal = pyqtSignal(str)
     enterKey = pyqtSignal()
@@ -352,12 +353,14 @@ class MusicTable(QTableView):
         self.set_selected_song_qmodel_index(selected_qmodel_index)
         self.set_current_song_qmodel_index(current_qmodel_index)
         self.jump_to_selected_song()
+        self.sortSignal.emit()
 
     def on_cell_clicked(self, index):
         """
         When a cell is clicked, do some stuff :)
         - this func also runs when double click happens, fyi
         """
+        print(index.row(), index.column())
         self.set_selected_song_filepath()
         self.set_selected_song_qmodel_index()
         self.viewport().update()  # type: ignore
@@ -457,6 +460,7 @@ class MusicTable(QTableView):
         Sets the current song filepath
         Emits a signal that the current song should start playback
         """
+        self.set_current_song_qmodel_index()
         self.set_current_song_filepath()
         self.playSignal.emit(self.current_song_filepath)
 
@@ -653,6 +657,7 @@ class MusicTable(QTableView):
     def toggle_play_pause(self):
         """Toggles the currently playing song by emitting a Signal"""
         if not self.current_song_filepath:
+            self.set_current_song_qmodel_index()
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
 
@@ -847,10 +852,6 @@ class MusicTable(QTableView):
         """Returns the selected song's ID3 tags"""
         return id3_remap(get_tags(self.selected_song_filepath)[0])
 
-    def get_current_song_album_art(self) -> bytes:
-        """Returns the APIC data (album art lol) for the currently playing song"""
-        return get_album_art(self.current_song_filepath)
-
     def set_selected_song_filepath(self) -> None:
         """Sets the filepath of the currently selected song"""
         try:
@@ -864,13 +865,11 @@ class MusicTable(QTableView):
                 filepath = db.query('SELECT filepath FROM song WHERE id = ?', (id,))[0][0]
         self.selected_song_filepath = filepath
 
-    def set_current_song_filepath(self) -> None:
+    def set_current_song_filepath(self, filepath=None) -> None:
         """
         - Sets the current song filepath to the value in column 'path'
         from the current selected row index
-        - Store the QModelIndex for navigation
         """
-        self.set_current_song_qmodel_index()
         # update the filepath
         self.current_song_filepath: str = (
             self.current_song_qmodel_index.siblingAtColumn(
@@ -879,18 +878,28 @@ class MusicTable(QTableView):
         )
 
     def set_current_song_qmodel_index(self, index=None):
+        """
+        Takes in the proxy model index for current song - QModelIndex
+        converts to model2 index
+        stores it
+        """
         if index is None:
-            # map proxy (sortable) model to the original model (used for interactions)
-            index = self.proxymodel.mapToSource(self.currentIndex())
-        # set the proxy model index
-        self.current_song_qmodel_index: QModelIndex = index
+            index = self.currentIndex()
+        # map proxy (sortable) model to the original model (used for interactions)
+        model_index: QModelIndex = self.proxymodel.mapToSource(index)
+        self.current_song_qmodel_index: QModelIndex = model_index
 
     def set_selected_song_qmodel_index(self, index=None):
+        """
+        Takes in the proxy model index for current song - QModelIndex
+        converts to model2 index
+        stores it
+        """
         if index is None:
-            # map proxy (sortable) model to the original model (used for interactions)
-            index = self.proxymodel.mapToSource(self.currentIndex())
-        # set the proxy model index
-        self.selected_song_qmodel_index: QModelIndex = index
+            index = self.currentIndex()
+        # map proxy (sortable) model to the original model (used for interactions)
+        model_index: QModelIndex = self.proxymodel.mapToSource(index)
+        self.selected_song_qmodel_index: QModelIndex = model_index
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""

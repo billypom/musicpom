@@ -9,6 +9,7 @@ def get_album_art(file: str | None) -> bytes:
     # Returns
     bytes for album art or placeholder artwork
     """
+    debug(f'try album art: {file}')
     default_image_path = "./assets/default_album_art.jpg"
     if file:
         try:
@@ -20,6 +21,7 @@ def get_album_art(file: str | None) -> bytes:
                 return audio.getall("APIC")[0].data
         except Exception as e:
             error(f"Error retrieving album art: {e}")
+            return bytes()
     with open(default_image_path, "rb") as f:
         debug("loading placeholder album art")
         return f.read()
