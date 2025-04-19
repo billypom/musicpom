@@ -424,7 +424,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         Start playback of `tableView.current_song_filepath` & moves playback slider
         """
         if not filepath:
-            filepath = self.tableView.get_current_song_filepath()
+            filepath = self.tableView.get_selected_song_filepath()
         # get metadata
         metadata = get_tags(filepath)[0]
         # read the file

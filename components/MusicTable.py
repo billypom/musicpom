@@ -482,6 +482,10 @@ class MusicTable(QTableView):
 
     def delete_songs(self):
         """Asks to delete the currently selected songs from the db and music table (not the filesystem)"""
+        # FIXME: determine if we are in a playlist or not
+        # then delete songs from only the playlist
+        # or provide extra questionbox option
+        # | Delete from playlist & lib | Delete from playlist only | Cancel |
         selected_filepaths = self.get_selected_songs_filepaths()
         formatted_selected_filepaths = "\n".join(selected_filepaths)
         question_dialog = QuestionBoxDetails(
@@ -708,12 +712,12 @@ class MusicTable(QTableView):
                 else:
                     std_item = QStandardItem(str(item) if item else "")
                 items.append(std_item)
-
-            self.model2.appendRow(items)
             # store database id in the row object using setData
             # - useful for fast db fetching and other model operations
             for item in items:
                 item.setData(id, Qt.ItemDataRole.UserRole)
+            self.model2.appendRow(items)
+
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
         self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time}")
         self.connect_data_changed()
@@ -808,7 +812,7 @@ class MusicTable(QTableView):
         filepaths = []
         for row in selected_rows:
             idx = self.proxymodel.index(
-                row, list(self.headers.gui.values()).index("path")
+                row, self.headers.user_headers.index("filepath")
             )
             filepaths.append(idx.data())
         return filepaths
@@ -824,7 +828,7 @@ class MusicTable(QTableView):
             return []
         selected_rows = set(index.row() for index in indexes)
         id_list = [
-            self.model2.data(self.model2.index(row, 0), Qt.ItemDataRole.UserRole)
+            self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole)
             for row in selected_rows
         ]
         return id_list
@@ -847,11 +851,16 @@ class MusicTable(QTableView):
 
     def set_selected_song_filepath(self) -> None:
         """Sets the filepath of the currently selected song"""
-        self.selected_song_filepath = (
-            self.currentIndex()
-            .siblingAtColumn(list(self.headers.gui.values()).index("path"))
-            .data()
-        )
+        try:
+            table_index = self.headers.user_headers.index("filepath")
+            filepath = self.currentIndex().siblingAtColumn(table_index).data()
+        except ValueError:
+            # if the user doesnt have filepath selected as a header, retrieve the file from db
+            row = self.currentIndex().row()
+            id = self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole)
+            with DBA.DBAccess() as db:
+                filepath = db.query('SELECT filepath FROM song WHERE id = ?', (id,))[0][0]
+        self.selected_song_filepath = filepath
 
     def set_current_song_filepath(self) -> None:
         """
