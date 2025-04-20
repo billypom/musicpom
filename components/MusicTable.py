@@ -342,12 +342,12 @@ class MusicTable(QTableView):
 
     def on_sort(self):
         debug("on_sort")
-        search_col_num = list(self.headers.gui.values()).index("path")
+        search_col_num = self.headers.user_headers.index("filepath")
         selected_qmodel_index = self.find_qmodel_index_by_value(
-            self.model2, search_col_num, self.selected_song_filepath
+            self.proxymodel, search_col_num, self.selected_song_filepath
         )
         current_qmodel_index = self.find_qmodel_index_by_value(
-            self.model2, search_col_num, self.current_song_filepath
+            self.proxymodel, search_col_num, self.current_song_filepath
         )
         # Update the 2 QModelIndexes that we track
         self.set_selected_song_qmodel_index(selected_qmodel_index)
@@ -360,7 +360,7 @@ class MusicTable(QTableView):
         When a cell is clicked, do some stuff :)
         - this func also runs when double click happens, fyi
         """
-        print(index.row(), index.column())
+        # print(index.row(), index.column())
         self.set_selected_song_filepath()
         self.set_selected_song_qmodel_index()
         self.viewport().update()  # type: ignore
@@ -407,7 +407,8 @@ class MusicTable(QTableView):
             filepath = self.model2.data(filepath_index)
             # update the ID3 information
             user_input_data = topLeft.data()
-            edited_column_name = self.database_columns[topLeft.column()]
+            # edited_column_name = self.database_columns[topLeft.column()]
+            edited_column_name = self.headers.user_headers[topLeft.column()]
             debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
             response = set_tag(filepath, edited_column_name, user_input_data)
             if response:
@@ -545,6 +546,8 @@ class MusicTable(QTableView):
         """Moves screen to the currently playing song, then selects the row"""
         debug("jump_to_current_song")
         # get the proxy model index
+        debug(self.current_song_filepath)
+        debug(self.current_song_qmodel_index)
         proxy_index = self.proxymodel.mapFromSource(self.current_song_qmodel_index)
         self.scrollTo(proxy_index)
         self.selectRow(proxy_index.row())
@@ -724,6 +727,18 @@ class MusicTable(QTableView):
                 item.setData(id, Qt.ItemDataRole.UserRole)
             self.model2.appendRow(items)
 
+        # reloading the model destroys and makes new indexes
+        # so we look for the new index of the current song on load
+        current_song_filepath = self.get_current_song_filepath()
+        print(f'load music table current filepath: {current_song_filepath}')
+        for row in range(self.model2.rowCount()):
+            real_index = self.model2.index(row, self.headers.user_headers.index("filepath"))
+            if real_index.data() == current_song_filepath:
+                print('is it true?')
+                print(f'{real_index.data()} == {current_song_filepath}')
+                print('load music table real index:')
+                print(real_index)
+                self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
         self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time}")
         self.loadMusicTableSignal.emit()
@@ -871,11 +886,11 @@ class MusicTable(QTableView):
         from the current selected row index
         """
         # update the filepath
-        self.current_song_filepath: str = (
-            self.current_song_qmodel_index.siblingAtColumn(
-                list(self.headers.gui.values()).index("path")
-            ).data()
-        )
+        if not filepath:
+            path = self.current_song_qmodel_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+            self.current_song_filepath: str = path
+        else:
+            self.current_song_filepath = filepath
 
     def set_current_song_qmodel_index(self, index=None):
         """
@@ -886,8 +901,8 @@ class MusicTable(QTableView):
         if index is None:
             index = self.currentIndex()
         # map proxy (sortable) model to the original model (used for interactions)
-        model_index: QModelIndex = self.proxymodel.mapToSource(index)
-        self.current_song_qmodel_index: QModelIndex = model_index
+        real_index: QModelIndex = self.proxymodel.mapToSource(index)
+        self.current_song_qmodel_index: QModelIndex = real_index
 
     def set_selected_song_qmodel_index(self, index=None):
         """
@@ -898,8 +913,8 @@ class MusicTable(QTableView):
         if index is None:
             index = self.currentIndex()
         # map proxy (sortable) model to the original model (used for interactions)
-        model_index: QModelIndex = self.proxymodel.mapToSource(index)
-        self.selected_song_qmodel_index: QModelIndex = model_index
+        real_index: QModelIndex = self.proxymodel.mapToSource(index)
+        self.selected_song_qmodel_index: QModelIndex = real_index
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""

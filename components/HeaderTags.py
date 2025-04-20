@@ -1,9 +1,18 @@
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
+from dataclasses import dataclass, asdict
+from typing import Optional
+
+@dataclass
+class SQLiteMap():
+    title: str
+    artist: str
+    album: Optional[str] = None
 
 
-class HeaderTags:
+
+class HeaderTags():
     """
     Utility class to converting between different "standards" for tags (headers, id3, etc)
 
@@ -22,7 +31,7 @@ class HeaderTags:
         )
         self.config = ConfigParser()
         self.config.read(cfg_file)
-        self.user_headers = str(self.config["table"]["columns"]).split(",")
+        self.user_headers: list = str(self.config["table"]["columns"]).split(",")
         self.db: dict = {
             "title": "title",
             "artist": "artist",

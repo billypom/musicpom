@@ -328,7 +328,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             file_url = media.canonicalUrl().toLocalFile()
             metadata = id3_remap(get_tags(file_url)[0])
             if metadata is not None:
-                self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"])
+                self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"], file_url)
 
     def on_volume_changed(self) -> None:
         """Handles volume changes"""
@@ -368,26 +368,39 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def on_prev_clicked(self) -> None:
         """click previous - go to previous song"""
         current_real_index = self.tableView.current_song_qmodel_index
-        index = self.tableView.proxymodel.mapFromSource(current_real_index)
+        try:
+            index = self.tableView.proxymodel.mapFromSource(current_real_index)
+        except:
+            return
         row: int = index.row()
         prev_row: int = row - 1
         prev_index: QModelIndex = self.tableView.proxymodel.index(prev_row, index.column())
         prev_filepath = prev_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+        if prev_filepath is None:
+            return
 
         self.play_audio_file(prev_filepath)
         self.tableView.set_current_song_qmodel_index(prev_index)
+        self.tableView.set_current_song_filepath(prev_filepath)
 
     def on_next_clicked(self) -> None:
         """click next (or song ended) - go to next song"""
         current_real_index = self.tableView.current_song_qmodel_index
-        index = self.tableView.proxymodel.mapFromSource(current_real_index)
+        try:
+            # FIXME: seg fault here but only sometimes???
+            # when playing song in lib, switch to playlist, back to lib, next song
+            index = self.tableView.proxymodel.mapFromSource(current_real_index)
+        except:
+            return
         row: int = index.row()
         next_row: int = row + 1
         next_index: QModelIndex = self.tableView.proxymodel.index(next_row, index.column())
         next_filepath = next_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
-
+        if next_filepath is None:
+            return
         self.play_audio_file(next_filepath)
         self.tableView.set_current_song_qmodel_index(next_index)
+        self.tableView.set_current_song_filepath(next_filepath)
 
     #  ____________________
     # |                    |
@@ -458,9 +471,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         filepath default value = `tableView.current_song_filepath`
         """
+        print('play audio file')
         if not filepath:
             filepath = self.tableView.get_selected_song_filepath()
-        file_url = QUrl.fromLocalFile(filepath)
         metadata = id3_remap(get_tags(filepath)[0])
         # read the file
         url = QUrl.fromLocalFile(filepath)

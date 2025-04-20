@@ -1,5 +1,6 @@
 from logging import debug, error
-from components import ErrorDialog, HeaderTags
+from components import ErrorDialog
+from components.HeaderTags import HeaderTags
 
 # from utils import convert_date_str_to_tyer_tdat_id3_tag
 from mutagen.id3 import ID3
@@ -120,7 +121,7 @@ def set_tag(filepath: str, tag_name: str, value: str):
             return True
         # Convert any ID3 tag or nice name (that i chose) into into the Mutagen Frame object
         if tag_name in list(headers.id3_keys.values()):
-            tag_nice_name = headers.id3_keys[tag_name]
+            tag_nice_name = headers.id3[tag_name]
         else:
             tag_nice_name = tag_name
             # Other
