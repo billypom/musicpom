@@ -107,6 +107,7 @@ def set_tag(filepath: str, tag_name: str, value: str):
         #     if tdat_tag:
         #         # update TDAT if we have it
         #         audio_file.add(tdat_tag)
+
         # Lyrics
         if tag_name == "lyrics" or tag_name == "USLT":
             try:

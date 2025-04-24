@@ -56,9 +56,10 @@ class MetadataWindow(QDialog):
         layout.addWidget(category_label)
         layout.addWidget(h_separator)
 
-        tag_sets: dict = {}
+        tag_sets: dict[str, list] = {}
         # Get a dict of all tags for all songs
         # e.g.,  { "TIT2": ["song_title1", "song_title2"], ... }
+        # e.g.,  { "title": ["song_title1", "song_title2"], ... }
         for song in self.songs:
             song_data = get_tags(song[0])[0]
             if not song_data:
@@ -71,7 +72,7 @@ class MetadataWindow(QDialog):
                 )
                 return
             for key, tag in self.headers.id3.items():
-                if key not in self.headers.editable_db_tags:
+                if key not in self.headers.editable_fields:
                     continue
                 if tag is not None:
                     try:

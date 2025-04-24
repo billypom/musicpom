@@ -4,15 +4,31 @@ from appdirs import user_config_dir
 from dataclasses import dataclass, asdict
 from typing import Optional
 
+
 @dataclass
-class SQLiteMap():
-    title: str
-    artist: str
+class SQLiteMap:
+    title: Optional[str] = None
+    artist: Optional[str] = None
     album: Optional[str] = None
+    album_artist: Optional[str] = None
+    track_number: Optional[str] = None
+    genre: Optional[str] = None
+    length_seconds: Optional[str] = None
+    album_date: Optional[str] = None
+    codec: Optional[str] = None
+    filepath: Optional[str] = None
 
 
+"""
+db names are called FIELDS (e.g., title, track_number, length_seconds)
+gui names are called HEADERS (e.g., title, track, length, year)
+id3 names are called TAGS (e.g., TIT2, TPE1, TALB)
 
-class HeaderTags():
+is dataclasses rly worth it?
+"""
+
+
+class HeaderTags:
     """
     Utility class to converting between different "standards" for tags (headers, id3, etc)
 
@@ -20,8 +36,8 @@ class HeaderTags():
     `gui`: dict = "db name": "gui string"
     `id3`: dict = "db name": "id3 tag string"
     `id3_keys`: dict = "id3 tag string": "db name"
-    `editable_db_tags`: list = "list of db names that are user editable"
-    `user_headers`: list = "list of db headers that the user has chosen to see in gui"
+    `editable_fields`: list = "list of db names that are user editable"
+    `user_fields`: list = "list of db headers that the user has chosen to see in gui"
     """
 
     def __init__(self):
@@ -31,7 +47,43 @@ class HeaderTags():
         )
         self.config = ConfigParser()
         self.config.read(cfg_file)
-        self.user_headers: list = str(self.config["table"]["columns"]).split(",")
+        print("header tag config")
+        print(self.config)
+        self.user_fields: list = str(self.config["table"]["columns"]).split(",")
+        self.editable_fields: list = [
+            "title",
+            "artist",
+            "album_artist",
+            "album",
+            "track_number",
+            "genre",
+            "album_date",
+        ]
+        self.fields = SQLiteMap()
+        self.headers = SQLiteMap(
+            title="title",
+            artist="artist",
+            album="album",
+            album_artist="alb artist",
+            track_number="track",
+            genre="genre",
+            codec="codec",
+            length_seconds="length",
+            album_date="year",
+            filepath="path",
+        )
+        # self.id3 = SQLiteMap(
+        #     title = "TIT2",
+        #     artist = "TPE1",
+        #     album = "TALB",
+        #     album_artist = "TPE2",
+        #     track_number = "TRCK",
+        #     genre = "TCON",
+        #     length_seconds = "TLEN",
+        #     album_date = "TDRC",
+        #     codec = None,
+        #     filepath = None
+        # )
         self.db: dict = {
             "title": "title",
             "artist": "artist",
@@ -74,20 +126,10 @@ class HeaderTags():
             if v is not None:
                 self.id3_keys[v] = k
 
-        self.editable_db_tags: list = [
-            "title",
-            "artist",
-            "album_artist",
-            "album",
-            "track_number",
-            "genre",
-            "album_date",
-        ]
-
     def get_user_gui_headers(self) -> list:
         """Returns a list of headers for the GUI"""
         gui_headers = []
-        for db, gui in self.gui.items():
-            if db in self.user_headers:
+        for db, gui in asdict(self.headers).items():
+            if db in self.user_fields:
                 gui_headers.append(gui)
         return gui_headers

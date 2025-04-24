@@ -1,7 +1,5 @@
 from mutagen.id3 import ID3
-from json import load as jsonload
 import DBA
-from pprint import pprint
 from PyQt5.QtGui import (
     QColor,
     QDragMoveEvent,
@@ -18,12 +16,10 @@ from PyQt5.QtWidgets import (
     QAction,
     QHeaderView,
     QMenu,
-    QPlainTextEdit,
     QTableView,
     QShortcut,
     QMessageBox,
     QAbstractItemView,
-    QVBoxLayout,
 )
 from PyQt5.QtCore import (
     QItemSelectionModel,
@@ -32,7 +28,6 @@ from PyQt5.QtCore import (
     QModelIndex,
     QThreadPool,
     pyqtSignal,
-    QTimer,
 )
 from components.DebugWindow import DebugWindow
 from components.ErrorDialog import ErrorDialog
@@ -104,6 +99,8 @@ class MusicTable(QTableView):
         )
         self.config = ConfigParser()
         self.config.read(cfg_file)
+        print("music table config:")
+        print(self.config)
 
         # Threads
         self.threadpool = QThreadPool
@@ -127,8 +124,6 @@ class MusicTable(QTableView):
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         # header
-        # FIXME: table headers being resized and going out window bounds
-        # causing some recursion errors...
         self.horizontal_header: QHeaderView = self.horizontalHeader()
         assert self.horizontal_header is not None  # i hate look at linting errors
         self.horizontal_header.setStretchLastSection(True)
@@ -342,7 +337,7 @@ class MusicTable(QTableView):
 
     def on_sort(self):
         debug("on_sort")
-        search_col_num = self.headers.user_headers.index("filepath")
+        search_col_num = self.headers.user_fields.index("filepath")
         selected_qmodel_index = self.find_qmodel_index_by_value(
             self.proxymodel, search_col_num, self.selected_song_filepath
         )
@@ -397,18 +392,14 @@ class MusicTable(QTableView):
         if isinstance(self.model2, QStandardItemModel):
             debug("on_cell_data_changed")
             # get the ID of the row that was edited
-            id_index = self.model2.index(topLeft.row(), 0)  # ID is column 0, always
+            id_index = self.model2.index(topLeft.row(), 0)
             # get the db song_id from the row
             song_id = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
-            # get the filepath through a series of steps...
-            # NOTE: filepath is always the last column
-            filepath_column_idx = self.model2.columnCount() - 1
-            filepath_index = self.model2.index(topLeft.row(), filepath_column_idx)
-            filepath = self.model2.data(filepath_index)
+            user_index = self.headers.user_fields.index("filepath")
+            filepath = self.currentIndex().siblingAtColumn(user_index).data()
             # update the ID3 information
             user_input_data = topLeft.data()
-            # edited_column_name = self.database_columns[topLeft.column()]
-            edited_column_name = self.headers.user_headers[topLeft.column()]
+            edited_column_name = self.headers.user_fields[topLeft.column()]
             debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
             response = set_tag(filepath, edited_column_name, user_input_data)
             if response:
@@ -677,7 +668,7 @@ class MusicTable(QTableView):
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
         self.model2.clear()
         self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
-        fields = ", ".join(self.headers.user_headers)
+        fields = ", ".join(self.headers.user_fields)
         if playlist_id:  # Load a playlist
             # Fetch playlist data
             selected_playlist_id = playlist_id[0]
@@ -730,13 +721,15 @@ class MusicTable(QTableView):
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
         current_song_filepath = self.get_current_song_filepath()
-        print(f'load music table current filepath: {current_song_filepath}')
+        print(f"load music table current filepath: {current_song_filepath}")
         for row in range(self.model2.rowCount()):
-            real_index = self.model2.index(row, self.headers.user_headers.index("filepath"))
+            real_index = self.model2.index(
+                row, self.headers.user_fields.index("filepath")
+            )
             if real_index.data() == current_song_filepath:
-                print('is it true?')
-                print(f'{real_index.data()} == {current_song_filepath}')
-                print('load music table real index:')
+                print("is it true?")
+                print(f"{real_index.data()} == {current_song_filepath}")
+                print("load music table real index:")
                 print(real_index)
                 self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
@@ -833,9 +826,7 @@ class MusicTable(QTableView):
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
-            idx = self.proxymodel.index(
-                row, self.headers.user_headers.index("filepath")
-            )
+            idx = self.proxymodel.index(row, self.headers.user_fields.index("filepath"))
             filepaths.append(idx.data())
         return filepaths
 
@@ -850,7 +841,9 @@ class MusicTable(QTableView):
             return []
         selected_rows = set(index.row() for index in indexes)
         id_list = [
-            self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole)
+            self.proxymodel.data(
+                self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole
+            )
             for row in selected_rows
         ]
         return id_list
@@ -870,14 +863,18 @@ class MusicTable(QTableView):
     def set_selected_song_filepath(self) -> None:
         """Sets the filepath of the currently selected song"""
         try:
-            table_index = self.headers.user_headers.index("filepath")
-            filepath = self.currentIndex().siblingAtColumn(table_index).data()
+            user_index = self.headers.user_fields.index("filepath")
+            filepath = self.currentIndex().siblingAtColumn(user_index).data()
         except ValueError:
             # if the user doesnt have filepath selected as a header, retrieve the file from db
             row = self.currentIndex().row()
-            id = self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole)
+            id = self.proxymodel.data(
+                self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole
+            )
             with DBA.DBAccess() as db:
-                filepath = db.query('SELECT filepath FROM song WHERE id = ?', (id,))[0][0]
+                filepath = db.query("SELECT filepath FROM song WHERE id = ?", (id,))[0][
+                    0
+                ]
         self.selected_song_filepath = filepath
 
     def set_current_song_filepath(self, filepath=None) -> None:
@@ -887,7 +884,9 @@ class MusicTable(QTableView):
         """
         # update the filepath
         if not filepath:
-            path = self.current_song_qmodel_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+            path = self.current_song_qmodel_index.siblingAtColumn(
+                self.headers.user_fields.index("filepath")
+            ).data()
             self.current_song_filepath: str = path
         else:
             self.current_song_filepath = filepath

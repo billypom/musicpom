@@ -41,7 +41,13 @@ from PyQt5.QtCore import (
     QThreadPool,
     QRunnable,
 )
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe, QMediaPlaylist, QMultimedia
+from PyQt5.QtMultimedia import (
+    QMediaPlayer,
+    QMediaContent,
+    QAudioProbe,
+    QMediaPlaylist,
+    QMultimedia,
+)
 from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
 from utils import (
     delete_album_art,
@@ -50,7 +56,7 @@ from utils import (
     initialize_db,
     add_files_to_database,
     set_album_art,
-    id3_remap
+    id3_remap,
 )
 from components import (
     HeaderTags,
@@ -155,6 +161,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             / "config.ini"
         )
         self.config.read(self.cfg_file)
+        print("main config:")
+        print(self.config)
         self.threadpool: QThreadPool = QThreadPool()
         # UI
         self.setupUi(self)
@@ -328,7 +336,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             file_url = media.canonicalUrl().toLocalFile()
             metadata = id3_remap(get_tags(file_url)[0])
             if metadata is not None:
-                self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"], file_url)
+                self.set_ui_metadata(
+                    metadata["title"], metadata["artist"], metadata["album"], file_url
+                )
 
     def on_volume_changed(self) -> None:
         """Handles volume changes"""
@@ -374,8 +384,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             return
         row: int = index.row()
         prev_row: int = row - 1
-        prev_index: QModelIndex = self.tableView.proxymodel.index(prev_row, index.column())
-        prev_filepath = prev_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+        prev_index: QModelIndex = self.tableView.proxymodel.index(
+            prev_row, index.column()
+        )
+        prev_filepath = prev_index.siblingAtColumn(
+            self.headers.user_fields.index("filepath")
+        ).data()
         if prev_filepath is None:
             return
 
@@ -394,8 +408,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             return
         row: int = index.row()
         next_row: int = row + 1
-        next_index: QModelIndex = self.tableView.proxymodel.index(next_row, index.column())
-        next_filepath = next_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+        next_index: QModelIndex = self.tableView.proxymodel.index(
+            next_row, index.column()
+        )
+        next_filepath = next_index.siblingAtColumn(
+            self.headers.user_fields.index("filepath")
+        ).data()
         if next_filepath is None:
             return
         self.play_audio_file(next_filepath)
@@ -471,7 +489,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         filepath default value = `tableView.current_song_filepath`
         """
-        print('play audio file')
+        print("play audio file")
         if not filepath:
             filepath = self.tableView.get_selected_song_filepath()
         metadata = id3_remap(get_tags(filepath)[0])
@@ -487,7 +505,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # assign "now playing" labels & album artwork
         if metadata is not None:
-            self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"], filepath)
+            self.set_ui_metadata(
+                metadata["title"], metadata["artist"], metadata["album"], filepath
+            )
 
     def set_ui_metadata(self, title, artist, album, filepath):
         """
