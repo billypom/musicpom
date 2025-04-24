@@ -18,6 +18,7 @@ from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
     QFileDialog,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QApplication,
     QGraphicsScene,
@@ -261,13 +262,18 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # for drag & drop functionality
         self.tableView.viewport().installEventFilter(self)
 
+        # Search box
+        self.lineEditSearch: QLineEdit
+
         ## CONNECTIONS
+        self.lineEditSearch.textChanged.connect(self.handle_search_box_text)
         # tableView
         self.tableView.playSignal.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
         self.tableView.handleProgressSignal.connect(self.handle_progress)
+        self.tableView.searchBoxSignal.connect(self.handle_search_box)
         self.tableView.playlistStatsSignal.connect(
             self.set_permanent_status_bar_message
         )
@@ -482,6 +488,15 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.status_bar.showMessage(message, timeout)
         else:
             self.status_bar.showMessage(message)
+
+    def handle_search_box(self):
+        """show or hide the searchbox"""
+        self.lineEditSearch.toggle_visibility()
+
+    def handle_search_box_text(self, text: str):
+        """when text changes, update the music table thingie"""
+        self.tableView.set_search_string(text)
+        self.tableView.load_music_table(text)
 
     def play_audio_file(self, filepath=None) -> None:
         """

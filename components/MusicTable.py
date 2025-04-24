@@ -70,6 +70,7 @@ class MusicTable(QTableView):
     refreshMusicTableSignal = pyqtSignal()
     handleProgressSignal = pyqtSignal(str)
     getThreadPoolSignal = pyqtSignal()
+    searchBoxSignal = pyqtSignal()
 
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
@@ -91,6 +92,7 @@ class MusicTable(QTableView):
         self.proxymodel.setSourceModel(self.model2)
         self.setModel(self.proxymodel)
         self.setSortingEnabled(True)
+        self.search_string = None
 
         # Config
         cfg_file = (
@@ -582,6 +584,12 @@ class MusicTable(QTableView):
         # Delete key?
         shortcut = QShortcut(QKeySequence("Delete"), self)
         shortcut.activated.connect(self.delete_songs)
+        # Search box
+        shortcut = QShortcut(QKeySequence("Ctrl+F"), self)
+        shortcut.activated.connect(self.emit_search_box)
+
+    def emit_search_box(self):
+        self.searchBoxSignal.emit()
 
     def confirm_reorganize_files(self) -> None:
         """
@@ -669,14 +677,27 @@ class MusicTable(QTableView):
         self.model2.clear()
         self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
         fields = ", ".join(self.headers.user_fields)
+        search_clause = (
+            "title LIKE %?% AND artist LIKE %?% and album LIKE %?%"
+            if self.search_string
+            else ""
+        )
+        params = ""
         if playlist_id:  # Load a playlist
-            # Fetch playlist data
             selected_playlist_id = playlist_id[0]
             try:
                 with DBA.DBAccess() as db:
+                    query = f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
+                    # fulltext search
+                    if self.search_string:
+                        params = 3 * [self.search_string]
+                        if query.find("WHERE") == -1:
+                            query = f"{query} WHERE {search_clause};"
+                        else:
+                            query = f"{query} AND {search_clause};"
                     data = db.query(
-                        f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?",
-                        (selected_playlist_id,),
+                        query,
+                        (selected_playlist_id, params),
                     )
             except Exception as e:
                 error(f"load_music_table() | Unhandled exception: {e}")
@@ -684,9 +705,17 @@ class MusicTable(QTableView):
         else:  # Load the library
             try:
                 with DBA.DBAccess() as db:
+                    query = f"SELECT id, {fields} FROM song"
+                    # fulltext search
+                    if self.search_string:
+                        params = 3 * [self.search_string]
+                        if query.find("WHERE") == -1:
+                            query = f"{query} WHERE {search_clause};"
+                        else:
+                            query = f"{query} AND {search_clause};"
                     data = db.query(
-                        f"SELECT id, {fields} FROM song;",
-                        (),
+                        query,
+                        (params),
                     )
             except Exception as e:
                 error(f"load_music_table() | Unhandled exception: {e}")
@@ -914,6 +943,10 @@ class MusicTable(QTableView):
         # map proxy (sortable) model to the original model (used for interactions)
         real_index: QModelIndex = self.proxymodel.mapToSource(index)
         self.selected_song_qmodel_index: QModelIndex = real_index
+
+    def set_search_string(self, text: str):
+        """set the search string"""
+        self.search_string = text
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""
