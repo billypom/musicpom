@@ -75,6 +75,7 @@ class MusicTable(QTableView):
     refreshMusicTableSignal = pyqtSignal()
     handleProgressSignal = pyqtSignal(str)
     getThreadPoolSignal = pyqtSignal()
+    searchBoxSignal = pyqtSignal()
 
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
@@ -96,6 +97,7 @@ class MusicTable(QTableView):
         self.proxymodel.setSourceModel(self.model2)
         self.setModel(self.proxymodel)
         self.setSortingEnabled(True)
+        self.search_string = None
 
         # Config
         cfg_file = (
@@ -591,6 +593,12 @@ class MusicTable(QTableView):
         # Delete key?
         shortcut = QShortcut(QKeySequence("Delete"), self)
         shortcut.activated.connect(self.delete_songs)
+        # Search box
+        shortcut = QShortcut(QKeySequence("Ctrl+F"), self)
+        shortcut.activated.connect(self.emit_search_box)
+
+    def emit_search_box(self):
+        self.searchBoxSignal.emit()
 
     def confirm_reorganize_files(self) -> None:
         """
@@ -677,15 +685,28 @@ class MusicTable(QTableView):
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
         self.model2.clear()
         self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
+        search_clause = (
+            "title LIKE %?% AND artist LIKE %?% and album LIKE %?%"
+            if self.search_string
+            else ""
+        )
         fields = ", ".join(self.headers.user_headers)
+        params = ""
         if playlist_id:  # Load a playlist
-            # Fetch playlist data
             selected_playlist_id = playlist_id[0]
             try:
                 with DBA.DBAccess() as db:
+                    query = f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
+                    # fulltext search
+                    if self.search_string:
+                        params = 3 * [self.search_string]
+                        if query.find("WHERE") == -1:
+                            query = f"{query} WHERE {search_clause};"
+                        else:
+                            query = f"{query} AND {search_clause};"
                     data = db.query(
-                        f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?",
-                        (selected_playlist_id,),
+                        query,
+                        (selected_playlist_id, params),
                     )
             except Exception as e:
                 error(f"load_music_table() | Unhandled exception: {e}")
@@ -693,9 +714,17 @@ class MusicTable(QTableView):
         else:  # Load the library
             try:
                 with DBA.DBAccess() as db:
+                    query = f"SELECT id, {fields} FROM song"
+                    # fulltext search
+                    if self.search_string:
+                        params = 3 * [self.search_string]
+                        if query.find("WHERE") == -1:
+                            query = f"{query} WHERE {search_clause};"
+                        else:
+                            query = f"{query} AND {search_clause};"
                     data = db.query(
-                        f"SELECT id, {fields} FROM song;",
-                        (),
+                        query,
+                        (params),
                     )
             except Exception as e:
                 error(f"load_music_table() | Unhandled exception: {e}")
@@ -730,13 +759,15 @@ class MusicTable(QTableView):
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
         current_song_filepath = self.get_current_song_filepath()
-        print(f'load music table current filepath: {current_song_filepath}')
+        print(f"load music table current filepath: {current_song_filepath}")
         for row in range(self.model2.rowCount()):
-            real_index = self.model2.index(row, self.headers.user_headers.index("filepath"))
+            real_index = self.model2.index(
+                row, self.headers.user_headers.index("filepath")
+            )
             if real_index.data() == current_song_filepath:
-                print('is it true?')
-                print(f'{real_index.data()} == {current_song_filepath}')
-                print('load music table real index:')
+                print("is it true?")
+                print(f"{real_index.data()} == {current_song_filepath}")
+                print("load music table real index:")
                 print(real_index)
                 self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
@@ -850,7 +881,9 @@ class MusicTable(QTableView):
             return []
         selected_rows = set(index.row() for index in indexes)
         id_list = [
-            self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole)
+            self.proxymodel.data(
+                self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole
+            )
             for row in selected_rows
         ]
         return id_list
@@ -875,9 +908,13 @@ class MusicTable(QTableView):
         except ValueError:
             # if the user doesnt have filepath selected as a header, retrieve the file from db
             row = self.currentIndex().row()
-            id = self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole)
+            id = self.proxymodel.data(
+                self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole
+            )
             with DBA.DBAccess() as db:
-                filepath = db.query('SELECT filepath FROM song WHERE id = ?', (id,))[0][0]
+                filepath = db.query("SELECT filepath FROM song WHERE id = ?", (id,))[0][
+                    0
+                ]
         self.selected_song_filepath = filepath
 
     def set_current_song_filepath(self, filepath=None) -> None:
@@ -887,7 +924,9 @@ class MusicTable(QTableView):
         """
         # update the filepath
         if not filepath:
-            path = self.current_song_qmodel_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+            path = self.current_song_qmodel_index.siblingAtColumn(
+                self.headers.user_headers.index("filepath")
+            ).data()
             self.current_song_filepath: str = path
         else:
             self.current_song_filepath = filepath
@@ -915,6 +954,10 @@ class MusicTable(QTableView):
         # map proxy (sortable) model to the original model (used for interactions)
         real_index: QModelIndex = self.proxymodel.mapToSource(index)
         self.selected_song_qmodel_index: QModelIndex = real_index
+
+    def set_search_string(self, text: str):
+        """set the search string"""
+        self.search_string = text
 
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""

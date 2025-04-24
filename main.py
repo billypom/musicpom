@@ -18,6 +18,7 @@ from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
     QFileDialog,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QApplication,
     QGraphicsScene,
@@ -41,7 +42,13 @@ from PyQt5.QtCore import (
     QThreadPool,
     QRunnable,
 )
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QAudioProbe, QMediaPlaylist, QMultimedia
+from PyQt5.QtMultimedia import (
+    QMediaPlayer,
+    QMediaContent,
+    QAudioProbe,
+    QMediaPlaylist,
+    QMultimedia,
+)
 from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
 from utils import (
     delete_album_art,
@@ -50,7 +57,7 @@ from utils import (
     initialize_db,
     add_files_to_database,
     set_album_art,
-    id3_remap
+    id3_remap,
 )
 from components import (
     HeaderTags,
@@ -253,13 +260,18 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # for drag & drop functionality
         self.tableView.viewport().installEventFilter(self)
 
+        # Search box
+        self.lineEditSearch: QLineEdit
+
         ## CONNECTIONS
+        self.lineEditSearch.textChanged.connect(self.handle_search_box_text)
         # tableView
         self.tableView.playSignal.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
         self.tableView.handleProgressSignal.connect(self.handle_progress)
+        self.tableView.searchBoxSignal.connect(self.handle_search_box)
         self.tableView.playlistStatsSignal.connect(
             self.set_permanent_status_bar_message
         )
@@ -328,7 +340,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             file_url = media.canonicalUrl().toLocalFile()
             metadata = id3_remap(get_tags(file_url)[0])
             if metadata is not None:
-                self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"], file_url)
+                self.set_ui_metadata(
+                    metadata["title"], metadata["artist"], metadata["album"], file_url
+                )
 
     def on_volume_changed(self) -> None:
         """Handles volume changes"""
@@ -374,8 +388,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             return
         row: int = index.row()
         prev_row: int = row - 1
-        prev_index: QModelIndex = self.tableView.proxymodel.index(prev_row, index.column())
-        prev_filepath = prev_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+        prev_index: QModelIndex = self.tableView.proxymodel.index(
+            prev_row, index.column()
+        )
+        prev_filepath = prev_index.siblingAtColumn(
+            self.headers.user_headers.index("filepath")
+        ).data()
         if prev_filepath is None:
             return
 
@@ -394,8 +412,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             return
         row: int = index.row()
         next_row: int = row + 1
-        next_index: QModelIndex = self.tableView.proxymodel.index(next_row, index.column())
-        next_filepath = next_index.siblingAtColumn(self.headers.user_headers.index("filepath")).data()
+        next_index: QModelIndex = self.tableView.proxymodel.index(
+            next_row, index.column()
+        )
+        next_filepath = next_index.siblingAtColumn(
+            self.headers.user_headers.index("filepath")
+        ).data()
         if next_filepath is None:
             return
         self.play_audio_file(next_filepath)
@@ -465,13 +487,22 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         else:
             self.status_bar.showMessage(message)
 
+    def handle_search_box(self):
+        """show or hide the searchbox"""
+        self.lineEditSearch.toggle_visibility()
+
+    def handle_search_box_text(self, text: str):
+        """when text changes, update the music table thingie"""
+        self.tableView.set_search_string(text)
+        self.tableView.load_music_table(text)
+
     def play_audio_file(self, filepath=None) -> None:
         """
         Start playback of filepath & moves playback slider
 
         filepath default value = `tableView.current_song_filepath`
         """
-        print('play audio file')
+        print("play audio file")
         if not filepath:
             filepath = self.tableView.get_selected_song_filepath()
         metadata = id3_remap(get_tags(filepath)[0])
@@ -487,7 +518,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # assign "now playing" labels & album artwork
         if metadata is not None:
-            self.set_ui_metadata(metadata["title"], metadata["artist"], metadata["album"], filepath)
+            self.set_ui_metadata(
+                metadata["title"], metadata["artist"], metadata["album"], filepath
+            )
 
     def set_ui_metadata(self, title, artist, album, filepath):
         """

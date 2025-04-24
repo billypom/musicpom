@@ -27,6 +27,9 @@
        <number>0</number>
       </property>
       <item>
+       <widget class="SearchLineEdit" name="lineEditSearch"/>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="hLayoutHead" stretch="1,0,6">
         <property name="sizeConstraint">
          <enum>QLayout::SetFixedSize</enum>
@@ -73,7 +76,7 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="hLayoutMusicTable" stretch="2,10">
+       <layout class="QHBoxLayout" name="hLayoutMusicTable" stretch="0,10">
         <property name="sizeConstraint">
          <enum>QLayout::SetMaximumSize</enum>
         </property>
@@ -84,7 +87,11 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="PlaylistsPane" name="playlistTreeView"/>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="PlaylistsPane" name="playlistTreeView"/>
+          </item>
+         </layout>
         </item>
         <item>
          <widget class="MusicTable" name="tableView"/>
@@ -311,7 +318,7 @@
      <x>0</x>
      <y>0</y>
      <width>1152</width>
-     <height>24</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -412,6 +419,11 @@
   <customwidget>
    <class>PlaylistsPane</class>
    <extends>QTreeView</extends>
+   <header>components</header>
+  </customwidget>
+  <customwidget>
+   <class>SearchLineEdit</class>
+   <extends>QLineEdit</extends>
    <header>components</header>
   </customwidget>
  </customwidgets>
