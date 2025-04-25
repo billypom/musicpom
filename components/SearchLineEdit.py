@@ -18,12 +18,20 @@ class SearchLineEdit(QLineEdit):
         super().__init__(parent)
         self.setVisible(False)
 
-    def toggle_visibility(self):
+    def toggle_visibility(self) -> bool:
+        """
+        Returns true if visible
+        false if hidden
+
+        This is used to bring focus back to the music table after toggling visibility
+        """
         if self.isHidden():
             self.setHidden(False)
+            return True
         else:
             self.setHidden(True)
             self.setText(None)
+            return False
 
     # def toggle_visibility(self):
     # if self.is_hidden:

@@ -491,7 +491,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def handle_search_box(self):
         """show or hide the searchbox"""
-        self.lineEditSearch.toggle_visibility()
+        visible = self.lineEditSearch.toggle_visibility()
+        if visible:
+            self.lineEditSearch.setFocus()
+        else:
+            self.tableView.setFocus()
 
     def handle_search_box_text(self, text: str):
         """when text changes, update the music table thingie"""
