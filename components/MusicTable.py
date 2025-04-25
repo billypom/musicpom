@@ -678,7 +678,7 @@ class MusicTable(QTableView):
         self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
         fields = ", ".join(self.headers.user_fields)
         search_clause = (
-            "title LIKE %?% AND artist LIKE %?% and album LIKE %?%"
+            "title LIKE ? OR artist LIKE ? OR album LIKE ?"
             if self.search_string
             else ""
         )
@@ -690,7 +690,8 @@ class MusicTable(QTableView):
                     query = f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
                     # fulltext search
                     if self.search_string:
-                        params = 3 * [self.search_string]
+                        # params = 3 * [self.search_string]
+                        params = ["%" + self.search_string + "%"] * 3
                         if query.find("WHERE") == -1:
                             query = f"{query} WHERE {search_clause};"
                         else:
@@ -708,7 +709,7 @@ class MusicTable(QTableView):
                     query = f"SELECT id, {fields} FROM song"
                     # fulltext search
                     if self.search_string:
-                        params = 3 * [self.search_string]
+                        params = ["%" + self.search_string + "%"] * 3
                         if query.find("WHERE") == -1:
                             query = f"{query} WHERE {search_clause};"
                         else:

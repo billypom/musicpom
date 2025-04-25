@@ -496,7 +496,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def handle_search_box_text(self, text: str):
         """when text changes, update the music table thingie"""
         self.tableView.set_search_string(text)
-        self.tableView.load_music_table(text)
+        self.tableView.load_music_table()
 
     def play_audio_file(self, filepath=None) -> None:
         """
