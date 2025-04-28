@@ -391,6 +391,7 @@ class MusicTable(QTableView):
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
+        # FIXME: broken
         if isinstance(self.model2, QStandardItemModel):
             debug("on_cell_data_changed")
             # get the ID of the row that was edited
@@ -622,6 +623,8 @@ class MusicTable(QTableView):
         # DBAccess is being instantiated for every file, boo
         # NOTE:
         # is that even possible with move file function?
+
+        # FIXME: change reorganize location in config, try to reorganize, failed - old reference
 
         # Get target directory
         target_dir = str(self.config["directories"]["reorganize_destination"])
