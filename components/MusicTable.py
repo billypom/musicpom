@@ -674,6 +674,9 @@ class MusicTable(QTableView):
 
         hint: You get a `playlist_id` from the signal emitted from PlaylistsPane as a tuple (1,)
         """
+        debug(
+            f"load_music_table() | playlist id: \nTYPE: {type(playlist_id)}\nVALUE: {playlist_id}\n"
+        )
         self.disconnect_data_changed()
         self.disconnect_layout_changed()
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
@@ -699,12 +702,12 @@ class MusicTable(QTableView):
                             query = f"{query} WHERE {search_clause};"
                         else:
                             query = f"{query} AND {search_clause};"
-                    data = db.query(
-                        query,
-                        (selected_playlist_id, params),
-                    )
+                        data = db.query(query, (selected_playlist_id, params))
+                    else:
+                        data = db.query(query, (selected_playlist_id,))
+
             except Exception as e:
-                error(f"load_music_table() | Unhandled exception: {e}")
+                error(f"load_music_table() | Unhandled exception 1: {e}")
                 return
         else:  # Load the library
             try:
@@ -722,7 +725,7 @@ class MusicTable(QTableView):
                         (params),
                     )
             except Exception as e:
-                error(f"load_music_table() | Unhandled exception: {e}")
+                error(f"load_music_table() | Unhandled exception 2: {e}")
                 return
         # Populate the model
         row_count: int = 0

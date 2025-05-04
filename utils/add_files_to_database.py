@@ -28,48 +28,48 @@ def add_files_to_database(files, progress_callback=None):
     config.read(cfg_file)
     if not files:
         return False, {"Failure": "All operations failed in add_files_to_database()"}
-    extensions = config.get("settings", "extensions").split(",")
     failed_dict = {}
     insert_data = []  # To store data for batch insert
     for filepath in files:
-        if any(filepath.lower().endswith(ext) for ext in extensions):
-            if progress_callback:
-                progress_callback.emit(filepath)
-            filename = filepath.split("/")[-1]
+        try:
+            progress_callback.emit(filepath)
+        except Exception:
+            pass
+        filename = filepath.split("/")[-1]
 
-            tags, details = get_tags(filepath)
-            if details:
-                failed_dict[filepath] = details
-                continue
-            audio = id3_remap(tags)
+        tags, details = get_tags(filepath)
+        if details:
+            failed_dict[filepath] = details
+            continue
+        audio = id3_remap(tags)
 
-            # Append data tuple to insert_data list
-            insert_data.append(
-                (
-                    filepath,
-                    audio["title"],
-                    audio["album"],
-                    audio["artist"],
-                    audio["track_number"],
-                    audio["genre"],
-                    filename.split(".")[-1],
-                    audio["date"],
-                    audio["bitrate"],
-                    audio["length"],
-                )
+        # Append data tuple to insert_data list
+        insert_data.append(
+            (
+                filepath,
+                audio["title"],
+                audio["album"],
+                audio["artist"],
+                audio["track_number"],
+                audio["genre"],
+                filename.split(".")[-1],
+                audio["date"],
+                audio["bitrate"],
+                audio["length"],
             )
-            # Check if batch size is reached
-            if len(insert_data) >= 1000:
-                debug(f"inserting a LOT of songs: {len(insert_data)}")
-                with DBA.DBAccess() as db:
-                    db.executemany(
-                        "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        insert_data,
-                    )
-                insert_data = []  # Reset the insert_data list
-            else:
-                # continue adding files if we havent reached big length
-                continue
+        )
+        # Check if batch size is reached
+        if len(insert_data) >= 1000:
+            debug(f"inserting a LOT of songs: {len(insert_data)}")
+            with DBA.DBAccess() as db:
+                db.executemany(
+                    "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    insert_data,
+                )
+            insert_data = []  # Reset the insert_data list
+        else:
+            # continue adding files if we havent reached big length
+            continue
     # Insert any remaining data
     debug("i check for insert data")
     if insert_data:

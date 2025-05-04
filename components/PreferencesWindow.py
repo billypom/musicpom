@@ -147,6 +147,7 @@ class PreferencesWindow(QDialog):
                 self.config.write(configfile)
 
             self.reloadConfigSignal.emit()
+            self.on_edit_toggled()
             # only reload db if we changed the db
             if self.current_category_str == "db":
                 self.reloadDatabaseSignal.emit()
