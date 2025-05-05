@@ -1,3 +1,4 @@
+from PyQt5.QtCore import QTimer, pyqtSignal
 from PyQt5.QtWidgets import QLineEdit
 
 """
@@ -14,9 +15,15 @@ in MusicTable.py, when Ctrl+F is pressed, the line edit gets hidden or visible
 
 
 class SearchLineEdit(QLineEdit):
+    textTypedSignal = pyqtSignal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setVisible(False)
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.on_typing_stopped)
+        self.textChanged.connect(self.on_text_changed)
 
     def toggle_visibility(self) -> bool:
         """
@@ -33,10 +40,10 @@ class SearchLineEdit(QLineEdit):
             self.setText(None)
             return False
 
-    # def toggle_visibility(self):
-    # if self.is_hidden:
-    #     self.button.setVisible(True)
-    #     self.is_hidden = False
-    # else:
-    #     self.button.setVisible(False)
-    #     self.is_hidden = True
+    def on_text_changed(self):
+        """Reset a timer each time text is changed"""
+        self.timer.start(300)
+
+    def on_typing_stopped(self):
+        """When timer reaches end, emit the text that is currently entered"""
+        self.textTypedSignal.emit(self.text())

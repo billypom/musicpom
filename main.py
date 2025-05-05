@@ -67,6 +67,7 @@ from components import (
     AudioVisualizer,
     CreatePlaylistWindow,
     ExportPlaylistWindow,
+    SearchLineEdit,
 )
 from utils.get_album_art import get_album_art
 
@@ -266,14 +267,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.lineEditSearch: QLineEdit
 
         ## CONNECTIONS
-        self.lineEditSearch.textChanged.connect(self.handle_search_box_text)
+        self.lineEditSearch.textTypedSignal.connect(self.handle_search_box_text)
         # tableView
         self.tableView.playSignal.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
         self.tableView.handleProgressSignal.connect(self.handle_progress)
-        self.tableView.searchBoxSignal.connect(self.handle_search_box)
+        self.tableView.searchBoxSignal.connect(self.handle_search_box_visibility)
         self.tableView.playlistStatsSignal.connect(
             self.set_permanent_status_bar_message
         )
@@ -489,7 +490,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         else:
             self.status_bar.showMessage(message)
 
-    def handle_search_box(self):
+    def handle_search_box_visibility(self):
         """show or hide the searchbox"""
         visible = self.lineEditSearch.toggle_visibility()
         if visible:

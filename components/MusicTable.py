@@ -142,7 +142,7 @@ class MusicTable(QTableView):
         self.doubleClicked.connect(self.play_selected_audio_file)
         self.enterKey.connect(self.play_selected_audio_file)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
-        self.model2.layoutChanged.connect(self.restore_scroll_position)
+        # self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontal_header.sectionResized.connect(self.on_header_resized)
         # Final actions
         # self.load_music_table()
@@ -674,9 +674,6 @@ class MusicTable(QTableView):
 
         hint: You get a `playlist_id` from the signal emitted from PlaylistsPane as a tuple (1,)
         """
-        debug(
-            f"load_music_table() | playlist id: \nTYPE: {type(playlist_id)}\nVALUE: {playlist_id}\n"
-        )
         self.disconnect_data_changed()
         self.disconnect_layout_changed()
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
@@ -757,16 +754,16 @@ class MusicTable(QTableView):
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
         current_song_filepath = self.get_current_song_filepath()
-        print(f"load music table current filepath: {current_song_filepath}")
+        debug(f"load_music_table() | current filepath: {current_song_filepath}")
         for row in range(self.model2.rowCount()):
             real_index = self.model2.index(
                 row, self.headers.user_fields.index("filepath")
             )
             if real_index.data() == current_song_filepath:
-                print("is it true?")
-                print(f"{real_index.data()} == {current_song_filepath}")
-                print("load music table real index:")
-                print(real_index)
+                # print("is it true?")
+                # print(f"{real_index.data()} == {current_song_filepath}")
+                # print("load music table real index:")
+                # print(real_index)
                 self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
         self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time}")
