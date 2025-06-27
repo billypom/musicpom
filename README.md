@@ -79,5 +79,5 @@ QMultimedia.EncodingMode / Encoding quality...
 ##### misc
 - database playlist autoexporting
 - .wav, .ogg, .flac convertor
-- automatic "radio" based on artist or genre
-- title artist album labels force fit the screen - so the window gets mega expanded with long text. bad
+- automatic "radio" (based on artist, genre, etc?)
+- title artist album labels - fit to window size
