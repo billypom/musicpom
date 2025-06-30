@@ -266,7 +266,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # Search box
         self.lineEditSearch: QLineEdit
 
-        ## CONNECTIONS
+        # CONNECTIONS
         self.lineEditSearch.textTypedSignal.connect(self.handle_search_box_text)
         # tableView
         self.tableView.playSignal.connect(self.play_audio_file)
@@ -411,7 +411,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             # FIXME: seg fault here but only sometimes???
             # when playing song in lib, switch to playlist, back to lib, next song
             index = self.tableView.proxymodel.mapFromSource(current_real_index)
-        except:
+        except Exception:
             return
         row: int = index.row()
         next_row: int = row + 1

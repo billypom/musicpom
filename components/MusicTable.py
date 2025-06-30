@@ -583,7 +583,7 @@ class MusicTable(QTableView):
         shortcut = QShortcut(QKeySequence("Ctrl+Shift+R"), self)
         shortcut.activated.connect(self.confirm_reorganize_files)
         # Delete key?
-        shortcut = QShortcut(QKeySequence("Delete"), self)
+        shortcut = QShortcut(QKeySequence("Del"), self)
         shortcut.activated.connect(self.delete_songs)
         # Search box
         shortcut = QShortcut(QKeySequence("Ctrl+F"), self)

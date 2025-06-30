@@ -81,3 +81,6 @@ QMultimedia.EncodingMode / Encoding quality...
 - .wav, .ogg, .flac convertor
 - automatic "radio" (based on artist, genre, etc?)
 - title artist album labels - fit to window size
+- edit metadata, get metadata in another thread (freezing)
+- on save metadata modal, run save in another thread (freezing)
+- on save metadata modal, return to previous state in table (jump to current song/restore scroll position)
