@@ -71,6 +71,22 @@ class MusicTable(QTableView):
     handleProgressSignal = pyqtSignal(str)
     getThreadPoolSignal = pyqtSignal()
     searchBoxSignal = pyqtSignal()
+    focusEnterSignal = pyqtSignal()
+    focusLeaveSignal = pyqtSignal()
+
+    def focusInEvent(self, e):
+        """
+        Event filter: when self is focused
+        """
+        self.focusEnterSignal.emit()
+        # arrow keys act normal
+        super().focusInEvent(e)
+
+    def focusOutEvent(self, e):
+        """
+        Event filter: when self becomes unfocused
+        """
+        self.focusLeaveSignal.emit()
 
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
@@ -766,7 +782,12 @@ class MusicTable(QTableView):
                 # print(real_index)
                 self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
-        self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time}")
+
+        db_name: str = self.config.get("db", "database").split("/").pop()
+        db_filename = self.config.get("db", "database")
+        self.playlistStatsSignal.emit(
+            f"Songs: {row_count} | Total time: {total_time} | {db_name} | {db_filename}"
+        )
         self.loadMusicTableSignal.emit()
         self.connect_data_changed()
         self.connect_layout_changed()

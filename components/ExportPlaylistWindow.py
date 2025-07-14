@@ -25,20 +25,19 @@ class ExportPlaylistWindow(QDialog):
         super(ExportPlaylistWindow, self).__init__()
         self.setWindowTitle("Export playlist")
         self.setMinimumSize(600, 400)
-        self.cfg_file = (
-            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
-            / "config.ini"
-        )
-        self.config = ConfigParser()
-        self.config.read(self.cfg_file)
+        self.load_config()
         self.relative_path: str = self.config.get(
             "directories", "playlist_relative_path"
         )
+        self.current_relative_path: str = self.relative_path
         self.export_path: str = self.config.get("directories", "playlist_export_path")
         self.selected_playlist_name: str = "my-playlist.m3u"
-        self.current_m3u_path: str = self.export_path
-        self.current_relative_path: str = self.relative_path
         self.chosen_list_widget_item: QListWidgetItem | None = None
+        layout = self.setup_ui()
+        self.setLayout(layout)
+        self.show()
+
+    def setup_ui(self):
         layout = QVBoxLayout()
 
         # Header label
@@ -54,15 +53,14 @@ class ExportPlaylistWindow(QDialog):
             playlist_dict[row[0]] = row[1]
 
         # Playlist list widget
-        self.item_dict = {}
         self.playlist_listWidget = QListWidget(self)
+        self.item_dict = {}
         for i, (k, v) in enumerate(playlist_dict.items()):
             # item_text = f"{i+1} | {v}"
             item_text = v
             item = QListWidgetItem(item_text)
             self.playlist_listWidget.addItem(item)
             self.item_dict[item_text] = k
-
         layout.addWidget(self.playlist_listWidget)
 
         # Relative path checkbox widget
@@ -77,8 +75,8 @@ class ExportPlaylistWindow(QDialog):
         layout.addWidget(label)
 
         # Relative export path line edit widget
-        self.relative_path_input = QLineEdit(self.relative_path)
-        layout.addWidget(self.relative_path_input)
+        self.input_relative_path = QLineEdit(self.relative_path)  # not needed
+        layout.addWidget(self.input_relative_path)
 
         # Playlist file save path label
         label = QLabel("Playlist file path")
@@ -87,8 +85,8 @@ class ExportPlaylistWindow(QDialog):
         layout.addWidget(label)
 
         # Playlist file save path line edit widget
-        self.m3u_path_input = QLineEdit(self.export_path)
-        layout.addWidget(self.m3u_path_input)
+        self.input_m3u_path = QLineEdit(self.export_path)  # not needed
+        layout.addWidget(self.input_m3u_path)
 
         # Save button
         self.save_button = QPushButton("Export")
@@ -96,14 +94,21 @@ class ExportPlaylistWindow(QDialog):
 
         # Signals
         self.save_button.clicked.connect(self.save)
-        self.checkbox.toggled.connect(self.relative_path_input.setEnabled)
+        self.checkbox.toggled.connect(self.input_relative_path.setEnabled)
         self.playlist_listWidget.currentRowChanged.connect(
-            self.set_current_selected_playlist
+            self.handle_playlist_selected
         )
-        self.setLayout(layout)
-        self.show()
+        return layout
 
-    def set_current_selected_playlist(self) -> None:
+    def load_config(self):
+        self.cfg_file = (
+            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
+            / "config.ini"
+        )
+        self.config = ConfigParser()
+        self.config.read(self.cfg_file)
+
+    def handle_playlist_selected(self) -> None:
         """
         Sets the current playlist name, then edits the playlist export path
         """
@@ -117,34 +122,45 @@ class ExportPlaylistWindow(QDialog):
 
         # Create the filename for the playlist to be exported
         self.selected_playlist_name = self.chosen_list_widget_item.text() + ".m3u"
+        # get the db id? i guess?
+        self.selected_playlist_db_id = self.item_dict[
+            self.chosen_list_widget_item.text()
+        ]
 
-        # Change line edit text for playlist path
-        current_text: list = self.m3u_path_input.text().split("/")
+        # alter line edit text for playlist path
+        current_text: list = self.input_m3u_path.text().split("/")
         if "." in current_text[-1]:
             current_text = current_text[:-1]
         else:
             current_text = current_text
         m3u_text = os.path.join("/", *current_text, self.selected_playlist_name)
-        self.m3u_path_input.setText(m3u_text)
+        self.input_m3u_path.setText(m3u_text)
 
     def save(self) -> None:
-        """Exports the chosen database playlist to a .m3u file"""
+        """
+        Exports the selected playlist to a .m3u file
+        - handles writing relative paths, if needed
+        """
         if self.chosen_list_widget_item is None:
             return
-        selected_db_id = self.item_dict[self.chosen_list_widget_item.text()]
-        relative_path = self.relative_path_input.text()
-        m3u_path = self.m3u_path_input.text()
+        relative_path = self.input_relative_path.text()
+        output_filename = self.input_m3u_path.text()
 
         # If no output path is provided, just close the window...
-        if m3u_path == "" or m3u_path is None:
+        if output_filename == "" or output_filename is None:
             self.close()
             return
+
+        # Get filepaths for selected playlist from the database
         try:
             with DBA.DBAccess() as db:
-                db_paths = db.query(
-                    "SELECT s.filepath FROM song_playlist as sp JOIN song as s ON s.id = sp.song_id WHERE sp.playlist_id = ?;",
-                    (selected_db_id,),
-                )[0]
+                data = db.query(
+                    """SELECT s.filepath FROM song_playlist as sp
+                    JOIN song as s ON s.id = sp.song_id
+                    WHERE sp.playlist_id = ?;""",
+                    (int(self.selected_playlist_db_id),),
+                )
+                db_paths = [path[0] for path in data]
         except Exception as e:
             logging.error(
                 f"ExportPlaylistWindow.py save() | could not retrieve playlist songs: {e}"
@@ -163,18 +179,17 @@ class ExportPlaylistWindow(QDialog):
             for song in db_paths:
                 artist, album = get_reorganize_vars(song)
                 write_path = os.path.join(
-                    relative_path, artist, album, song.split("/")[-1]
+                    relative_path, artist, album, song.split("/")[-1], "\n"
                 )
-                write_paths.append(write_path)
+                write_paths.append(str(write_path))
         else:
             # Normal paths
             for song in db_paths:
                 write_paths.append(song)
 
-        # Write playlist file
-        filename = self.m3u_path_input.text()
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        with open(filename, "w") as f:
+        # Write playlist file TODO: add threading
+        os.makedirs(os.path.dirname(output_filename), exist_ok=True)
+        with open(output_filename, "w") as f:
             f.writelines(write_paths)
 
         self.close()

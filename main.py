@@ -702,8 +702,8 @@ def update_database_file() -> bool:
         with open(cfg_file, "w") as configfile:
             config.write(configfile)
         config.read(cfg_file)
+        db_filepath: str = config.get("db", "database")
 
-    db_filepath: str = config.get("db", "database")
     db_path = db_filepath.split("/")
     db_path.pop()
     db_path = "/".join(db_path)
