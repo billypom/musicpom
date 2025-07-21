@@ -31,10 +31,8 @@ def add_files_to_database(files, progress_callback=None):
     failed_dict = {}
     insert_data = []  # To store data for batch insert
     for filepath in files:
-        try:
+        if progress_callback:
             progress_callback.emit(filepath)
-        except Exception:
-            pass
         filename = filepath.split("/")[-1]
 
         tags, details = get_tags(filepath)

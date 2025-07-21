@@ -15,7 +15,7 @@ class DBAccess:
         )
         config.read(cfg_file)
         if db_name is None:
-            db_name = config.get("db", "database")
+            db_name = config.get("settings", "db")
         self._conn: sqlite3.Connection = sqlite3.connect(db_name)
         self._cursor: sqlite3.Cursor = self._conn.cursor()
 

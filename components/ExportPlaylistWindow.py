@@ -27,10 +27,9 @@ class ExportPlaylistWindow(QDialog):
         self.setMinimumSize(600, 400)
         self.load_config()
         self.relative_path: str = self.config.get(
-            "directories", "playlist_relative_path"
+            "settings", "playlist_content_relative_path"
         )
-        self.current_relative_path: str = self.relative_path
-        self.export_path: str = self.config.get("directories", "playlist_export_path")
+        self.export_path: str = self.config.get("settings", "playlist_export_path")
         self.selected_playlist_name: str = "my-playlist.m3u"
         self.chosen_list_widget_item: QListWidgetItem | None = None
         layout = self.setup_ui()
@@ -85,8 +84,8 @@ class ExportPlaylistWindow(QDialog):
         layout.addWidget(label)
 
         # Playlist file save path line edit widget
-        self.input_m3u_path = QLineEdit(self.export_path)  # not needed
-        layout.addWidget(self.input_m3u_path)
+        self.export_m3u_path = QLineEdit(self.config.get("settings", "playlist_export_path"))
+        layout.addWidget(self.export_m3u_path)
 
         # Save button
         self.save_button = QPushButton("Export")
@@ -122,12 +121,14 @@ class ExportPlaylistWindow(QDialog):
 
         # Create the filename for the playlist to be exported
         self.selected_playlist_name = self.chosen_list_widget_item.text() + ".m3u"
-        # get the db id? i guess?
+
+        # get the db id
         self.selected_playlist_db_id = self.item_dict[
             self.chosen_list_widget_item.text()
         ]
 
         # alter line edit text for playlist path
+        # Make the thing react and show the correct thing or whatever
         current_text: list = self.input_m3u_path.text().split("/")
         if "." in current_text[-1]:
             current_text = current_text[:-1]
@@ -179,13 +180,13 @@ class ExportPlaylistWindow(QDialog):
             for song in db_paths:
                 artist, album = get_reorganize_vars(song)
                 write_path = os.path.join(
-                    relative_path, artist, album, song.split("/")[-1], "\n"
+                    relative_path, artist, album, song.split("/")[-1] + "\n"
                 )
                 write_paths.append(str(write_path))
         else:
             # Normal paths
             for song in db_paths:
-                write_paths.append(song)
+                write_paths.append(song + "\n")
 
         # Write playlist file TODO: add threading
         os.makedirs(os.path.dirname(output_filename), exist_ok=True)

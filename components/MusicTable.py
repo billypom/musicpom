@@ -783,8 +783,8 @@ class MusicTable(QTableView):
                 self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
 
-        db_name: str = self.config.get("db", "database").split("/").pop()
-        db_filename = self.config.get("db", "database")
+        db_name: str = self.config.get("settings", "db").split("/").pop()
+        db_filename = self.config.get("settings", "db")
         self.playlistStatsSignal.emit(
             f"Songs: {row_count} | Total time: {total_time} | {db_name} | {db_filename}"
         )

@@ -662,8 +662,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         Scans for new files in the configured library folder
         then, refreshes the datagridview
         """
-        scan_for_music()
-        self.tableView.load_music_table()
+        worker = Worker(scan_for_music)
+        worker.signals.signal_finished.connect(self.tableView.load_music_table)
+        worker.signals.signal_progress.connect(self.handle_progress)
+        self.threadpool.start(worker)
 
     def delete_database(self) -> None:
         """Deletes the entire database"""
@@ -689,7 +691,7 @@ def update_database_file() -> bool:
     cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
     config = ConfigParser()
     config.read(cfg_file)
-    db_filepath: str = config.get("db", "database")
+    db_filepath: str = config.get("settings", "db")
 
     # If the database location isnt set at the config location, move it
     if not db_filepath.startswith(cfg_path):
@@ -702,7 +704,7 @@ def update_database_file() -> bool:
         with open(cfg_file, "w") as configfile:
             config.write(configfile)
         config.read(cfg_file)
-        db_filepath: str = config.get("db", "database")
+        db_filepath: str = config.get("settings", "db")
 
     db_path = db_filepath.split("/")
     db_path.pop()
