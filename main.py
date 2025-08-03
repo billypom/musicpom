@@ -4,12 +4,11 @@ import logging
 from PyQt5 import QtCore
 import qdarktheme
 import typing
-import traceback
-import DBA
+# import DBA
 from subprocess import run
-from pyqtgraph import mkBrush
+# from pyqtgraph import mkBrush
 from mutagen.id3 import ID3
-from mutagen.id3._frames import APIC
+# from mutagen.id3._frames import APIC
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
@@ -70,84 +69,14 @@ from components import (
     SearchLineEdit,
 )
 from utils.get_album_art import get_album_art
+# from utils.Worker import Worker
+from utils import Worker
 
 # good help with signals slots in threads
 # https://stackoverflow.com/questions/52993677/how-do-i-setup-signals-and-slots-in-pyqt-with-qthreads-in-both-directions
 
 # GOOD
 # https://www.pythonguis.com/tutorials/multithreading-pyqt-applications-qthreadpool/
-
-
-class WorkerSignals(QObject):
-    """
-    How to use signals for a QRunnable class;
-    Unlike most cases where signals are defined as class attributes directly in the class,
-    here we define a class that inherits from QObject
-    and define the signals as class attributes in that class.
-    Then we can instantiate that class and use it as a signal object.
-    """
-
-    # 1)
-    # Use a naming convention for signals that makes it clear that they are signals
-    # and a corresponding naming convention for the slots that handle them.
-    # For example signal_* and handle_*.
-    # 2)
-    # And try to make the signal content as small as possible. DO NOT pass large objects through signals, like
-    # pandas DataFrames or numpy arrays. Instead, pass the minimum amount of information needed
-    # (i.e. lists of filepaths)
-
-    signal_started = pyqtSignal()
-    signal_result = pyqtSignal(object)
-    signal_finished = pyqtSignal()
-    signal_progress = pyqtSignal(str)
-
-
-class Worker(QRunnable):
-    """
-    This is the thread that is going to do the work so that the
-    application doesn't freeze
-
-    Inherits from QRunnable to handle worker thread setup, signals, and tear down
-    :param callback: the function callback to run on this worker thread. Supplied
-                    arg and kwargs will be passed through to the runner
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-    """
-
-    def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-        self.signals: WorkerSignals = WorkerSignals()
-
-        # Add a callback to our kwargs
-        self.kwargs["progress_callback"] = self.signals.signal_progress
-
-    @pyqtSlot()
-    def run(self) -> None:  # type: ignore
-        """
-        This is where the work is done.
-        MUST be called run() in order for QRunnable to work
-
-        Initialize the runner function with passed args & kwargs
-        """
-        self.signals.signal_started.emit()
-        try:
-            result = self.fn(*self.args, **self.kwargs)
-        except Exception:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.signal_finished.emit((exctype, value, traceback.format_exc()))
-            error(f"Worker failed: {exctype} | {value} | {traceback.format_exc()}")
-        else:
-            if result:
-                self.signals.signal_finished.emit()
-                self.signals.signal_result.emit(result)
-            else:
-                self.signals.signal_finished.emit()
 
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
@@ -163,8 +92,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             / "config.ini"
         )
         self.config.read(self.cfg_file)
-        print("main config:")
-        print(self.config)
+        debug(f"\tmain config: {self.config}")
         self.threadpool: QThreadPool = QThreadPool()
         # UI
         self.setupUi(self)
@@ -286,6 +214,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.tableView.load_music_table
         )
         self.playlistTreeView.allSongsSignal.connect(self.tableView.load_music_table)
+        self.playlistTreeView.set_threadpool(self.threadpool)
 
         # albumGraphicsView
         self.albumGraphicsView.albumArtDropped.connect(
@@ -777,9 +706,13 @@ if __name__ == "__main__":
     handlers = [file_handler, stdout_handler]
     basicConfig(
         level=DEBUG,
-        format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
+        # format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
+        format="{%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
         handlers=handlers,
     )
+    debug(f'--------- musicpom debug started')
+    debug(f'---------------------|          ')
+    debug(f'----------------------> {handlers}      ')
     # Initialization
     config: ConfigParser = update_config_file()
     if not update_database_file():

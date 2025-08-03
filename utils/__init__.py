@@ -8,6 +8,7 @@ from .get_reorganize_vars import get_reorganize_vars
 from .set_tag import set_tag
 from .delete_song_id_from_database import delete_song_id_from_database
 from .batch_delete_filepaths_from_database import batch_delete_filepaths_from_database
+from .batch_delete_filepaths_from_playlist import batch_delete_filepaths_from_playlist
 from .delete_and_create_library_database import delete_and_create_library_database
 from .update_song_in_database import update_song_in_database
 from .scan_for_music import scan_for_music
@@ -15,3 +16,4 @@ from .add_files_to_database import add_files_to_database
 from .convert_date_str_to_tyer_tdat_id3_tag import convert_date_str_to_tyer_tdat_id3_tag
 from .set_album_art import set_album_art
 from .delete_album_art import delete_album_art
+from .Worker import Worker

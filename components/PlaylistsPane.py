@@ -7,9 +7,10 @@ from PyQt5.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
 )
-from PyQt5.QtCore import pyqtSignal, Qt, QPoint
+from PyQt5.QtCore import QThreadPool, pyqtSignal, Qt, QPoint
 import DBA
 from logging import debug
+from utils import Worker
 
 from components import CreatePlaylistWindow
 
@@ -42,8 +43,12 @@ class PlaylistsPane(QTreeWidget):
         self.customContextMenuRequested.connect(self.showContextMenu)
         self.currentItemChanged.connect(self.playlist_clicked)
         self.playlist_db_id_choice: int | None = None
+        self.threadpool: QThreadPool | None = None
 
-    def reload_playlists(self):
+    def set_threadpool(self, threadpool: QThreadPool):
+        self.threadpool = threadpool
+
+    def reload_playlists(self, progress_callback=None):
         """
         Clears and reinitializes the playlists tree
         each playlist is a branch/child of root node `Playlists`
@@ -53,8 +58,9 @@ class PlaylistsPane(QTreeWidget):
         # NOTE: implement user sorting by adding a column to playlist db table for 'rank' or something
         with DBA.DBAccess() as db:
             playlists = db.query(
-                "SELECT id, name FROM playlist ORDER BY date_created DESC LIMIT 1;", ()
+                "SELECT id, name FROM playlist ORDER BY date_created DESC;", ()
             )
+            debug(f'PlaylistsPane: | playlists = {playlists}')
         for playlist in playlists:
             branch = PlaylistWidgetItem(self, playlist[0], playlist[1])
             self._playlists_root.addChild(branch)
@@ -95,13 +101,17 @@ class PlaylistsPane(QTreeWidget):
         if len(text) > 64:
             QMessageBox.warning(self, "WARNING", "Name must not exceed 64 characters")
             return
-        if ok:
-            with DBA.DBAccess() as db:
-                db.execute(
-                    "UPDATE playlist SET name = ? WHERE id = ?;",
-                    (text, self.playlist_db_id_choice),
-                )
-            self.reload_playlists()
+        if not ok:
+            return
+        # Proceed with renaming the playlist
+        with DBA.DBAccess() as db:
+            db.execute(
+                "UPDATE playlist SET name = ? WHERE id = ?;",
+                (text, self.playlist_db_id_choice),
+            )
+        worker = Worker(self.reload_playlists)
+        if self.threadpool:
+            self.threadpool.start(worker)
 
     def delete_playlist(self, *args):
         """Deletes a playlist"""
@@ -118,7 +128,9 @@ class PlaylistsPane(QTreeWidget):
                     "DELETE FROM playlist WHERE id = ?;", (self.playlist_db_id_choice,)
                 )
             # reload
-            self.reload_playlists()
+            worker = Worker(self.reload_playlists)
+            if self.threadpool:
+                self.threadpool.start(worker)
 
     def playlist_clicked(self, item):
         """Specific playlist pane index was clicked"""

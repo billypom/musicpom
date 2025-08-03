@@ -37,9 +37,9 @@ from components.MetadataWindow import MetadataWindow
 from components.QuestionBoxDetails import QuestionBoxDetails
 from components.HeaderTags import HeaderTags
 
-from main import Worker
 from utils import (
     batch_delete_filepaths_from_database,
+    batch_delete_filepaths_from_playlist,
     delete_song_id_from_database,
     add_files_to_database,
     get_reorganize_vars,
@@ -48,6 +48,7 @@ from utils import (
     id3_remap,
     get_tags,
     set_tag,
+    Worker
 )
 from subprocess import Popen
 from logging import debug, error
@@ -133,6 +134,7 @@ class MusicTable(QTableView):
         self.current_song_filepath = ""
         self.current_song_db_id = None
         self.current_song_qmodel_index: QModelIndex
+        self.selected_playlist_id: int | None = None
 
         # Properties
         self.setAcceptDrops(True)
@@ -503,21 +505,34 @@ class MusicTable(QTableView):
         # or provide extra questionbox option
         # | Delete from playlist & lib | Delete from playlist only | Cancel |
         selected_filepaths = self.get_selected_songs_filepaths()
-        formatted_selected_filepaths = "\n".join(selected_filepaths)
-        question_dialog = QuestionBoxDetails(
-            title="Delete songs",
-            description="Remove these songs from the library?",
-            data=selected_filepaths,
-        )
-        reply = question_dialog.execute()
-        if reply:
-            worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
-            worker.signals.signal_progress.connect(self.qapp.handle_progress)
-            worker.signals.signal_finished.connect(self.delete_selected_row_indices)
-            if self.qapp:
-                threadpool = self.qapp.threadpool
-                threadpool.start(worker)
-        return
+        if self.selected_playlist_id:
+            question_dialog = QuestionBoxDetails(
+                title="Delete songs",
+                description="Remove these songs from the playlist?",
+                data=selected_filepaths,
+            )
+            reply = question_dialog.execute()
+            if reply:
+                worker = Worker(batch_delete_filepaths_from_playlist, selected_filepaths, self.selected_playlist_id)
+                worker.signals.signal_progress.connect(self.qapp.handle_progress)
+                worker.signals.signal_finished.connect(self.delete_selected_row_indices)
+                if self.qapp:
+                    threadpool = self.qapp.threadpool
+                    threadpool.start(worker)
+        else:
+            question_dialog = QuestionBoxDetails(
+                title="Delete songs",
+                description="Remove these songs from the library?\n(This will remove the songs from all playlists)",
+                data=selected_filepaths,
+            )
+            reply = question_dialog.execute()
+            if reply:
+                worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
+                worker.signals.signal_progress.connect(self.qapp.handle_progress)
+                worker.signals.signal_finished.connect(self.delete_selected_row_indices)
+                if self.qapp:
+                    threadpool = self.qapp.threadpool
+                    threadpool.start(worker)
 
     def delete_selected_row_indices(self):
         """
@@ -532,7 +547,7 @@ class MusicTable(QTableView):
             except Exception as e:
                 debug(f"delete_selected_row_indices() failed | {e}")
         self.connect_data_changed()
-        self.load_music_table()
+        self.load_music_table(self.selected_playlist_id)
 
     def edit_selected_files_metadata(self):
         """Opens a form with metadata from the selected audio files"""
@@ -702,8 +717,9 @@ class MusicTable(QTableView):
             else ""
         )
         params = ""
-        if playlist_id:  # Load a playlist
-            selected_playlist_id = playlist_id[0]
+        # Load a playlist
+        if playlist_id:
+            self.selected_playlist_id = playlist_id[0]
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
@@ -715,14 +731,16 @@ class MusicTable(QTableView):
                             query = f"{query} WHERE {search_clause};"
                         else:
                             query = f"{query} AND {search_clause};"
-                        data = db.query(query, (selected_playlist_id, params))
+                        data = db.query(query, (self.selected_playlist_id, params))
                     else:
-                        data = db.query(query, (selected_playlist_id,))
+                        data = db.query(query, (self.selected_playlist_id,))
 
             except Exception as e:
                 error(f"load_music_table() | Unhandled exception 1: {e}")
                 return
-        else:  # Load the library
+        # Load the entire library
+        else:
+            self.selected_playlist_id = None
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {fields} FROM song"
