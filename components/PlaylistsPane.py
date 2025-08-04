@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import (
     QAction,
     QInputDialog,
-    QListWidget,
     QMenu,
     QMessageBox,
     QTreeWidget,
@@ -10,6 +9,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QThreadPool, pyqtSignal, Qt, QPoint
 import DBA
 from logging import debug
+from components.ErrorDialog import ErrorDialog
 from utils import Worker
 
 from components import CreatePlaylistWindow
@@ -43,10 +43,6 @@ class PlaylistsPane(QTreeWidget):
         self.customContextMenuRequested.connect(self.showContextMenu)
         self.currentItemChanged.connect(self.playlist_clicked)
         self.playlist_db_id_choice: int | None = None
-        self.threadpool: QThreadPool | None = None
-
-    def set_threadpool(self, threadpool: QThreadPool):
-        self.threadpool = threadpool
 
     def reload_playlists(self, progress_callback=None):
         """
@@ -60,7 +56,7 @@ class PlaylistsPane(QTreeWidget):
             playlists = db.query(
                 "SELECT id, name FROM playlist ORDER BY date_created DESC;", ()
             )
-            debug(f'PlaylistsPane: | playlists = {playlists}')
+            # debug(f'PlaylistsPane: | playlists = {playlists}')
         for playlist in playlists:
             branch = PlaylistWidgetItem(self, playlist[0], playlist[1])
             self._playlists_root.addChild(branch)
@@ -86,7 +82,7 @@ class PlaylistsPane(QTreeWidget):
     def create_playlist(self):
         """Creates a database record for a playlist, given a name"""
         window = CreatePlaylistWindow(self.playlistCreatedSignal)
-        window.playlistCreatedSignal.connect(self.reload_playlists)  # type: ignore
+        window.playlistCreatedSignal.connect(self.reload_playlists)
         window.exec_()
 
     def rename_playlist(self, *args):
@@ -110,8 +106,9 @@ class PlaylistsPane(QTreeWidget):
                 (text, self.playlist_db_id_choice),
             )
         worker = Worker(self.reload_playlists)
-        if self.threadpool:
-            self.threadpool.start(worker)
+        if self.qapp:
+            threadpool = self.qapp.threadpool
+            threadpool.start(worker)
 
     def delete_playlist(self, *args):
         """Deletes a playlist"""
@@ -123,14 +120,18 @@ class PlaylistsPane(QTreeWidget):
             QMessageBox.Yes,
         )
         if reply == QMessageBox.Yes:
-            with DBA.DBAccess() as db:
-                db.execute(
-                    "DELETE FROM playlist WHERE id = ?;", (self.playlist_db_id_choice,)
-                )
-            # reload
-            worker = Worker(self.reload_playlists)
-            if self.threadpool:
-                self.threadpool.start(worker)
+            if self.qapp:
+                with DBA.DBAccess() as db:
+                    db.execute(
+                        "DELETE FROM playlist WHERE id = ?;", (self.playlist_db_id_choice,)
+                    )
+                # reload
+                worker = Worker(self.reload_playlists)
+                threadpool = self.qapp.threadpool
+                threadpool.start(worker)
+            else:
+                error_dialog = ErrorDialog("Main application [qapp] not loaded - aborting operation")
+                error_dialog.exec()
 
     def playlist_clicked(self, item):
         """Specific playlist pane index was clicked"""
@@ -139,9 +140,13 @@ class PlaylistsPane(QTreeWidget):
             # self.all_songs_selected()
             self.allSongsSignal.emit()
         elif isinstance(item, PlaylistWidgetItem):
-            debug(f"ID: {item.id}, name: {item.text(0)}")
+            # debug(f"ID: {item.id}, name: {item.text(0)}")
             self.playlist_db_id_choice = item.id
             self.playlistChoiceSignal.emit(int(item.id))
+
+    def load_qapp(self, qapp) -> None:
+        """Necessary for using members and methods of main application window"""
+        self.qapp = qapp
 
     # def all_songs_selected(self):
     #     """Emits a signal to display all songs in the library"""

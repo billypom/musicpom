@@ -42,7 +42,7 @@ class SearchLineEdit(QLineEdit):
 
     def on_text_changed(self):
         """Reset a timer each time text is changed"""
-        self.timer.start(300)
+        self.timer.start(1500)
 
     def on_typing_stopped(self):
         """When timer reaches end, emit the text that is currently entered"""

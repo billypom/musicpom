@@ -7,16 +7,16 @@ from typing import Optional
 
 @dataclass
 class SQLiteMap:
-    title: Optional[str] = None
-    artist: Optional[str] = None
-    album: Optional[str] = None
-    album_artist: Optional[str] = None
-    track_number: Optional[str] = None
-    genre: Optional[str] = None
-    length_seconds: Optional[str] = None
-    album_date: Optional[str] = None
-    codec: Optional[str] = None
-    filepath: Optional[str] = None
+    title: str | None = None
+    artist: str | None = None
+    album: str | None = None
+    album_artist: str | None = None
+    track_number: str | None = None
+    genre: str | None = None
+    length_seconds: str | None = None
+    album_date: str | None = None
+    codec: str | None = None
+    filepath: str | None = None
 
 
 """

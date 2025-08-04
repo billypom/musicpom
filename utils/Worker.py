@@ -27,10 +27,10 @@ class WorkerSignals(QObject):
     # pandas DataFrames or numpy arrays. Instead, pass the minimum amount of information needed
     # (i.e. lists of filepaths)
 
-    signal_started = pyqtSignal()
-    signal_result = pyqtSignal(object)
-    signal_finished = pyqtSignal()
-    signal_progress = pyqtSignal(str)
+    signal_started: pyqtSignal = pyqtSignal()
+    signal_result: pyqtSignal = pyqtSignal(object)
+    signal_finished: pyqtSignal = pyqtSignal()
+    signal_progress: pyqtSignal = pyqtSignal(str)
 
 
 class Worker(QRunnable):
@@ -46,12 +46,12 @@ class Worker(QRunnable):
     :param kwargs: Keywords to pass to the callback function
     """
 
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, fn, *args: object, **kwargs: object):
         super(Worker, self).__init__()
         # Store constructor arguments (re-used for processing)
         self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
+        self.args: object = args
+        self.kwargs: object = kwargs
         self.signals: WorkerSignals = WorkerSignals()
 
         # Add a callback to our kwargs

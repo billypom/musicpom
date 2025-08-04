@@ -118,8 +118,7 @@ class MusicTable(QTableView):
         )
         self.config = ConfigParser()
         self.config.read(cfg_file)
-        print("music table config:")
-        print(self.config)
+        debug(f"music table config: {self.config}")
 
         # Threads
         self.threadpool = QThreadPool
@@ -138,7 +137,8 @@ class MusicTable(QTableView):
 
         # Properties
         self.setAcceptDrops(True)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setEditTriggers(QAbstractItemView.EditTrigger.EditKeyPressed)
         self.setAlternatingRowColors(True)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -146,7 +146,7 @@ class MusicTable(QTableView):
         # header
         self.horizontal_header: QHeaderView = self.horizontalHeader()
         assert self.horizontal_header is not None  # i hate look at linting errors
-        self.horizontal_header.setStretchLastSection(True)
+        self.horizontal_header.setStretchLastSection(False)
         self.horizontal_header.setSectionResizeMode(QHeaderView.Interactive)
         self.horizontal_header.sortIndicatorChanged.connect(self.on_sort)
         # dumb vertical estupido
@@ -159,7 +159,8 @@ class MusicTable(QTableView):
         self.deleteKey.connect(self.delete_songs)
         self.doubleClicked.connect(self.play_selected_audio_file)
         self.enterKey.connect(self.play_selected_audio_file)
-        self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
+        self.model2.dataChanged.connect(
+            self.on_cell_data_changed)  # editing cells
         # self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontal_header.sectionResized.connect(self.on_header_resized)
         # Final actions
@@ -202,11 +203,13 @@ class MusicTable(QTableView):
         """Right-click context menu"""
         menu = QMenu(self)
         add_to_playlist_action = QAction("Add to playlist", self)
-        add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
+        add_to_playlist_action.triggered.connect(
+            self.add_selected_files_to_playlist)
         menu.addAction(add_to_playlist_action)
         # edit metadata
         edit_metadata_action = QAction("Edit metadata", self)
-        edit_metadata_action.triggered.connect(self.edit_selected_files_metadata)
+        edit_metadata_action.triggered.connect(
+            self.edit_selected_files_metadata)
         menu.addAction(edit_metadata_action)
         # edit lyrics
         edit_lyrics_action = QAction("Lyrics (View/Edit)", self)
@@ -214,10 +217,12 @@ class MusicTable(QTableView):
         menu.addAction(edit_lyrics_action)
         # jump to current song in table
         jump_to_current_song_action = QAction("Jump to current song", self)
-        jump_to_current_song_action.triggered.connect(self.jump_to_current_song)
+        jump_to_current_song_action.triggered.connect(
+            self.jump_to_current_song)
         menu.addAction(jump_to_current_song_action)
         # open in file explorer
-        open_containing_folder_action = QAction("Open in system file manager", self)
+        open_containing_folder_action = QAction(
+            "Open in system file manager", self)
         open_containing_folder_action.triggered.connect(self.open_directory)
         menu.addAction(open_containing_folder_action)
         # view id3 tags (debug)
@@ -380,59 +385,58 @@ class MusicTable(QTableView):
         self.set_selected_song_qmodel_index()
         self.viewport().update()  # type: ignore
 
-    def on_header_resized(self, logicalIndex, oldSize, newSize):
+    def on_header_resized(self, logicalIndex: int, oldSize: int, newSize: int):
         """Handles keeping headers inside the viewport"""
         # FIXME: how resize good
+        pass
 
         # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
-        col_count = self.model2.columnCount()
-        qtableview_width = self.size().width()
-        sum_of_cols = self.horizontal_header.length()
+        # col_count = self.model2.columnCount()
+        # qtableview_width = self.size().width()
+        # sum_of_cols = self.horizontal_header.length()
         # debug(f'qtable_width: {qtableview_width}')
         # debug(f'sum of cols: {sum_of_cols}')
 
-        # check for discrepancy
-        if sum_of_cols != qtableview_width:
-            # if not the last header
-            if logicalIndex < col_count:
-                next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
-                # If it should shrink
-                if next_header_size > (sum_of_cols - qtableview_width):
-                    # shrink it
-                    self.horizontal_header.resizeSection(
-                        logicalIndex + 1,
-                        next_header_size - (sum_of_cols - qtableview_width),
-                    )
-                else:
-                    # block the resize
-                    self.horizontal_header.resizeSection(logicalIndex, oldSize)
+        # if sum_of_cols != qtableview_width:  # check for discrepancy
+        #     if logicalIndex < col_count:  # if not the last header
+        #         next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
+        #         if next_header_size > (sum_of_cols - qtableview_width): # if it should shrink
+        #             self.horizontal_header.resizeSection(
+        #                 logicalIndex + 1,
+        #                 next_header_size - (sum_of_cols - qtableview_width),
+        #             ) # shrink it
+        #         else:
+        #             self.horizontal_header.resizeSection(logicalIndex, oldSize) # block the resize
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
         # FIXME: broken
-        if isinstance(self.model2, QStandardItemModel):
-            debug("on_cell_data_changed")
-            # get the ID of the row that was edited
-            id_index = self.model2.index(topLeft.row(), 0)
-            # get the db song_id from the row
-            song_id = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
-            user_index = self.headers.user_fields.index("filepath")
-            filepath = self.currentIndex().siblingAtColumn(user_index).data()
-            # update the ID3 information
-            user_input_data = topLeft.data()
-            edited_column_name = self.headers.user_fields[topLeft.column()]
-            debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
-            response = set_tag(filepath, edited_column_name, user_input_data)
-            if response:
-                # Update the library with new metadata
-                update_song_in_database(song_id, edited_column_name, user_input_data)
-            return
 
-    def handle_progress(self, data):
+        # if isinstance(self.model2, QStandardItemModel):
+        debug("on_cell_data_changed")
+        # get the ID of the row that was edited
+        id_index = self.model2.index(topLeft.row(), 0)
+        # get the db song_id from the row
+        song_id: int = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
+        user_index = self.headers.user_fields.index("filepath")
+        filepath = self.currentIndex().siblingAtColumn(user_index).data()
+        # update the ID3 information
+        user_input_data: str = topLeft.data()
+        edited_column_name: str = self.headers.user_fields[topLeft.column()]
+        debug(
+            f"on_cell_data_changed | edited column name: {edited_column_name}")
+        response = set_tag(filepath, edited_column_name, user_input_data)
+        if response:
+            # Update the library with new metadata
+            _ = update_song_in_database(
+                song_id, edited_column_name, user_input_data)
+        return
+
+    def handle_progress(self, data: object):
         """Emits data to main"""
         self.handleProgressSignal.emit(data)
 
-    def on_get_audio_files_recursively_finished(self, result):
+    def on_get_audio_files_recursively_finished(self, result: list[str]):
         """file search completion handler"""
         if result:
             self.add_files_to_library(result)
@@ -456,7 +460,8 @@ class MusicTable(QTableView):
         except IndexError:
             pass
         except Exception as e:
-            debug(f"on_add_files_to_database_finished() | Something went wrong: {e}")
+            debug(
+                f"on_add_files_to_database_finished() | Something went wrong: {e}")
 
     #  ____________________
     # |                    |
@@ -484,8 +489,8 @@ class MusicTable(QTableView):
         - File > Open > List of song(s)
         """
         worker = Worker(add_files_to_database, files)
-        worker.signals.signal_progress.connect(self.qapp.handle_progress)
-        worker.signals.signal_result.connect(self.on_add_files_to_database_finished)
+        _ = worker.signals.signal_progress.connect(self.qapp.handle_progress)
+        _ = worker.signals.signal_result.connect(self.on_add_files_to_database_finished)
         worker.signals.signal_finished.connect(self.load_music_table)
         if self.qapp:
             threadpool = self.qapp.threadpool
@@ -495,15 +500,15 @@ class MusicTable(QTableView):
 
     def add_selected_files_to_playlist(self):
         """Opens a playlist choice menu and adds the currently selected files to the chosen playlist"""
-        playlist_choice_window = AddToPlaylistWindow(self.get_selected_songs_db_ids())
+        playlist_choice_window = AddToPlaylistWindow(
+            self.get_selected_songs_db_ids())
         playlist_choice_window.exec_()
 
     def delete_songs(self):
         """Asks to delete the currently selected songs from the db and music table (not the filesystem)"""
-        # FIXME: determine if we are in a playlist or not
-        # then delete songs from only the playlist
-        # or provide extra questionbox option
+        # NOTE: provide extra questionbox option?
         # | Delete from playlist & lib | Delete from playlist only | Cancel |
+        # Currently, this just deletes from the playlist, or the main lib & any playlists
         selected_filepaths = self.get_selected_songs_filepaths()
         if self.selected_playlist_id:
             question_dialog = QuestionBoxDetails(
@@ -513,9 +518,12 @@ class MusicTable(QTableView):
             )
             reply = question_dialog.execute()
             if reply:
-                worker = Worker(batch_delete_filepaths_from_playlist, selected_filepaths, self.selected_playlist_id)
-                worker.signals.signal_progress.connect(self.qapp.handle_progress)
-                worker.signals.signal_finished.connect(self.delete_selected_row_indices)
+                worker = Worker(batch_delete_filepaths_from_playlist,
+                                selected_filepaths, self.selected_playlist_id)
+                worker.signals.signal_progress.connect(
+                    self.qapp.handle_progress)
+                worker.signals.signal_finished.connect(
+                    self.delete_selected_row_indices)
                 if self.qapp:
                     threadpool = self.qapp.threadpool
                     threadpool.start(worker)
@@ -527,9 +535,12 @@ class MusicTable(QTableView):
             )
             reply = question_dialog.execute()
             if reply:
-                worker = Worker(batch_delete_filepaths_from_database, selected_filepaths)
-                worker.signals.signal_progress.connect(self.qapp.handle_progress)
-                worker.signals.signal_finished.connect(self.delete_selected_row_indices)
+                worker = Worker(
+                    batch_delete_filepaths_from_database, selected_filepaths)
+                worker.signals.signal_progress.connect(
+                    self.qapp.handle_progress)
+                worker.signals.signal_finished.connect(
+                    self.delete_selected_row_indices)
                 if self.qapp:
                     threadpool = self.qapp.threadpool
                     threadpool.start(worker)
@@ -563,7 +574,8 @@ class MusicTable(QTableView):
         """Moves screen to the selected song, then selects the row"""
         debug("jump_to_selected_song")
         # get the proxy model index
-        proxy_index = self.proxymodel.mapFromSource(self.selected_song_qmodel_index)
+        proxy_index = self.proxymodel.mapFromSource(
+            self.selected_song_qmodel_index)
         self.scrollTo(proxy_index)
         self.selectRow(proxy_index.row())
 
@@ -573,7 +585,8 @@ class MusicTable(QTableView):
         # get the proxy model index
         debug(self.current_song_filepath)
         debug(self.current_song_qmodel_index)
-        proxy_index = self.proxymodel.mapFromSource(self.current_song_qmodel_index)
+        proxy_index = self.proxymodel.mapFromSource(
+            self.current_song_qmodel_index)
         self.scrollTo(proxy_index)
         self.selectRow(proxy_index.row())
 
@@ -684,7 +697,8 @@ class MusicTable(QTableView):
                     )
                 # debug(f"reorganize_files() | Moved: {filepath} -> {new_path}")
             except Exception as e:
-                error(f"reorganize_files() | Error moving file: {filepath} | {e}")
+                error(
+                    f"reorganize_files() | Error moving file: {filepath} | {e}")
         # Draw the rest of the owl
         # QMessageBox.information(
         #     self, "Reorganization complete", "Files successfully reorganized"
@@ -709,7 +723,8 @@ class MusicTable(QTableView):
         self.disconnect_layout_changed()
         self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
         self.model2.clear()
-        self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
+        self.model2.setHorizontalHeaderLabels(
+            self.headers.get_user_gui_headers())
         fields = ", ".join(self.headers.user_fields)
         search_clause = (
             "title LIKE ? OR artist LIKE ? OR album LIKE ?"
@@ -731,7 +746,8 @@ class MusicTable(QTableView):
                             query = f"{query} WHERE {search_clause};"
                         else:
                             query = f"{query} AND {search_clause};"
-                        data = db.query(query, (self.selected_playlist_id, params))
+                        data = db.query(
+                            query, (self.selected_playlist_id, params))
                     else:
                         data = db.query(query, (self.selected_playlist_id,))
 
@@ -788,7 +804,8 @@ class MusicTable(QTableView):
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
         current_song_filepath = self.get_current_song_filepath()
-        debug(f"load_music_table() | current filepath: {current_song_filepath}")
+        debug(
+            f"load_music_table() | current filepath: {current_song_filepath}")
         for row in range(self.model2.rowCount()):
             real_index = self.model2.index(
                 row, self.headers.user_fields.index("filepath")
@@ -814,7 +831,8 @@ class MusicTable(QTableView):
         """
         Loads the header widths from the last application close.
         """
-        table_view_column_widths = str(self.config["table"]["column_widths"]).split(",")
+        table_view_column_widths = str(
+            self.config["table"]["column_widths"]).split(",")
         debug(f"loaded header widths: {table_view_column_widths}")
         if not isinstance(table_view_column_widths, list):
             for i in range(self.model2.columnCount() - 1):
@@ -898,7 +916,8 @@ class MusicTable(QTableView):
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
-            idx = self.proxymodel.index(row, self.headers.user_fields.index("filepath"))
+            idx = self.proxymodel.index(
+                row, self.headers.user_fields.index("filepath"))
             filepaths.append(idx.data())
         return filepaths
 

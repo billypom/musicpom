@@ -92,7 +92,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             / "config.ini"
         )
         self.config.read(self.cfg_file)
-        debug(f"\tmain config: {self.config}")
         self.threadpool: QThreadPool = QThreadPool()
         # UI
         self.setupUi(self)
@@ -105,6 +104,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.status_bar.addPermanentWidget(self.permanent_status_label)
         self.setStatusBar(self.status_bar)
 
+        # table
         self.selected_song_filepath: str | None = None
         self.current_song_filepath: str | None = None
         self.current_song_metadata: ID3 | dict | None = None
@@ -113,7 +113,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # widget bits
         self.tableView: MusicTable
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
-        # self.player: QMediaPlayer = QMediaPlayer()  # Audio player object
         self.player: QMediaPlayer = MediaPlayer()
         # set index on choose song
         # index is the model2's row number? i guess?
@@ -143,6 +142,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # sharing functions with other classes and that
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
+        self.playlistTreeView.load_qapp(self)
         self.headers = HeaderTags()
 
         # Settings init
@@ -214,7 +214,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.tableView.load_music_table
         )
         self.playlistTreeView.allSongsSignal.connect(self.tableView.load_music_table)
-        self.playlistTreeView.set_threadpool(self.threadpool)
 
         # albumGraphicsView
         self.albumGraphicsView.albumArtDropped.connect(
@@ -393,15 +392,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def load_config(self) -> None:
         """does what it says"""
         cfg_file = (
-            Path(user_config_dir(appname="musicpom", appauthor="billypom"))
-            / "config.ini"
+            Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
         )
         self.config.read(cfg_file)
         debug("load_config()")
-
-    def get_thread_pool(self) -> QThreadPool:
-        """Returns the threadpool instance"""
-        return self.threadpool
 
     def set_permanent_status_bar_message(self, message: str) -> None:
         """
