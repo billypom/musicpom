@@ -3,7 +3,8 @@ matplotlib
 appdirs
 pyqt5
 pydub
-pyqtdarktheme-fork; python_version > '3.11'
-pyqtdarktheme; python_version < '3.12'
+audioop-lts
+pyqtdarktheme-fork; python_version < '3.11'
+pyqtdarktheme; python_version > '3.12'
 pyqtgraph
 scipy

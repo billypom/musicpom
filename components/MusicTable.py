@@ -75,58 +75,38 @@ class MusicTable(QTableView):
     focusEnterSignal = pyqtSignal()
     focusLeaveSignal = pyqtSignal()
 
-    def focusInEvent(self, e):
-        """
-        Event filter: when self is focused
-        """
-        self.focusEnterSignal.emit()
-        # arrow keys act normal
-        super().focusInEvent(e)
-
-    def focusOutEvent(self, e):
-        """
-        Event filter: when self becomes unfocused
-        """
-        self.focusLeaveSignal.emit()
-
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
         # why do i need this?
         self.application_window = application_window
-
-        # NOTE: wtf is actually going on here with the models?
-        # Create QStandardItemModel
-        # Create QSortFilterProxyModel
-        # Set QSortFilterProxyModel source to QStandardItemModel
-        # Set QTableView model to the Proxy model
-        # so it looks like this, i guess:
-        # QTableView model2 = QSortFilterProxyModel(QStandardItemModel)
-
-        # need a standard item model to do actions on cells
-        self.model2: QStandardItemModel = QStandardItemModel()
-        # proxy model for sorting i guess?
-        self.proxymodel = QSortFilterProxyModel()
-        self.proxymodel.setSourceModel(self.model2)
-        self.setModel(self.proxymodel)
-        self.setSortingEnabled(True)
-        self.search_string = None
-
+        self.config = ConfigParser()
         # Config
         cfg_file = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
         )
-        self.config = ConfigParser()
         self.config.read(cfg_file)
         debug(f"music table config: {self.config}")
 
-        # Threads
-        self.threadpool = QThreadPool
-        # headers class thing
-        self.headers = HeaderTags()
+        # NOTE:
+        # QTableView model2 = QSortFilterProxyModel(QStandardItemModel)
+        #
+        # wtf is actually going on here with the models?
+        # Create QStandardItemModel
+        # Create QSortFilterProxyModel
+        # Set QSortFilterProxyModel source to QStandardItemModel
+        # Set QTableView model to the Proxy model
+        # so it looks like that, i guess
 
+        # need a QStandardItemModel to do actions on cells
+        self.model2: QStandardItemModel = QStandardItemModel()
+        self.proxymodel = QSortFilterProxyModel()
+        self.search_string = None
+        self.threadpool = QThreadPool
+        self.headers = HeaderTags()
         # db names of headers
-        self.database_columns = str(self.config["table"]["columns"]).split(",")
+        self.database_columns: list[str] = str(
+            self.config["table"]["columns"]).split(",")
         self.vertical_scroll_position = 0
         self.selected_song_filepath = ""
         self.selected_song_qmodel_index: QModelIndex
@@ -134,6 +114,11 @@ class MusicTable(QTableView):
         self.current_song_db_id = None
         self.current_song_qmodel_index: QModelIndex
         self.selected_playlist_id: int | None = None
+
+        # proxy model for sorting i guess?
+        self.proxymodel.setSourceModel(self.model2)
+        self.setModel(self.proxymodel)
+        self.setSortingEnabled(True)
 
         # Properties
         self.setAcceptDrops(True)
@@ -174,6 +159,20 @@ class MusicTable(QTableView):
     # | Built-in Events |
     # |                 |
     # |_________________|
+
+    def focusInEvent(self, e):
+        """
+        Event filter: when self is focused
+        """
+        self.focusEnterSignal.emit()
+        # arrow keys act normal
+        super().focusInEvent(e)
+
+    def focusOutEvent(self, e):
+        """
+        Event filter: when self becomes unfocused
+        """
+        self.focusLeaveSignal.emit()
 
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
         """Do something when the QTableView is resized"""
@@ -490,7 +489,8 @@ class MusicTable(QTableView):
         """
         worker = Worker(add_files_to_database, files)
         _ = worker.signals.signal_progress.connect(self.qapp.handle_progress)
-        _ = worker.signals.signal_result.connect(self.on_add_files_to_database_finished)
+        _ = worker.signals.signal_result.connect(
+            self.on_add_files_to_database_finished)
         worker.signals.signal_finished.connect(self.load_music_table)
         if self.qapp:
             threadpool = self.qapp.threadpool
@@ -660,7 +660,7 @@ class MusicTable(QTableView):
     def reorganize_files(self, filepaths, progress_callback=None):
         """
         Reorganizes files into Artist/Album/Song,
-        based on self.config['directories'][reorganize_destination']
+        based on self.config['settings'][reorganize_destination']
         """
         debug("reorganizing files")
         # FIXME: batch update, instead of doing 1 file at a time
@@ -671,7 +671,7 @@ class MusicTable(QTableView):
         # FIXME: change reorganize location in config, try to reorganize, failed - old reference
 
         # Get target directory
-        target_dir = str(self.config["directories"]["reorganize_destination"])
+        target_dir = str(self.config["settings"]["reorganize_destination"])
         for filepath in filepaths:
             # Read file metadata
             artist, album = get_reorganize_vars(filepath)
@@ -737,7 +737,8 @@ class MusicTable(QTableView):
             self.selected_playlist_id = playlist_id[0]
             try:
                 with DBA.DBAccess() as db:
-                    query = f"SELECT id, {fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
+                    query = f"SELECT id, {
+                        fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
                     # fulltext search
                     if self.search_string:
                         # params = 3 * [self.search_string]
@@ -821,7 +822,8 @@ class MusicTable(QTableView):
         db_name: str = self.config.get("settings", "db").split("/").pop()
         db_filename = self.config.get("settings", "db")
         self.playlistStatsSignal.emit(
-            f"Songs: {row_count} | Total time: {total_time} | {db_name} | {db_filename}"
+            f"Songs: {row_count} | Total time: {
+                total_time} | {db_name} | {db_filename}"
         )
         self.loadMusicTableSignal.emit()
         self.connect_data_changed()

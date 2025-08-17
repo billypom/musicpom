@@ -57,6 +57,8 @@ from utils import (
     add_files_to_database,
     set_album_art,
     id3_remap,
+    get_album_art,
+    Worker
 )
 from components import (
     HeaderTags,
@@ -68,9 +70,6 @@ from components import (
     ExportPlaylistWindow,
     SearchLineEdit,
 )
-from utils.get_album_art import get_album_art
-# from utils.Worker import Worker
-from utils import Worker
 
 # good help with signals slots in threads
 # https://stackoverflow.com/questions/52993677/how-do-i-setup-signals-and-slots-in-pyqt-with-qthreads-in-both-directions
@@ -162,18 +161,23 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.playbackSlider.sliderReleased.connect(
             lambda: self.player.setPosition(self.playbackSlider.value())
         )  # sliderReleased works better than sliderMoved
-        self.volumeSlider.sliderMoved[int].connect(lambda: self.on_volume_changed())
+        self.volumeSlider.sliderMoved[int].connect(
+            lambda: self.on_volume_changed())
         self.speedSlider.sliderMoved.connect(
             lambda: self.on_speed_changed(self.speedSlider.value())
         )
         # self.speedSlider.doubleClicked.connect(lambda: self.on_speed_changed(1))
-        self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
+        self.playButton.clicked.connect(
+            self.on_play_clicked)  # Click to play/pause
         self.previousButton.clicked.connect(self.on_prev_clicked)
-        self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
+        self.nextButton.clicked.connect(
+            self.on_next_clicked)  # Click to next song
 
         # FILE MENU
-        self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
-        self.actionNewPlaylist.triggered.connect(self.playlistTreeView.create_playlist)
+        self.actionOpenFiles.triggered.connect(
+            self.open_files)  # Open files window
+        self.actionNewPlaylist.triggered.connect(
+            self.playlistTreeView.create_playlist)
         self.actionExportPlaylist.triggered.connect(self.export_playlist)
 
         # EDIT MENU
@@ -195,14 +199,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.lineEditSearch: QLineEdit
 
         # CONNECTIONS
-        self.lineEditSearch.textTypedSignal.connect(self.handle_search_box_text)
+        self.lineEditSearch.textTypedSignal.connect(
+            self.handle_search_box_text)
         # tableView
         self.tableView.playSignal.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(
             self.on_play_clicked
         )  # Spacebar toggle play/pause signal
         self.tableView.handleProgressSignal.connect(self.handle_progress)
-        self.tableView.searchBoxSignal.connect(self.handle_search_box_visibility)
+        self.tableView.searchBoxSignal.connect(
+            self.handle_search_box_visibility)
         self.tableView.playlistStatsSignal.connect(
             self.set_permanent_status_bar_message
         )
@@ -213,7 +219,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.playlistTreeView.playlistChoiceSignal.connect(
             self.tableView.load_music_table
         )
-        self.playlistTreeView.allSongsSignal.connect(self.tableView.load_music_table)
+        self.playlistTreeView.allSongsSignal.connect(
+            self.tableView.load_music_table)
 
         # albumGraphicsView
         self.albumGraphicsView.albumArtDropped.connect(
@@ -315,7 +322,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         current_real_index = self.tableView.current_song_qmodel_index
         try:
             index = self.tableView.proxymodel.mapFromSource(current_real_index)
-        except:
+        except Exception:
             return
         row: int = index.row()
         prev_row: int = row - 1
@@ -392,7 +399,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def load_config(self) -> None:
         """does what it says"""
         cfg_file = (
-            Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+            Path(user_config_dir(appname="musicpom",
+                 appauthor="billypom")) / "config.ini"
         )
         self.config.read(cfg_file)
         debug("load_config()")
@@ -470,7 +478,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         selected_songs = self.tableView.get_selected_songs_filepaths()
         for song in selected_songs:
             debug(
-                f"main.py set_album_art_for_selected_songs() | updating album art for {song}"
+                f"main.py set_album_art_for_selected_songs() | updating album art for {
+                    song}"
             )
             set_album_art(song, album_art_path)
 
@@ -497,7 +506,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                 self.playbackSlider.setMaximum(self.player.duration())
                 slider_position = self.player.position()
                 self.playbackSlider.setValue(slider_position)
-                current_minutes, current_seconds = divmod(slider_position / 1000, 60)
+                current_minutes, current_seconds = divmod(
+                    slider_position / 1000, 60)
                 duration_minutes, duration_seconds = divmod(
                     self.player.duration() / 1000, 60
                 )
@@ -548,7 +558,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def create_playlist(self) -> None:
         """Creates a database record for a playlist, given a name"""
         window = CreatePlaylistWindow(self.playlistCreatedSignal)
-        window.playlistCreatedSignal.connect(self.add_latest_playlist_to_tree)  # type: ignore
+        window.playlistCreatedSignal.connect(
+            self.add_latest_playlist_to_tree)  # type: ignore
         window.exec_()
 
     def import_playlist(self) -> None:
@@ -574,8 +585,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         preferences_window = PreferencesWindow(
             self.reloadConfigSignal, self.reloadDatabaseSignal
         )
-        preferences_window.reloadConfigSignal.connect(self.load_config)  # type: ignore
-        preferences_window.reloadDatabaseSignal.connect(self.tableView.load_music_table)  # type: ignore
+        preferences_window.reloadConfigSignal.connect(
+            self.load_config)  # type: ignore
+        preferences_window.reloadDatabaseSignal.connect(
+            self.tableView.load_music_table)  # type: ignore
         preferences_window.exec_()  # Display the preferences window modally
 
     # Quick Actions
@@ -609,9 +622,11 @@ def update_database_file() -> bool:
     Reads the database file (specified by config file)
     """
     cfg_file = (
-        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+        Path(user_config_dir(appname="musicpom",
+             appauthor="billypom")) / "config.ini"
     )
-    cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
+    cfg_path = str(Path(user_config_dir(
+        appname="musicpom", appauthor="billypom")))
     config = ConfigParser()
     config.read(cfg_file)
     db_filepath: str = config.get("settings", "db")
@@ -620,9 +635,10 @@ def update_database_file() -> bool:
     if not db_filepath.startswith(cfg_path):
         new_path = f"{cfg_path}/{db_filepath}"
         debug(
-            f"Set new config [db] database path: \n> Current: {db_filepath}\n> New:{new_path}"
+            f"Set new config [db] database path: \n> Current: {
+                db_filepath}\n> New:{new_path}"
         )
-        config["db"]["database"] = new_path
+        config["settings"]["db"] = new_path
         # Save the config
         with open(cfg_file, "w") as configfile:
             config.write(configfile)
@@ -654,9 +670,11 @@ def update_config_file() -> ConfigParser:
     If the user config file is not up to date, update it with examples from sample config
     """
     cfg_file = (
-        Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
+        Path(user_config_dir(appname="musicpom",
+             appauthor="billypom")) / "config.ini"
     )
-    cfg_path = str(Path(user_config_dir(appname="musicpom", appauthor="billypom")))
+    cfg_path = str(Path(user_config_dir(
+        appname="musicpom", appauthor="billypom")))
 
     # If config path doesn't exist, create it
     if not os.path.exists(cfg_path):
@@ -720,8 +738,8 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     clipboard = app.clipboard()
     # Dark theme >:3
-    qdarktheme.setup_theme()
-    # qdarktheme.setup_theme("auto") # this is supposed to work but doesnt
+    # qdarktheme.setup_theme()
+    qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
     # Show the UI
     ui = ApplicationWindow(clipboard)
     # window size
