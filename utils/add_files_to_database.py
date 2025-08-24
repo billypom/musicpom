@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QMessageBox
-from mutagen.id3 import ID3
 import DBA
 from logging import debug
 from utils import get_tags, convert_id3_timestamp_to_datetime, id3_remap
@@ -8,7 +6,7 @@ from pathlib import Path
 from appdirs import user_config_dir
 
 
-def add_files_to_database(files, progress_callback=None):
+def add_files_to_database(files: list[str], playlist_id: int | None = None, progress_callback=None) -> tuple[bool, dict[str, str]]:
     """
     Adds audio file(s) to the sqllite db "song" table
     Args:
@@ -21,26 +19,40 @@ def add_files_to_database(files, progress_callback=None):
     (True, {"filename.mp3":"failed because i said so"})
     ```
     """
+    # yea
+    if playlist_id:
+        pass
+
     config = ConfigParser()
     cfg_file = (
         Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini"
     )
-    config.read(cfg_file)
+    _ = config.read(cfg_file)
     if not files:
         return False, {"Failure": "All operations failed in add_files_to_database()"}
-    failed_dict = {}
-    insert_data = []  # To store data for batch insert
+    failed_dict: dict[str, str] = {}
+    insert_data: list[tuple[
+    str, 
+    str | int | None, 
+    str | int | None, 
+    str | int | None, 
+    str | int | None, 
+    str | int | None, 
+    str, 
+    str | int | None, 
+    str | int | None, 
+    str | int | None]] = []  # To store data for batch insert
     for filepath in files:
         if progress_callback:
             progress_callback.emit(filepath)
         filename = filepath.split("/")[-1]
-
-        tags, details = get_tags(filepath)
-        if details:
-            failed_dict[filepath] = details
+        tags, fail_reason = get_tags(filepath)
+        if fail_reason:
+            # if we fail to get audio tags, skip to next song
+            failed_dict[filepath] = fail_reason
             continue
-        audio = id3_remap(tags)
-
+        # remap tags from ID3 to database tags
+        audio: dict[str, str | int | None] = id3_remap(tags)
         # Append data tuple to insert_data list
         insert_data.append(
             (
@@ -60,21 +72,22 @@ def add_files_to_database(files, progress_callback=None):
         if len(insert_data) >= 1000:
             debug(f"inserting a LOT of songs: {len(insert_data)}")
             with DBA.DBAccess() as db:
-                db.executemany(
-                    "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                result = db.executemany(
+                    "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
                     insert_data,
                 )
+            debug('IMPORTANT')
+            debug(f'batch insert result: {result}')
+            debug('IMPORTANT')
             insert_data = []  # Reset the insert_data list
-        else:
-            # continue adding files if we havent reached big length
-            continue
-    # Insert any remaining data
-    debug("i check for insert data")
+    # Insert any remaining data after reading every file
     if insert_data:
-        debug(f"inserting some songs: {len(insert_data)}")
         with DBA.DBAccess() as db:
-            db.executemany(
-                "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            result = db.executemany(
+                "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
                 insert_data,
             )
+        debug('IMPORTANT')
+        debug(f'batch insert result: {result}')
+        debug('IMPORTANT')
     return True, failed_dict

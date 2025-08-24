@@ -34,7 +34,7 @@ def get_mp3_tags(filename: str) -> tuple[MP3 | ID3 | FLAC, str]:
         return MP3(), f"Could not assign ID3 tag to file: {e}"
 
 
-def id3_remap(audio: MP3 | ID3 | FLAC) -> dict:
+def id3_remap(audio: MP3 | ID3 | FLAC) -> dict[str, str | int | None]:
     """
     Turns the ID3 dict of an audio file into a normal dict that I, the human, can use.
     Add extra fields too :D yahooo

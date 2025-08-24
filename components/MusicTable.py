@@ -1,4 +1,3 @@
-from mutagen.id3 import ID3
 import DBA
 from PyQt5.QtGui import (
     QColor,
@@ -14,6 +13,7 @@ from PyQt5.QtGui import (
 )
 from PyQt5.QtWidgets import (
     QAction,
+    QApplication,
     QHeaderView,
     QMenu,
     QTableView,
@@ -26,11 +26,9 @@ from PyQt5.QtCore import (
     QSortFilterProxyModel,
     Qt,
     QModelIndex,
-    QThreadPool,
     pyqtSignal,
 )
 from components.DebugWindow import DebugWindow
-from components.ErrorDialog import ErrorDialog
 from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
@@ -40,11 +38,9 @@ from components.HeaderTags import HeaderTags
 from utils import (
     batch_delete_filepaths_from_database,
     batch_delete_filepaths_from_playlist,
-    delete_song_id_from_database,
     add_files_to_database,
     get_reorganize_vars,
     update_song_in_database,
-    get_album_art,
     id3_remap,
     get_tags,
     set_tag,
@@ -59,21 +55,20 @@ from pathlib import Path
 from appdirs import user_config_dir
 from configparser import ConfigParser
 
-
 class MusicTable(QTableView):
-    playlistStatsSignal = pyqtSignal(str)
-    loadMusicTableSignal = pyqtSignal()
-    sortSignal = pyqtSignal()
-    playPauseSignal = pyqtSignal()
-    playSignal = pyqtSignal(str)
-    enterKey = pyqtSignal()
-    deleteKey = pyqtSignal()
-    refreshMusicTableSignal = pyqtSignal()
-    handleProgressSignal = pyqtSignal(str)
-    getThreadPoolSignal = pyqtSignal()
-    searchBoxSignal = pyqtSignal()
-    focusEnterSignal = pyqtSignal()
-    focusLeaveSignal = pyqtSignal()
+    playlistStatsSignal: pyqtSignal = pyqtSignal(str)
+    loadMusicTableSignal: pyqtSignal = pyqtSignal()
+    sortSignal: pyqtSignal = pyqtSignal()
+    playPauseSignal: pyqtSignal = pyqtSignal()
+    playSignal: pyqtSignal = pyqtSignal(str)
+    enterKey: pyqtSignal = pyqtSignal()
+    deleteKey: pyqtSignal = pyqtSignal()
+    refreshMusicTableSignal: pyqtSignal = pyqtSignal()
+    handleProgressSignal: pyqtSignal = pyqtSignal(str)
+    getThreadPoolSignal: pyqtSignal = pyqtSignal()
+    searchBoxSignal: pyqtSignal = pyqtSignal()
+    focusEnterSignal: pyqtSignal = pyqtSignal()
+    focusLeaveSignal: pyqtSignal = pyqtSignal()
 
     def __init__(self, parent=None, application_window=None):
         super().__init__(parent)
@@ -85,7 +80,7 @@ class MusicTable(QTableView):
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
         )
-        self.config.read(cfg_file)
+        _ = self.config.read(cfg_file)
         debug(f"music table config: {self.config}")
 
         # NOTE:
@@ -96,13 +91,12 @@ class MusicTable(QTableView):
         # Create QSortFilterProxyModel
         # Set QSortFilterProxyModel source to QStandardItemModel
         # Set QTableView model to the Proxy model
-        # so it looks like that, i guess
+        # so it looks like the above note, i guess
 
         # need a QStandardItemModel to do actions on cells
         self.model2: QStandardItemModel = QStandardItemModel()
-        self.proxymodel = QSortFilterProxyModel()
-        self.search_string = None
-        self.threadpool = QThreadPool
+        self.proxymodel: QSortFilterProxyModel = QSortFilterProxyModel()
+        self.search_string: str | None = None
         self.headers = HeaderTags()
         # db names of headers
         self.database_columns: list[str] = str(
@@ -144,8 +138,7 @@ class MusicTable(QTableView):
         self.deleteKey.connect(self.delete_songs)
         self.doubleClicked.connect(self.play_selected_audio_file)
         self.enterKey.connect(self.play_selected_audio_file)
-        self.model2.dataChanged.connect(
-            self.on_cell_data_changed)  # editing cells
+        self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
         # self.model2.layoutChanged.connect(self.restore_scroll_position)
         self.horizontal_header.sectionResized.connect(self.on_header_resized)
         # Final actions
@@ -202,35 +195,32 @@ class MusicTable(QTableView):
         """Right-click context menu"""
         menu = QMenu(self)
         add_to_playlist_action = QAction("Add to playlist", self)
-        add_to_playlist_action.triggered.connect(
-            self.add_selected_files_to_playlist)
+        _ = add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
         menu.addAction(add_to_playlist_action)
         # edit metadata
         edit_metadata_action = QAction("Edit metadata", self)
-        edit_metadata_action.triggered.connect(
-            self.edit_selected_files_metadata)
+        _ = edit_metadata_action.triggered.connect(self.edit_selected_files_metadata)
         menu.addAction(edit_metadata_action)
         # edit lyrics
         edit_lyrics_action = QAction("Lyrics (View/Edit)", self)
-        edit_lyrics_action.triggered.connect(self.show_lyrics_menu)
+        _ = edit_lyrics_action.triggered.connect(self.show_lyrics_menu)
         menu.addAction(edit_lyrics_action)
         # jump to current song in table
         jump_to_current_song_action = QAction("Jump to current song", self)
-        jump_to_current_song_action.triggered.connect(
-            self.jump_to_current_song)
+        _ = jump_to_current_song_action.triggered.connect(self.jump_to_current_song)
         menu.addAction(jump_to_current_song_action)
         # open in file explorer
         open_containing_folder_action = QAction(
             "Open in system file manager", self)
-        open_containing_folder_action.triggered.connect(self.open_directory)
+        _ = open_containing_folder_action.triggered.connect(self.open_directory)
         menu.addAction(open_containing_folder_action)
         # view id3 tags (debug)
         view_id3_tags_debug = QAction("View ID3 tags (debug)", self)
-        view_id3_tags_debug.triggered.connect(self.view_id3_tags_debug_menu)
+        _ = view_id3_tags_debug.triggered.connect(self.view_id3_tags_debug_menu)
         menu.addAction(view_id3_tags_debug)
         # delete song
         delete_action = QAction("Delete", self)
-        delete_action.triggered.connect(self.delete_songs)
+        _ = delete_action.triggered.connect(self.delete_songs)
         menu.addAction(delete_action)
         # show
         self.set_selected_song_filepath()
@@ -261,8 +251,8 @@ class MusicTable(QTableView):
         data = e.mimeData()
         debug("dropEvent")
         if data and data.hasUrls():
-            directories = []
-            files = []
+            directories: list[str] = []
+            files: list[str] = []
             for url in data.urls():
                 if url.isLocalFile():
                     path = url.toLocalFile()
@@ -275,11 +265,9 @@ class MusicTable(QTableView):
             e.accept()
             if directories:
                 worker = Worker(self.get_audio_files_recursively, directories)
-                worker.signals.signal_progress.connect(self.handle_progress)
-                worker.signals.signal_result.connect(
-                    self.on_get_audio_files_recursively_finished
-                )
-                worker.signals.signal_finished.connect(self.load_music_table)
+                _ = worker.signals.signal_progress.connect(self.handle_progress)
+                _ = worker.signals.signal_result.connect(self.on_get_audio_files_recursively_finished)
+                _ = worker.signals.signal_finished.connect(self.load_music_table)
                 if self.qapp:
                     threadpool = self.qapp.threadpool
                     threadpool.start(worker)
@@ -301,9 +289,8 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row(), index.column() + 1)
             if new_index.isValid():
-                # print(f"right -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
-                self.viewport().update()  # type: ignore
+                self.viewport().update()
             super().keyPressEvent(e)
             return
 
@@ -311,9 +298,8 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row(), index.column() - 1)
             if new_index.isValid():
-                # print(f"left -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
-                self.viewport().update()  # type: ignore
+                self.viewport().update()
             super().keyPressEvent(e)
             return
 
@@ -321,9 +307,8 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row() - 1, index.column())
             if new_index.isValid():
-                # print(f"up -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
-                self.viewport().update()  # type: ignore
+                self.viewport().update()
             super().keyPressEvent(e)
             return
 
@@ -331,15 +316,14 @@ class MusicTable(QTableView):
             index = self.currentIndex()
             new_index = self.model2.index(index.row() + 1, index.column())
             if new_index.isValid():
-                # print(f"down -> ({new_index.row()},{new_index.column()})")
                 self.setCurrentIndex(new_index)
-                self.viewport().update()  # type: ignore
+                self.viewport().update()
             super().keyPressEvent(e)
             return
 
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             if self.state() != QAbstractItemView.EditingState:
-                self.enterKey.emit()  # Enter key detected
+                self.enterKey.emit()
             else:
                 super().keyPressEvent(e)
         else:  # Default behavior
@@ -450,8 +434,10 @@ class MusicTable(QTableView):
             - data returned from the original worker process function are returned here
               as the first item in a tuple
         """
-        _, details = args[0][:2]
+        print('hello?')
+        print(args)
         try:
+            _, details = args[0][:2]
             details = dict(tuple(details)[0])
             if details:
                 window = DebugWindow(details)
@@ -484,14 +470,15 @@ class MusicTable(QTableView):
     def add_files_to_library(self, files: list[str]) -> None:
         """
         Spawns a worker thread - adds a list of filepaths to the library
+
         - Drag & Drop song(s) on tableView
         - File > Open > List of song(s)
         """
-        worker = Worker(add_files_to_database, files)
+        debug('add_files_to_library()')
+        worker = Worker(add_files_to_database, files, None)
         _ = worker.signals.signal_progress.connect(self.qapp.handle_progress)
-        _ = worker.signals.signal_result.connect(
-            self.on_add_files_to_database_finished)
-        worker.signals.signal_finished.connect(self.load_music_table)
+        _ = worker.signals.signal_result.connect(self.on_add_files_to_database_finished)
+        _ = worker.signals.signal_finished.connect(self.load_music_table)
         if self.qapp:
             threadpool = self.qapp.threadpool
             threadpool.start(worker)
@@ -711,7 +698,7 @@ class MusicTable(QTableView):
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
 
-    def load_music_table(self, *playlist_id):
+    def load_music_table(self, *playlist_id: int):
         """
         Loads data into self (QTableView)
         Loads all songs in library, by default
@@ -721,7 +708,7 @@ class MusicTable(QTableView):
         """
         self.disconnect_data_changed()
         self.disconnect_layout_changed()
-        self.vertical_scroll_position = self.verticalScrollBar().value()  # type: ignore
+        self.vertical_scroll_position = self.verticalScrollBar().value()
         self.model2.clear()
         self.model2.setHorizontalHeaderLabels(
             self.headers.get_user_gui_headers())
@@ -845,10 +832,8 @@ class MusicTable(QTableView):
         Sorts the data in QTableView (self) by multiple columns
         as defined in config.ini
         """
-        # TODO: Rewrite this function to use self.load_music_table() with dynamic SQL queries
-        # in order to sort the data more effectively & have more control over UI refreshes.
 
-        # Disconnect these signals to prevent unnecessary loads
+        # Disconnect these signals to prevent unnecessary reloads
         debug("sort_table_by_multiple_columns()")
         self.disconnect_data_changed()
         self.disconnect_layout_changed()
@@ -879,6 +864,8 @@ class MusicTable(QTableView):
         self.connect_data_changed()
         self.connect_layout_changed()
         # self.model2.layoutChanged.emit()
+        # TODO: Rewrite this function to use self.load_music_table() with dynamic SQL queries
+        # in order to sort the data more effectively & have more control over UI refreshes.
 
     def restore_scroll_position(self) -> None:
         """Restores the scroll position"""
@@ -888,10 +875,10 @@ class MusicTable(QTableView):
         #     lambda: self.verticalScrollBar().setValue(self.vertical_scroll_position),
         # )
 
-    def get_audio_files_recursively(self, directories, progress_callback=None):
+    def get_audio_files_recursively(self, directories: list[str], progress_callback=None) -> list[str]:
         """Scans a directories for files"""
         extensions = self.config.get("settings", "extensions").split(",")
-        audio_files = []
+        audio_files: list[str] = []
         for directory in directories:
             for root, _, files in os.walk(directory):
                 for file in files:
@@ -965,9 +952,7 @@ class MusicTable(QTableView):
                 self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole
             )
             with DBA.DBAccess() as db:
-                filepath = db.query("SELECT filepath FROM song WHERE id = ?", (id,))[0][
-                    0
-                ]
+                filepath = db.query("SELECT filepath FROM song WHERE id = ?", (id,))[0][0]
         self.selected_song_filepath = filepath
 
     def set_current_song_filepath(self, filepath=None) -> None:
@@ -984,7 +969,7 @@ class MusicTable(QTableView):
         else:
             self.current_song_filepath = filepath
 
-    def set_current_song_qmodel_index(self, index=None):
+    def set_current_song_qmodel_index(self, index: QModelIndex | None = None):
         """
         Takes in the proxy model index for current song - QModelIndex
         converts to model2 index
@@ -994,9 +979,9 @@ class MusicTable(QTableView):
             index = self.currentIndex()
         # map proxy (sortable) model to the original model (used for interactions)
         real_index: QModelIndex = self.proxymodel.mapToSource(index)
-        self.current_song_qmodel_index: QModelIndex = real_index
+        self.current_song_qmodel_index = real_index
 
-    def set_selected_song_qmodel_index(self, index=None):
+    def set_selected_song_qmodel_index(self, index: QModelIndex | None = None):
         """
         Takes in the proxy model index for current song - QModelIndex
         converts to model2 index
@@ -1006,15 +991,15 @@ class MusicTable(QTableView):
             index = self.currentIndex()
         # map proxy (sortable) model to the original model (used for interactions)
         real_index: QModelIndex = self.proxymodel.mapToSource(index)
-        self.selected_song_qmodel_index: QModelIndex = real_index
+        self.selected_song_qmodel_index = real_index
 
     def set_search_string(self, text: str):
         """set the search string"""
         self.search_string = text
 
-    def load_qapp(self, qapp) -> None:
+    def load_qapp(self, qapp: QApplication) -> None:
         """Necessary for using members and methods of main application window"""
-        self.qapp = qapp
+        self.qapp: QApplication = qapp
 
     #  ____________________
     # |                    |
@@ -1033,7 +1018,7 @@ class MusicTable(QTableView):
     def connect_data_changed(self):
         """Connects the dataChanged signal from QTableView.model"""
         try:
-            self.model2.dataChanged.connect(self.on_cell_data_changed)
+            _ = self.model2.dataChanged.connect(self.on_cell_data_changed)
         except Exception:
             pass
 
@@ -1047,7 +1032,7 @@ class MusicTable(QTableView):
     def connect_layout_changed(self):
         """Connects the layoutChanged signal from QTableView.model"""
         try:
-            self.model2.layoutChanged.connect(self.restore_scroll_position)
+            _ = self.model2.layoutChanged.connect(self.restore_scroll_position)
         except Exception:
             pass
 

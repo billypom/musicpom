@@ -12,7 +12,7 @@ from mutagen.id3 import ID3
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
-from logging import debug, error, warning, basicConfig, INFO, DEBUG
+from logging import debug, error, basicConfig, DEBUG
 from ui import Ui_MainWindow
 from PyQt5.QtWidgets import (
     QFileDialog,
@@ -21,34 +21,25 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QApplication,
     QGraphicsScene,
-    QGraphicsPixmapItem,
     QMessageBox,
     QPushButton,
     QStatusBar,
     QStyle,
-    QTableView,
 )
 from PyQt5.QtCore import (
     QModelIndex,
     QSize,
-    QThread,
     QUrl,
     QTimer,
-    Qt,
     pyqtSignal,
-    QObject,
-    pyqtSlot,
     QThreadPool,
-    QRunnable,
 )
 from PyQt5.QtMultimedia import (
     QMediaPlayer,
     QMediaContent,
     QAudioProbe,
-    QMediaPlaylist,
-    QMultimedia,
 )
-from PyQt5.QtGui import QClipboard, QCloseEvent, QFont, QPixmap, QResizeEvent
+from PyQt5.QtGui import QCloseEvent, QFont, QResizeEvent
 from utils import (
     delete_album_art,
     get_tags,
@@ -68,7 +59,6 @@ from components import (
     AudioVisualizer,
     CreatePlaylistWindow,
     ExportPlaylistWindow,
-    SearchLineEdit,
 )
 
 # good help with signals slots in threads
@@ -79,14 +69,14 @@ from components import (
 
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
-    reloadConfigSignal = pyqtSignal()
-    reloadDatabaseSignal = pyqtSignal()
+    reloadConfigSignal: pyqtSignal = pyqtSignal()
+    reloadDatabaseSignal: pyqtSignal = pyqtSignal()
 
     def __init__(self, clipboard):
         super(ApplicationWindow, self).__init__()
         self.clipboard = clipboard
         self.config: ConfigParser = ConfigParser()
-        self.cfg_file = (
+        self.cfg_file: Path = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
         )
@@ -119,14 +109,15 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.audio_visualizer: AudioVisualizer = AudioVisualizer(
             self.player, self.probe, self.PlotWidget
         )
-        self.timer = QTimer(self)  # for playback slider and such
+        self.timer: QTimer = QTimer(parent=self)  # for playback slider and such
 
         # Button styles
+        style: QStyle | None
         if not self.style():
             style = QStyle()
         else:
             style = self.style()
-        assert style is not None  # i hate linting errors
+        assert style is not None
         pixmapi = QStyle.StandardPixmap.SP_MediaSkipForward
         icon = style.standardIcon(pixmapi)
         self.nextButton.setIcon(icon)
@@ -380,7 +371,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
 
-        font: QFont = QFont()
         font.setPointSize(12)
         font.setBold(False)
         self.titleLabel.setFont(font)
@@ -388,7 +378,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
 
-        font: QFont = QFont()
         font.setPointSize(12)
         font.setItalic(True)
         self.albumLabel.setFont(font)
@@ -585,10 +574,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         preferences_window = PreferencesWindow(
             self.reloadConfigSignal, self.reloadDatabaseSignal
         )
-        preferences_window.reloadConfigSignal.connect(
-            self.load_config)  # type: ignore
-        preferences_window.reloadDatabaseSignal.connect(
-            self.tableView.load_music_table)  # type: ignore
+        preferences_window.reloadConfigSignal.connect(self.load_config)
+        preferences_window.reloadDatabaseSignal.connect(self.tableView.load_music_table)
         preferences_window.exec_()  # Display the preferences window modally
 
     # Quick Actions
@@ -606,11 +593,11 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def delete_database(self) -> None:
         """Deletes the entire database"""
         reply = QMessageBox.question(
-            self,
-            "Confirmation",
-            "Delete database?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
+            parent=self,
+            title="Confirmation",
+            text="Delete database?",
+            buttons=QMessageBox.Yes | QMessageBox.No,
+            defaultButton=QMessageBox.Yes,
         )
         if reply == QMessageBox.Yes:
             initialize_db()
@@ -629,7 +616,8 @@ def update_database_file() -> bool:
         appname="musicpom", appauthor="billypom")))
     config = ConfigParser()
     config.read(cfg_file)
-    db_filepath: str = config.get("settings", "db")
+    db_filepath: str
+    db_filepath= config.get("settings", "db")
 
     # If the database location isnt set at the config location, move it
     if not db_filepath.startswith(cfg_path):
@@ -643,7 +631,7 @@ def update_database_file() -> bool:
         with open(cfg_file, "w") as configfile:
             config.write(configfile)
         config.read(cfg_file)
-        db_filepath: str = config.get("settings", "db")
+        db_filepath = config.get("settings", "db")
 
     db_path = db_filepath.split("/")
     db_path.pop()
@@ -722,8 +710,8 @@ if __name__ == "__main__":
         format="{%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
         handlers=handlers,
     )
-    debug(f'--------- musicpom debug started')
-    debug(f'---------------------|          ')
+    debug('--------- musicpom debug started')
+    debug('---------------------|          ')
     debug(f'----------------------> {handlers}      ')
     # Initialization
     config: ConfigParser = update_config_file()
