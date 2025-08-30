@@ -1,6 +1,6 @@
 import DBA
 from logging import debug
-from utils import get_tags, convert_id3_timestamp_to_datetime, id3_remap
+from utils import get_tags, id3_remap
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
@@ -72,22 +72,16 @@ def add_files_to_database(files: list[str], playlist_id: int | None = None, prog
         if len(insert_data) >= 1000:
             debug(f"inserting a LOT of songs: {len(insert_data)}")
             with DBA.DBAccess() as db:
-                result = db.executemany(
-                    "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+                db.executemany(
+                    "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                     insert_data,
                 )
-            debug('IMPORTANT')
-            debug(f'batch insert result: {result}')
-            debug('IMPORTANT')
             insert_data = []  # Reset the insert_data list
     # Insert any remaining data after reading every file
     if insert_data:
         with DBA.DBAccess() as db:
-            result = db.executemany(
-                "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            db.executemany(
+                "INSERT OR IGNORE INTO song (filepath, title, album, artist, track_number, genre, codec, album_date, bitrate, length_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                 insert_data,
             )
-        debug('IMPORTANT')
-        debug(f'batch insert result: {result}')
-        debug('IMPORTANT')
     return True, failed_dict
