@@ -539,6 +539,7 @@ class MusicTable(QTableView):
         Removes rows from the QTableView based on a list of indices
         and then reload the table
         """
+        debug('delete_selected_row_indices')
         selected_indices = self.get_selected_rows()
         self.disconnect_data_changed()
         for index in selected_indices:
@@ -686,8 +687,7 @@ class MusicTable(QTableView):
                     )
                 # debug(f"reorganize_files() | Moved: {filepath} -> {new_path}")
             except Exception as e:
-                error(
-                    f"reorganize_files() | Error moving file: {filepath} | {e}")
+                error(f"reorganize_files() | Error moving file: {filepath} | {e}")
         # Draw the rest of the owl
         # QMessageBox.information(
         #     self, "Reorganization complete", "Files successfully reorganized"
@@ -700,7 +700,7 @@ class MusicTable(QTableView):
             self.set_current_song_filepath()
         self.playPauseSignal.emit()
 
-    def load_music_table(self, *playlist_id: int):
+    def load_music_table(self, *playlist_id):
         """
         Loads data into self (QTableView)
         Loads all songs in library, by default
@@ -724,6 +724,7 @@ class MusicTable(QTableView):
         # Load a playlist
         if playlist_id:
             self.selected_playlist_id = playlist_id[0]
+        if self.selected_playlist_id:
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {
@@ -746,7 +747,6 @@ class MusicTable(QTableView):
                 return
         # Load the entire library
         else:
-            self.selected_playlist_id = None
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {fields} FROM song"
@@ -794,8 +794,7 @@ class MusicTable(QTableView):
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
         current_song_filepath = self.get_current_song_filepath()
-        debug(
-            f"load_music_table() | current filepath: {current_song_filepath}")
+        debug(f"load_music_table() | current filepath: {current_song_filepath}")
         for row in range(self.model2.rowCount()):
             real_index = self.model2.index(
                 row, self.headers.user_fields.index("filepath")
@@ -806,10 +805,7 @@ class MusicTable(QTableView):
 
         db_name: str = self.config.get("settings", "db").split("/").pop()
         db_filename = self.config.get("settings", "db")
-        self.playlistStatsSignal.emit(
-            f"Songs: {row_count} | Total time: {
-                total_time} | {db_name} | {db_filename}"
-        )
+        self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time} | {db_name} | {db_filename}")
         self.loadMusicTableSignal.emit()
         self.connect_data_changed()
         self.connect_layout_changed()
@@ -920,10 +916,7 @@ class MusicTable(QTableView):
             return []
         selected_rows = set(index.row() for index in indexes)
         id_list = [
-            self.proxymodel.data(
-                self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole
-            )
-            for row in selected_rows
+            self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole) for row in selected_rows
         ]
         return id_list
 
@@ -947,9 +940,7 @@ class MusicTable(QTableView):
         except ValueError:
             # if the user doesnt have filepath selected as a header, retrieve the file from db
             row = self.currentIndex().row()
-            id = self.proxymodel.data(
-                self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole
-            )
+            id = self.proxymodel.data(self.proxymodel.index(row, 0), Qt.ItemDataRole.UserRole)
             with DBA.DBAccess() as db:
                 filepath = db.query("SELECT filepath FROM song WHERE id = ?", (id,))[0][0]
         self.selected_song_filepath = filepath
