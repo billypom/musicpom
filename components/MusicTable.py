@@ -406,13 +406,18 @@ class MusicTable(QTableView):
         # update the ID3 information
         user_input_data: str = topLeft.data()
         edited_column_name: str = self.headers.user_fields[topLeft.column()]
-        debug(
-            f"on_cell_data_changed | edited column name: {edited_column_name}")
-        response = set_tag(filepath, edited_column_name, user_input_data)
+        debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
+        response = set_tag(
+            filepath=filepath, 
+            tag_name=edited_column_name, 
+            value=user_input_data
+        )
         if response:
             # Update the library with new metadata
             _ = update_song_in_database(
                 song_id, edited_column_name, user_input_data)
+        else:
+            error('ERROR: response failed')
         return
 
     def handle_progress(self, data: object):

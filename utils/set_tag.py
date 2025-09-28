@@ -1,4 +1,4 @@
-from logging import debug, error
+from logging import debug, error, warning
 from components import ErrorDialog
 from components.HeaderTags import HeaderTags
 
@@ -82,7 +82,8 @@ mutagen_id3_tag_mapping = {
 
 
 def set_tag(filepath: str, tag_name: str, value: str):
-    """Sets the ID3 tag for a file given a filepath, tag_name, and a value for the tag
+    """
+    Sets the ID3 tag for a file given a filepath, tag_name, and a value for the tag
 
     Args:
         filepath: path to the mp3 file
@@ -90,9 +91,10 @@ def set_tag(filepath: str, tag_name: str, value: str):
         value: value to set for the tag
 
     Returns:
-        True / False"""
+        True / False
+    """
     headers = HeaderTags()
-    # debug(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
+    debug(f"filepath: {filepath} | tag_name: {tag_name} | value: {value}")
 
     try:
         try:  # Load existing tags
@@ -109,7 +111,8 @@ def set_tag(filepath: str, tag_name: str, value: str):
         #         audio_file.add(tdat_tag)
 
         # Lyrics
-        if tag_name == "lyrics" or tag_name == "USLT":
+        # if tag_name == "lyrics" or tag_name == "USLT":
+        if tag_name == "lyrics":
             try:
                 audio = ID3(filepath)
             except Exception as e:
@@ -120,20 +123,16 @@ def set_tag(filepath: str, tag_name: str, value: str):
             audio.add(frame)
             audio.save()
             return True
-        # Convert any ID3 tag or nice name (that i chose) into into the Mutagen Frame object
-        if tag_name in list(headers.id3_keys.values()):
-            tag_nice_name = headers.id3[tag_name]
-        else:
-            tag_nice_name = tag_name
-            # Other
-        if tag_nice_name in mutagen_id3_tag_mapping:  # Tag accounted for
-            tag_class = mutagen_id3_tag_mapping[tag_nice_name]
+        # Convert ID3 tag nice name (that i chose) into into the Mutagen Frame object
+        if tag_name in mutagen_id3_tag_mapping:  # Tag accounted for
+            tag_class = mutagen_id3_tag_mapping[tag_name]
             if issubclass(tag_class, Frame):
                 frame = tag_class(encoding=3, text=[value])
                 audio_file.add(frame)  # Add the tag
             else:
                 pass
         else:
+            warning('nice name tag not found - skipping updating id3 tag')
             pass
         audio_file.save(filepath)
         return True
