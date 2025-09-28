@@ -111,6 +111,7 @@ class MusicTable(QTableView):
 
         # proxy model for sorting i guess?
         self.proxymodel.setSourceModel(self.model2)
+        self.proxymodel.setSortCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.setModel(self.proxymodel)
         self.setSortingEnabled(True)
 
@@ -393,8 +394,6 @@ class MusicTable(QTableView):
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
-        # FIXME: broken
-
         # if isinstance(self.model2, QStandardItemModel):
         debug("on_cell_data_changed")
         # get the ID of the row that was edited
@@ -439,8 +438,6 @@ class MusicTable(QTableView):
             - data returned from the original worker process function are returned here
               as the first item in a tuple
         """
-        print('hello?')
-        print(args)
         try:
             _, details = args[0][:2]
             details = dict(tuple(details)[0])
@@ -610,7 +607,9 @@ class MusicTable(QTableView):
         if selected_song_filepath is None:
             return
         dic = id3_remap(get_tags(selected_song_filepath)[0])
-        lyrics = dic["lyrics"]
+        lyrics = str(dic["lyrics"])
+        if not lyrics:
+            lyrics = ""
         lyrics_window = LyricsWindow(selected_song_filepath, lyrics)
         lyrics_window.exec_()
 
@@ -668,9 +667,7 @@ class MusicTable(QTableView):
             # Read file metadata
             artist, album = get_reorganize_vars(filepath)
             # Determine the new path that needs to be made
-            new_path = os.path.join(
-                target_dir, artist, album, os.path.basename(filepath)
-            )
+            new_path = os.path.join(target_dir, artist, album, os.path.basename(filepath))
             # Need to determine if filepath is equal
             if new_path == filepath:
                 continue
@@ -804,10 +801,6 @@ class MusicTable(QTableView):
                 row, self.headers.user_fields.index("filepath")
             )
             if real_index.data() == current_song_filepath:
-                # print("is it true?")
-                # print(f"{real_index.data()} == {current_song_filepath}")
-                # print("load music table real index:")
-                # print(real_index)
                 self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
 
@@ -839,9 +832,9 @@ class MusicTable(QTableView):
         """
 
         # Disconnect these signals to prevent unnecessary reloads
-        debug("sort_table_by_multiple_columns()")
-        self.disconnect_data_changed()
-        self.disconnect_layout_changed()
+        # debug("sort_table_by_multiple_columns()")
+        # self.disconnect_data_changed()
+        # self.disconnect_layout_changed()
         sort_orders = []
         config_sort_orders: list[int] = [
             int(x) for x in self.config["table"]["sort_orders"].split(",")
@@ -858,7 +851,7 @@ class MusicTable(QTableView):
         # The primary sort column is the last column sorted.
         for i in reversed(range(len(sort_orders))):
             if sort_orders[i] is not None:
-                debug(f"sorting column {i} by {sort_orders[i]}")
+                # debug(f"sorting column {i} by {sort_orders[i]}")
                 self.sortByColumn(i, sort_orders[i])
                 # WARNING:
                 # sortByColumn calls a SELECT statement,
@@ -866,8 +859,9 @@ class MusicTable(QTableView):
                 # maybe not a huge deal for a small music application...?
                 # `len(config_sort_orders)` number of SELECTs
 
-        self.connect_data_changed()
-        self.connect_layout_changed()
+        # self.connect_data_changed()
+        # self.connect_layout_changed()
+
         # self.model2.layoutChanged.emit()
         # TODO: Rewrite this function to use self.load_music_table() with dynamic SQL queries
         # in order to sort the data more effectively & have more control over UI refreshes.
