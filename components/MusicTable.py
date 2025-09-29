@@ -721,10 +721,11 @@ class MusicTable(QTableView):
             else ""
         )
         params = ""
+        debug(f'playlist_id: {playlist_id}')
         # Load a playlist
-        if playlist_id:
+        if len(playlist_id) > 0:
             self.selected_playlist_id = playlist_id[0]
-        if self.selected_playlist_id:
+            debug('load music table a playlist')
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {
@@ -747,6 +748,7 @@ class MusicTable(QTableView):
                 return
         # Load the entire library
         else:
+            debug('load music table a Whole Table')
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {fields} FROM song"
@@ -793,14 +795,14 @@ class MusicTable(QTableView):
 
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
-        current_song_filepath = self.get_current_song_filepath()
-        debug(f"load_music_table() | current filepath: {current_song_filepath}")
-        for row in range(self.model2.rowCount()):
-            real_index = self.model2.index(
-                row, self.headers.user_fields.index("filepath")
-            )
-            if real_index.data() == current_song_filepath:
-                self.current_song_qmodel_index = real_index
+        # current_song_filepath = self.get_current_song_filepath()
+        # debug(f"load_music_table() | current filepath: {current_song_filepath}")
+        # for row in range(self.model2.rowCount()):
+        #     real_index = self.model2.index(
+        #         row, self.headers.user_fields.index("filepath")
+        #     )
+        #     if real_index.data() == current_song_filepath:
+        #         self.current_song_qmodel_index = real_index
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
 
         db_name: str = self.config.get("settings", "db").split("/").pop()

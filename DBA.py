@@ -1,5 +1,4 @@
 import sqlite3
-import logging
 from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
@@ -7,7 +6,7 @@ from appdirs import user_config_dir
 
 class DBAccess:
     def __init__(self, db_name=None):
-        logging.info("Instantiating DBAccess")
+        # logging.info("Instantiating DBAccess")
         config = ConfigParser()
         cfg_file = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))

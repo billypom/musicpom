@@ -85,7 +85,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # UI
         self.setupUi(self)
         self.setWindowTitle("musicpom")
-        self.setup_fonts()
+        self.setup_labels()
 
         # self.vLayoutAlbumArt.SetFixedSize()
         self.status_bar: QStatusBar = QStatusBar()
@@ -360,8 +360,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     # |                    |
     # |____________________|
 
-    def setup_fonts(self):
-        """Initializes font sizes and behaviors for various UI components"""
+    def setup_labels(self):
+        """Initializes attributes and behaviors for various UI labels"""
         font: QFont = QFont()
         font.setPointSize(12)
         font.setBold(True)
@@ -370,6 +370,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.artistLabel.setTextInteractionFlags(
             QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
+        self.artistLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.artistLabel.setWordWrap(True)
 
         font.setPointSize(12)
         font.setBold(False)
@@ -377,13 +379,18 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.titleLabel.setTextInteractionFlags(
             QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
+        self.titleLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.titleLabel.setWordWrap(True)
 
         font.setPointSize(12)
         font.setItalic(True)
+        self.albumLabel: QLabel
         self.albumLabel.setFont(font)
         self.albumLabel.setTextInteractionFlags(
             QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
+        self.albumLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.albumLabel.setWordWrap(True)
 
     def load_config(self) -> None:
         """does what it says"""

@@ -2,7 +2,6 @@ from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
 from dataclasses import dataclass, asdict
-from typing import Optional
 
 
 @dataclass
@@ -47,8 +46,8 @@ class HeaderTags:
         )
         self.config = ConfigParser()
         self.config.read(cfg_file)
-        print("header tag config")
-        print(self.config)
+        # print("header tag config")
+        # print(self.config)
         self.user_fields: list = str(self.config["table"]["columns"]).split(",")
         self.editable_fields: list = [
             "title",
