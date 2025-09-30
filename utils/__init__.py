@@ -17,3 +17,4 @@ from .convert_date_str_to_tyer_tdat_id3_tag import convert_date_str_to_tyer_tdat
 from .set_album_art import set_album_art
 from .delete_album_art import delete_album_art
 from .Worker import Worker
+from .export_playlist_by_id import export_playlist_by_id

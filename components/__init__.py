@@ -6,6 +6,7 @@ from .ErrorDialog import ErrorDialog
 from .LyricsWindow import LyricsWindow
 from .DebugWindow import DebugWindow
 from .AddToPlaylistWindow import AddToPlaylistWindow
+from .EditPlaylistOptionsWindow import EditPlaylistOptionsWindow
 from .CreatePlaylistWindow import CreatePlaylistWindow
 from .PlaylistsPane import PlaylistsPane
 from .ExportPlaylistWindow import ExportPlaylistWindow

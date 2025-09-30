@@ -6,13 +6,12 @@ from PyQt5.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
 )
-from PyQt5.QtCore import QThreadPool, pyqtSignal, Qt, QPoint
+from PyQt5.QtCore import pyqtSignal, Qt, QPoint
 import DBA
-from logging import debug
 from components.ErrorDialog import ErrorDialog
 from utils import Worker
 
-from components import CreatePlaylistWindow
+from components import CreatePlaylistWindow, EditPlaylistOptionsWindow
 
 
 class PlaylistWidgetItem(QTreeWidgetItem):
@@ -70,10 +69,13 @@ class PlaylistsPane(QTreeWidget):
             # only allow delete/rename non-root nodes
             rename_action = QAction("Rename", self)
             delete_action = QAction("Delete", self)
+            options_action = QAction("Options", self)
             rename_action.triggered.connect(self.rename_playlist)
             delete_action.triggered.connect(self.delete_playlist)
+            options_action.triggered.connect(self.options)
             menu.addAction(rename_action)
             menu.addAction(delete_action)
+            menu.addAction(options_action)
         create_action = QAction("New playlist", self)
         create_action.triggered.connect(self.create_playlist)
         menu.addAction(create_action)
@@ -83,6 +85,10 @@ class PlaylistsPane(QTreeWidget):
         """Creates a database record for a playlist, given a name"""
         window = CreatePlaylistWindow(self.playlistCreatedSignal)
         window.playlistCreatedSignal.connect(self.reload_playlists)
+        window.exec_()
+
+    def options(self):
+        window = EditPlaylistOptionsWindow(self.playlist_db_id_choice)
         window.exec_()
 
     def rename_playlist(self, *args):

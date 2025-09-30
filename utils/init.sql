@@ -22,7 +22,9 @@ CREATE TABLE song(
 CREATE TABLE playlist(
     id integer primary key,
     name varchar(64),
-    date_created TIMESTAMP default CURRENT_TIMESTAMP
+    date_created TIMESTAMP default CURRENT_TIMESTAMP,
+    auto_export_path varchar(512),
+    path_prefix varchar(255)
 );
 
 CREATE TABLE song_playlist(

@@ -4,7 +4,7 @@ import logging
 from PyQt5 import QtCore
 import qdarktheme
 import typing
-# import DBA
+import DBA
 from subprocess import run
 # from pyqtgraph import mkBrush
 from mutagen.id3 import ID3
@@ -60,6 +60,7 @@ from components import (
     CreatePlaylistWindow,
     ExportPlaylistWindow,
 )
+from utils.export_playlist_by_id import export_playlist_by_id
 
 # good help with signals slots in threads
 # https://stackoverflow.com/questions/52993677/how-do-i-setup-signals-and-slots-in-pyqt-with-qthreads-in-both-directions
@@ -246,13 +247,22 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.config["settings"]["window_size"] = (
             str(self.width()) + "," + str(self.height())
         )
-
         # Save the config
         try:
             with open(self.cfg_file, "w") as configfile:
                 self.config.write(configfile)
         except Exception as e:
             debug(f"wtf man {e}")
+
+        # auto export any playlists that want it
+        try:
+            with DBA.DBAccess() as db:
+                result = db.query('SELECT id FROM playlist WHERE auto_export_path IS NOT NULL;', ())
+            ids = [id[0] for id in result]
+            for id in ids:
+                export_playlist_by_id(id)
+        except Exception:
+            pass
         if a0 is not None:
             super().closeEvent(a0)
 

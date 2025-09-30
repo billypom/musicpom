@@ -4,7 +4,6 @@ import os
 from PyQt5.QtWidgets import (
     QCheckBox,
     QDialog,
-    QHBoxLayout,
     QLineEdit,
     QLabel,
     QPushButton,
@@ -26,8 +25,8 @@ class ExportPlaylistWindow(QDialog):
         self.setWindowTitle("Export playlist")
         self.setMinimumSize(600, 400)
         self.load_config()
-        self.relative_path: str = self.config.get(
-            "settings", "playlist_content_relative_path"
+        self.playlist_path_prefix: str = self.config.get(
+            "settings", "playlist_path_prefix"
         )
         self.export_path: str = self.config.get("settings", "playlist_export_path")
         self.selected_playlist_name: str = "my-playlist.m3u"
@@ -74,7 +73,7 @@ class ExportPlaylistWindow(QDialog):
         layout.addWidget(label)
 
         # Relative export path line edit widget
-        self.input_relative_path = QLineEdit(self.relative_path)  # not needed
+        self.input_relative_path = QLineEdit(self.playlist_path_prefix)  # not needed
         layout.addWidget(self.input_relative_path)
 
         # Playlist file save path label
@@ -112,9 +111,7 @@ class ExportPlaylistWindow(QDialog):
         Sets the current playlist name, then edits the playlist export path
         """
         # Get the current chosen list item
-        self.chosen_list_widget_item: QListWidgetItem | None = (
-            self.playlist_listWidget.currentItem()
-        )
+        self.chosen_list_widget_item = self.playlist_listWidget.currentItem()
         # We don't care if nothing is chosen
         if self.chosen_list_widget_item is None:
             return
@@ -129,13 +126,13 @@ class ExportPlaylistWindow(QDialog):
 
         # alter line edit text for playlist path
         # Make the thing react and show the correct thing or whatever
-        current_text: list = self.input_m3u_path.text().split("/")
+        current_text: list = self.export_m3u_path.text().split("/")
         if "." in current_text[-1]:
             current_text = current_text[:-1]
         else:
             current_text = current_text
         m3u_text = os.path.join("/", *current_text, self.selected_playlist_name)
-        self.input_m3u_path.setText(m3u_text)
+        self.export_m3u_path.setText(m3u_text)
 
     def save(self) -> None:
         """
@@ -145,7 +142,7 @@ class ExportPlaylistWindow(QDialog):
         if self.chosen_list_widget_item is None:
             return
         relative_path = self.input_relative_path.text()
-        output_filename = self.input_m3u_path.text()
+        output_filename = self.export_m3u_path.text()
 
         # If no output path is provided, just close the window...
         if output_filename == "" or output_filename is None:
