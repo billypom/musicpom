@@ -27,6 +27,10 @@ def export_playlist_by_id(playlist_db_id: int) -> bool:
     if not path_prefix:
         path_prefix = ""
 
+    # If the path is nothing, just stop
+    if not auto_export_path:
+        return False
+
     # Get filepaths for selected playlist from the database
     try:
         with DBA.DBAccess() as db:

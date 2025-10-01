@@ -23,6 +23,7 @@ CREATE TABLE playlist(
     id integer primary key,
     name varchar(64),
     date_created TIMESTAMP default CURRENT_TIMESTAMP,
+    auto_export boolean default 0,
     auto_export_path varchar(512),
     path_prefix varchar(255)
 );

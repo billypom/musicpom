@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog,
     QListWidgetItem,
@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QListWidget,
     QWidget,
-    QDial,
     QStyle,
 )
 from logging import debug
@@ -20,11 +19,12 @@ from appdirs import user_config_dir
 
 
 class PreferencesWindow(QDialog):
-    def __init__(self, reloadConfigSignal, reloadDatabaseSignal):
+    reloadConfigSignal = pyqtSignal()
+    reloadDatabaseSignal = pyqtSignal()
+
+    def __init__(self):
         super(PreferencesWindow, self).__init__()
         # Config
-        self.reloadConfigSignal = reloadConfigSignal
-        self.reloadDatabaseSignal = reloadDatabaseSignal
         self.setWindowTitle("Preferences")
         self.setMinimumSize(800, 600)
         self.cfg_file = (
@@ -74,14 +74,13 @@ class PreferencesWindow(QDialog):
         self.clear_layout(self.content_layout)
 
         # Edit toggle button
-        edit_button = QPushButton()
-        self.edit_button: QPushButton = edit_button
+        self.edit_button = QPushButton()
         self.edit_button.setText("view mode")
         self.edit_button.clicked.connect(self.on_edit_toggled)
-        self.content_layout.addWidget(edit_button)
+        self.content_layout.addWidget(self.edit_button)
 
         # dict of text input fields
-        self.input_fields: dict[str, QLineEdit] = {}
+        self.input_fields  = {}
         if isinstance(item, str):
             self.current_category_str = item
         else:

@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 from PyQt5 import QtCore
-import qdarktheme
 import typing
 import DBA
 from subprocess import run
@@ -31,7 +30,6 @@ from PyQt5.QtCore import (
     QSize,
     QUrl,
     QTimer,
-    pyqtSignal,
     QThreadPool,
 )
 from PyQt5.QtMultimedia import (
@@ -70,9 +68,6 @@ from utils.export_playlist_by_id import export_playlist_by_id
 
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
-    reloadConfigSignal: pyqtSignal = pyqtSignal()
-    reloadDatabaseSignal: pyqtSignal = pyqtSignal()
-
     def __init__(self, clipboard):
         super(ApplicationWindow, self).__init__()
         self.clipboard = clipboard
@@ -257,7 +252,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # auto export any playlists that want it
         try:
             with DBA.DBAccess() as db:
-                result = db.query('SELECT id FROM playlist WHERE auto_export_path IS NOT NULL;', ())
+                result = db.query('SELECT id FROM playlist WHERE auto_export = true;', ())
             ids = [id[0] for id in result]
             for id in ids:
                 export_playlist_by_id(id)
@@ -446,7 +441,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         filepath default value = `tableView.current_song_filepath`
         """
-        print("play audio file")
         if not filepath:
             filepath = self.tableView.get_selected_song_filepath()
         metadata = id3_remap(get_tags(filepath)[0])
@@ -588,9 +582,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def open_preferences(self) -> None:
         """Opens the preferences window"""
-        preferences_window = PreferencesWindow(
-            self.reloadConfigSignal, self.reloadDatabaseSignal
-        )
+        preferences_window = PreferencesWindow()
         preferences_window.reloadConfigSignal.connect(self.load_config)
         preferences_window.reloadDatabaseSignal.connect(self.tableView.load_music_table)
         preferences_window.exec_()  # Display the preferences window modally
@@ -744,7 +736,7 @@ if __name__ == "__main__":
     clipboard = app.clipboard()
     # Dark theme >:3
     # qdarktheme.setup_theme()
-    qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
+    # qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
     # Show the UI
     ui = ApplicationWindow(clipboard)
     # window size

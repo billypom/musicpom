@@ -5,15 +5,17 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QVBoxLayout,
+    QCheckBox,
 )
 from PyQt5.QtGui import QFont
+
 
 
 class EditPlaylistOptionsWindow(QDialog):
     def __init__(self, playlist_id):
         super(EditPlaylistOptionsWindow, self).__init__()
         self.setWindowTitle("Playlist options")
-        self.setMinimumSize(600, 400)
+        # self.setMinimumSize(600, 400)
         self.playlist_id = playlist_id
         # self.playlist_path_prefix: str = self.config.get(
         #     "settings", "playlist_path_prefix"
@@ -35,14 +37,21 @@ class EditPlaylistOptionsWindow(QDialog):
 
         # Get options from db
         with DBA.DBAccess() as db:
-            data = db.query("SELECT auto_export_path, path_prefix from playlist WHERE id = ?;", (self.playlist_id,))
+            data = db.query("SELECT auto_export_path, path_prefix, auto_export from playlist WHERE id = ?;", (self.playlist_id,))
             auto_export_path = data[0][0]
             path_prefix = data[0][1]
+            auto_export = data[0][2]
+
+        self.checkbox = QCheckBox(text="Auto export?")
+        self.checkbox.setChecked(auto_export)
+        layout.addWidget(self.checkbox)
 
         # Relative export path label
-        label = QLabel("Auto export path (../music/playlists/my_playlist.m3u)")
-        label.setFont(QFont("Sans", weight=QFont.Bold))  # bold category
-        label.setStyleSheet("text-transform:lowercase;")  # uppercase category
+        label = QLabel("Export to file:")
+        label.setFont(QFont("Sans", weight=QFont.Bold))
+        layout.addWidget(label)
+        label = QLabel('i.e.: ../music/playlists/my-playlist.m3u')
+        label.setFont(QFont("Serif", weight=QFont.Style.StyleItalic))  # bold category
         layout.addWidget(label)
 
         # Relative export path line edit widget
@@ -50,9 +59,11 @@ class EditPlaylistOptionsWindow(QDialog):
         layout.addWidget(self.auto_export_path)
 
         # Playlist file save path label
-        label = QLabel("Path prefix (/prefix/song.mp3, /prefix/song2.mp3)")
+        label = QLabel("Path prefix")
         label.setFont(QFont("Sans", weight=QFont.Bold))
-        label.setStyleSheet("text-transform:lowercase;")
+        layout.addWidget(label)
+        label = QLabel("i.e.: /prefix/song.mp3")
+        label.setFont(QFont("Serif", weight=QFont.Style.StyleItalic))  # bold category
         layout.addWidget(label)
 
         # Playlist file save path line edit widget
@@ -73,10 +84,12 @@ class EditPlaylistOptionsWindow(QDialog):
         """
         with DBA.DBAccess() as db:
             db.execute('''
-                       UPDATE playlist SET auto_export_path = ?, path_prefix = ? WHERE id = ?
-                       ''', (self.auto_export_path.text(), self.path_prefix.text(), self.playlist_id)
+            UPDATE playlist SET auto_export_path = ?, path_prefix = ?, auto_export = ? WHERE id = ?
+                       ''', (self.auto_export_path.text(), 
+                             self.path_prefix.text(), 
+                             self.checkbox.isChecked(), 
+                             self.playlist_id)
                        )
-
         self.close()
         return
 
