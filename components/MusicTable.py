@@ -96,7 +96,7 @@ class MusicTable(QTableView):
         # need a QStandardItemModel to load data & do actions on cells
         self.model2: QStandardItemModel = QStandardItemModel()
         self.proxymodel: QSortFilterProxyModel = QSortFilterProxyModel()
-        self.cache_models: dict[int | None, QStandardItemModel]
+        self.cache_models: dict[int | None, QStandardItemModel] = {}
         self.search_string: str | None = None
         self.headers = HeaderTags()
         # db names of headers
@@ -734,9 +734,8 @@ class MusicTable(QTableView):
         try:
             new_model = self.cache_models[self.selected_playlist_id]
             self.model2 = new_model
+            debug('Cached model loaded')
         except KeyError:
-            # Store the current loaded model
-            self.cache_models[self.selected_playlist_id] = self.model2
             # Query for a playlist
             if is_playlist:
                 debug('load music table a playlist')
@@ -806,6 +805,10 @@ class MusicTable(QTableView):
                 for item in items:
                     item.setData(id, Qt.ItemDataRole.UserRole)
                 self.model2.appendRow(items)
+            # Store the current loaded model
+            self.cache_models[self.selected_playlist_id] = self.model2
+            debug('Current model stored')
+
 
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
