@@ -85,3 +85,6 @@ QMultimedia.EncodingMode / Encoding quality...
 - on save metadata modal, run save in another thread (freezing)
 - on save metadata modal, return to previous state in table (jump to current song/restore scroll position)
 - on add to playlist, check if song already exists - prompt user for duplicate?
+- drag and drop song(s) onto PlaylistPane to add to playlist
+- font sizing
+- font choicing? :o

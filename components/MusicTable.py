@@ -93,9 +93,10 @@ class MusicTable(QTableView):
         # Set QTableView model to the Proxy model
         # so it looks like the above note, i guess
 
-        # need a QStandardItemModel to do actions on cells
+        # need a QStandardItemModel to load data & do actions on cells
         self.model2: QStandardItemModel = QStandardItemModel()
         self.proxymodel: QSortFilterProxyModel = QSortFilterProxyModel()
+        self.cache_models: dict[int | None, QStandardItemModel]
         self.search_string: str | None = None
         self.headers = HeaderTags()
         # db names of headers
@@ -722,76 +723,89 @@ class MusicTable(QTableView):
         )
         params = ""
         debug(f'playlist_id: {playlist_id}')
-        # Load a playlist
+        is_playlist = 0
         if len(playlist_id) > 0:
             self.selected_playlist_id = playlist_id[0]
-            debug('load music table a playlist')
-            try:
-                with DBA.DBAccess() as db:
-                    query = f"SELECT id, {
-                        fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
-                    # fulltext search
-                    if self.search_string:
-                        # params = 3 * [self.search_string]
-                        params = ["%" + self.search_string + "%"] * 3
-                        if query.find("WHERE") == -1:
-                            query = f"{query} WHERE {search_clause};"
-                        else:
-                            query = f"{query} AND {search_clause};"
-                        data = db.query(
-                            query, (self.selected_playlist_id, params))
-                    else:
-                        data = db.query(query, (self.selected_playlist_id,))
-
-            except Exception as e:
-                error(f"load_music_table() | Unhandled exception 1: {e}")
-                return
-        # Load the entire library
+            is_playlist = 1
         else:
-            debug('load music table a Whole Table')
-            try:
-                with DBA.DBAccess() as db:
-                    query = f"SELECT id, {fields} FROM song"
-                    # fulltext search
-                    if self.search_string:
-                        params = ["%" + self.search_string + "%"] * 3
-                        if query.find("WHERE") == -1:
-                            query = f"{query} WHERE {search_clause};"
+            self.selected_playlist_id = None
+
+        # Check cache for already loaded QTableView QStandardItemModel
+        try:
+            new_model = self.cache_models[self.selected_playlist_id]
+            self.model2 = new_model
+        except KeyError:
+            # Store the current loaded model
+            self.cache_models[self.selected_playlist_id] = self.model2
+            # Query for a playlist
+            if is_playlist:
+                debug('load music table a playlist')
+                try:
+                    with DBA.DBAccess() as db:
+                        query = f"SELECT id, {
+                            fields} FROM song JOIN song_playlist sp ON id = sp.song_id WHERE sp.playlist_id = ?"
+                        # fulltext search
+                        if self.search_string:
+                            # params = 3 * [self.search_string]
+                            params = ["%" + self.search_string + "%"] * 3
+                            if query.find("WHERE") == -1:
+                                query = f"{query} WHERE {search_clause};"
+                            else:
+                                query = f"{query} AND {search_clause};"
+                            data = db.query(
+                                query, (self.selected_playlist_id, params))
                         else:
-                            query = f"{query} AND {search_clause};"
-                    data = db.query(
-                        query,
-                        (params),
-                    )
-            except Exception as e:
-                error(f"load_music_table() | Unhandled exception 2: {e}")
-                return
-        # Populate the model
-        row_count: int = 0
-        # TODO: total time of playlist
-        # but how do i want to do this if user doesn't choose to see length field?
-        # spawn new thread and calculate myself?
-        total_time: int = 0  # total time of all songs in seconds
-        for row_data in data:
-            # print(row_data)
-            # if "length" in fields:
-            row_count += 1
-            id, *rest_of_data = row_data
-            # handle different datatypes
-            items = []
-            for item in rest_of_data:
-                if isinstance(item, int):
-                    std_item = QStandardItem()
-                    std_item.setData(item, Qt.ItemDataRole.DisplayRole)
-                    std_item.setData(item, Qt.ItemDataRole.EditRole)
-                else:
-                    std_item = QStandardItem(str(item) if item else "")
-                items.append(std_item)
-            # store database id in the row object using setData
-            # - useful for fast db fetching and other model operations
-            for item in items:
-                item.setData(id, Qt.ItemDataRole.UserRole)
-            self.model2.appendRow(items)
+                            data = db.query(query, (self.selected_playlist_id,))
+
+                except Exception as e:
+                    error(f"load_music_table() | Unhandled exception 1: {e}")
+                    return
+            # Query for the entire library
+            else:
+                debug('load music table a Whole Table')
+                try:
+                    with DBA.DBAccess() as db:
+                        query = f"SELECT id, {fields} FROM song"
+                        # fulltext search
+                        if self.search_string:
+                            params = ["%" + self.search_string + "%"] * 3
+                            if query.find("WHERE") == -1:
+                                query = f"{query} WHERE {search_clause};"
+                            else:
+                                query = f"{query} AND {search_clause};"
+                        data = db.query(
+                            query,
+                            (params),
+                        )
+                except Exception as e:
+                    error(f"load_music_table() | Unhandled exception 2: {e}")
+                    return
+            # Populate the model
+            # row_count: int = 0
+            # TODO: total time of playlist
+            # but how do i want to do this if user doesn't choose to see length field?
+            # spawn new thread and calculate myself?
+            total_time: int = 0  # total time of all songs in seconds
+            for row_data in data:
+                # print(row_data)
+                # if "length" in fields:
+                # row_count += 1
+                id, *rest_of_data = row_data
+                # handle different datatypes
+                items = []
+                for item in rest_of_data:
+                    if isinstance(item, int):
+                        std_item = QStandardItem()
+                        std_item.setData(item, Qt.ItemDataRole.DisplayRole)
+                        std_item.setData(item, Qt.ItemDataRole.EditRole)
+                    else:
+                        std_item = QStandardItem(str(item) if item else "")
+                    items.append(std_item)
+                # store database id in the row object using setData
+                # - useful for fast db fetching and other model operations
+                for item in items:
+                    item.setData(id, Qt.ItemDataRole.UserRole)
+                self.model2.appendRow(items)
 
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
@@ -807,7 +821,9 @@ class MusicTable(QTableView):
 
         db_name: str = self.config.get("settings", "db").split("/").pop()
         db_filename = self.config.get("settings", "db")
-        self.playlistStatsSignal.emit(f"Songs: {row_count} | Total time: {total_time} | {db_name} | {db_filename}")
+        # FIXME: total time implementation
+        total_time = 0
+        self.playlistStatsSignal.emit(f"Songs: {self.model2.rowCount()} | Total time: {total_time} | {db_name} | {db_filename}")
         self.loadMusicTableSignal.emit()
         self.connect_data_changed()
         self.connect_layout_changed()
