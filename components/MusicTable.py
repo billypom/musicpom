@@ -660,7 +660,6 @@ class MusicTable(QTableView):
         # DBAccess is being instantiated for every file, boo
         # NOTE:
         # is that even possible with move file function?
-
         # FIXME: change reorganize location in config, try to reorganize, failed - old reference
 
         # Get target directory
@@ -780,7 +779,6 @@ class MusicTable(QTableView):
                     error(f"load_music_table() | Unhandled exception 2: {e}")
                     return
             # Populate the model
-            # row_count: int = 0
             # TODO: total time of playlist
             # but how do i want to do this if user doesn't choose to see length field?
             # spawn new thread and calculate myself?
@@ -788,7 +786,6 @@ class MusicTable(QTableView):
             for row_data in data:
                 # print(row_data)
                 # if "length" in fields:
-                # row_count += 1
                 id, *rest_of_data = row_data
                 # handle different datatypes
                 items = []
@@ -805,7 +802,7 @@ class MusicTable(QTableView):
                 for item in items:
                     item.setData(id, Qt.ItemDataRole.UserRole)
                 self.model2.appendRow(items)
-            # Store the current loaded model
+            # Store the current loaded model in cache
             self.cache_models[self.selected_playlist_id] = self.model2
             debug('Current model stored')
 
