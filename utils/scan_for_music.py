@@ -4,8 +4,6 @@ from configparser import ConfigParser
 from pathlib import Path
 from appdirs import user_config_dir
 
-import glob
-from concurrent.futures import ThreadPoolExecutor
 
 
 def scan_for_music(progress_callback=None):
@@ -19,7 +17,7 @@ def scan_for_music(progress_callback=None):
         progress_callback.emit('Scanning libraries...')
     config = ConfigParser()
     config.read(Path(user_config_dir(appname="musicpom", appauthor="billypom")) / "config.ini")
-    libraries = [path.strip() for path in config.get("settings", "library_path").split(',')]
+    libraries = [path.strip() for path in config.get("settings", "library").split(',')]
     extensions = config.get("settings", "extensions").split(",")
 
     # Use each library as root dir, walk the dir and find files

@@ -16,6 +16,7 @@ class SQLiteMap:
     album_date: str | None = None
     codec: str | None = None
     filepath: str | None = None
+    bitrate: str | None = None
 
 
 """
@@ -66,10 +67,11 @@ class HeaderTags:
             album_artist="alb artist",
             track_number="track",
             genre="genre",
+            album_date="year",
             codec="codec",
             length_seconds="length",
-            album_date="year",
             filepath="path",
+            bitrate="bitrate",
         )
         # self.id3 = SQLiteMap(
         #     title = "TIT2",
@@ -90,10 +92,11 @@ class HeaderTags:
             "album_artist": "album_artist",
             "track_number": "track_number",
             "genre": "genre",
+            "album_date": "album_date",
             "codec": "codec",
             "length_seconds": "length_seconds",
-            "album_date": "album_date",
             "filepath": "filepath",
+            "bitrate": "bitrate",
         }
         self.gui: dict = {
             "title": "title",
@@ -102,10 +105,11 @@ class HeaderTags:
             "album_artist": "alb artist",
             "track_number": "track",
             "genre": "genre",
+            "album_date": "year",
             "codec": "codec",
             "length_seconds": "length",
-            "album_date": "year",
             "filepath": "path",
+            "bitrate": "bitrate",
         }
         self.id3: dict = {
             "title": "TIT2",
@@ -114,10 +118,11 @@ class HeaderTags:
             "album": "TALB",
             "track_number": "TRCK",
             "genre": "TCON",
+            "album_date": "TDRC",
             "codec": None,
             "length_seconds": "TLEN",
-            "album_date": "TDRC",
             "filepath": None,
+            "bitrate": "TBIT",
         }
         # id3 is the key
         self.id3_keys: dict = {}

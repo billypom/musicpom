@@ -4,6 +4,7 @@ import logging
 from PyQt5 import QtCore
 import typing
 import DBA
+import qdarktheme
 from subprocess import run
 # from pyqtgraph import mkBrush
 from mutagen.id3 import ID3
@@ -736,7 +737,7 @@ if __name__ == "__main__":
     clipboard = app.clipboard()
     # Dark theme >:3
     # qdarktheme.setup_theme()
-    # qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
+    qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
     # Show the UI
     ui = ApplicationWindow(clipboard)
     # window size

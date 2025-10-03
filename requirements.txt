@@ -4,7 +4,8 @@ appdirs
 pyqt5
 pydub
 audioop-lts
-pyqtdarktheme-fork; python_version < '3.11'
-pyqtdarktheme; python_version > '3.12'
+pyqtdarktheme==2.1.0
 pyqtgraph
 scipy
+# pyqtdarktheme-fork; python_version < '3.11'
+# pyqtdarktheme; python_version > '3.12'
