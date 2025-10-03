@@ -102,6 +102,7 @@ class ID3Field:
     gui: str                            # e.g., "Title"
     frame_class: Optional[type] = None  # e.g., TPE1
     frame_id: Optional[str] = None      # e.g., "TPE1"
+    editable: bool = True
 
 
 class HeaderTags2:
@@ -113,17 +114,26 @@ class HeaderTags2:
             ID3Field(frame_class=TPE2, frame_id="TPE2", db="album_artist", gui="Album Artist"),
             ID3Field(frame_class=TRCK, frame_id="TRCK", db="track_number", gui="Track"),
             ID3Field(frame_class=TCON, frame_id="TCON", db="genre", gui="Genre"),
-            ID3Field(frame_class=TLEN, frame_id="TLEN", db="length_ms", gui="Time"),
             ID3Field(frame_class=TDRC, frame_id="TDRC", db="album_date", gui="Year"),
-            ID3Field(db="codec", gui="Codec"),
-            ID3Field(db="filepath", gui="Filepath"),
-            ID3Field(db="bitrate", gui="Bitrate"),
+            ID3Field(frame_class=TLEN, frame_id="TLEN", db="length_ms", gui="Time", editable=False),
+            ID3Field(db="codec", gui="Codec", editable=False),
+            ID3Field(db="filepath", gui="Filepath", editable=False),
+            ID3Field(db="bitrate", gui="Bitrate", editable=False),
         ]
         # Lookup dicts 
         # - Usage example: frame_id['TPE1'].db  # => "artist"
         self.frame_id = {f.frame_id: f for f in self.headers}
         self.db = {f.db: f for f in self.headers}
         self.gui = {f.gui: f for f in self.headers}
+
+        # Simple lists
+        self.frame_id_list = [f.frame_id for f in self.headers]
+        self.db_list = [f.db for f in self.headers]
+        self.gui_list = [f.gui for f in self.headers]
+
+    def get_editable_db_list(self) -> list:
+        return [f.db for f in self.headers if f.editable]
+
 
 
 class HeaderTags:

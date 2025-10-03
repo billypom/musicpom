@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from components.ErrorDialog import ErrorDialog
 from utils import set_tag, get_tags, update_song_in_database
-from logging import debug
 # import re
 
 
@@ -71,9 +70,10 @@ class MetadataWindow(QDialog):
                     QMessageBox.Ok,
                 )
                 return
-            for key, tag in self.headers.id3.items():
-                if key not in self.headers.editable_fields:
+            for key in self.headers.db_list:
+                if key not in self.headers.get_editable_db_list():
                     continue
+                tag = self.headers.db[key].frame_id
                 if tag is not None:
                     try:
                         _ = tag_sets[tag]
@@ -98,7 +98,7 @@ class MetadataWindow(QDialog):
                 # If the ID3 tag is the same for every item we're editing
                 field_text = str(value[0]) if value else ""
                 # Normal field
-                label = QLabel(str(self.headers.id3_keys[tag]))
+                label = QLabel(str(self.headers.frame_id[tag].db))
                 input_field = ID3LineEdit(field_text, tag)
                 input_field.setStyleSheet(None)
             else:
@@ -106,7 +106,7 @@ class MetadataWindow(QDialog):
                 # this means the metadata differs between the selected items for this tag
                 # so be careful...dangerous
                 field_text = ""
-                label = QLabel(str(self.headers.id3_keys[tag]))
+                label = QLabel(str(self.headers.frame_id[tag].db))
                 input_field = ID3LineEdit(field_text, tag)
                 input_field.setStyleSheet("border: 1px solid red")
             # Save each input field to our dict for saving
@@ -130,12 +130,12 @@ class MetadataWindow(QDialog):
                         # Update the ID3 tag if the tag is not blank,
                         #   and has been edited
                         success = set_tag(
-                            filepath=song[0], tag_name=tag, value=field.text()
+                            filepath=song[0], db_column=tag, value=field.text()
                         )
                         if success:
                             update_song_in_database(
                                 song[1],
-                                edited_column_name=self.headers.id3_keys[tag],
+                                edited_column_name=self.headers.frame_id[tag].db,
                                 user_input_data=field.text(),
                             )
                         else:

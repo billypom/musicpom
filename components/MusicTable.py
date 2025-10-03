@@ -33,7 +33,7 @@ from components.LyricsWindow import LyricsWindow
 from components.AddToPlaylistWindow import AddToPlaylistWindow
 from components.MetadataWindow import MetadataWindow
 from components.QuestionBoxDetails import QuestionBoxDetails
-from components.HeaderTags import HeaderTags
+from components.HeaderTags import HeaderTags2
 
 from utils import (
     batch_delete_filepaths_from_database,
@@ -99,10 +99,7 @@ class MusicTable(QTableView):
         self.data_cache = {}
         self.playlist_scroll_positions: dict[int | None, int] = {}
         self.search_string: str | None = None
-        self.headers = HeaderTags()
-        # db names of headers
-        self.database_columns: list[str] = str(
-            self.config["table"]["columns"]).split(",")
+        self.headers = HeaderTags2()
         self.selected_song_filepath = ""
         self.selected_song_qmodel_index: QModelIndex
         self.current_song_filepath = ""
@@ -395,15 +392,15 @@ class MusicTable(QTableView):
         id_index = self.model2.index(topLeft.row(), 0)
         # get the db song_id from the row
         song_id: int = self.model2.data(id_index, Qt.ItemDataRole.UserRole)
-        user_index = self.headers.user_fields.index("filepath")
+        user_index = self.headers.db_list.index("filepath")
         filepath = self.currentIndex().siblingAtColumn(user_index).data()
         # update the ID3 information
         user_input_data: str = topLeft.data()
-        edited_column_name: str = self.headers.user_fields[topLeft.column()]
+        edited_column_name: str = self.headers.db_list[topLeft.column()]
         debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
         response = set_tag(
             filepath=filepath, 
-            tag_name=edited_column_name, 
+            db_column=edited_column_name, 
             value=user_input_data
         )
         if response:
@@ -695,9 +692,9 @@ class MusicTable(QTableView):
         self.disconnect_layout_changed()
         self.save_scroll_position(self.current_playlist_id)
         self.model2.clear()
-        self.model2.setHorizontalHeaderLabels(
-            self.headers.get_user_gui_headers())
-        fields = ", ".join(self.headers.user_fields)
+        # self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
+        self.model2.setHorizontalHeaderLabels(self.headers.db_list)
+        fields = ", ".join(self.headers.db_list)
         search_clause = (
             "title LIKE ? OR artist LIKE ? OR album LIKE ?"
             if self.search_string
@@ -792,7 +789,7 @@ class MusicTable(QTableView):
         When data changes in the model view, its nice to re-grab the current song. 
         might as well get the selected song too i guess? though nothing should be selected when reloading the table data
         """
-        search_col_num = self.headers.user_fields.index("filepath")
+        search_col_num = self.headers.db_list.index("filepath")
         selected_qmodel_index = self.find_qmodel_index_by_value(self.proxymodel, search_col_num, self.selected_song_filepath)
         current_qmodel_index = self.find_qmodel_index_by_value(self.proxymodel, search_col_num, self.current_song_filepath)
         # Update the 2 QModelIndexes that we track
@@ -913,7 +910,7 @@ class MusicTable(QTableView):
         selected_rows = self.get_selected_rows()
         filepaths = []
         for row in selected_rows:
-            idx = self.proxymodel.index(row, self.headers.user_fields.index("filepath"))
+            idx = self.proxymodel.index(row, self.headers.db_list.index("filepath"))
             filepaths.append(idx.data())
         return filepaths
 
@@ -947,7 +944,7 @@ class MusicTable(QTableView):
     def set_selected_song_filepath(self) -> None:
         """Sets the filepath of the currently selected song"""
         try:
-            user_index = self.headers.user_fields.index("filepath")
+            user_index = self.headers.db_list.index("filepath")
             filepath = self.currentIndex().siblingAtColumn(user_index).data()
         except ValueError:
             # if the user doesnt have filepath selected as a header, retrieve the file from db
@@ -965,7 +962,7 @@ class MusicTable(QTableView):
         # update the filepath
         if not filepath:
             path = self.current_song_qmodel_index.siblingAtColumn(
-                self.headers.user_fields.index("filepath")
+                self.headers.db_list.index("filepath")
             ).data()
             self.current_song_filepath: str = path
         else:

@@ -1,9 +1,10 @@
 import os
 import sys
 import logging
-from PyQt5 import QtCore
 import typing
 import DBA
+import qdarktheme
+from PyQt5 import QtCore
 from subprocess import run
 # from pyqtgraph import mkBrush
 from mutagen.id3 import ID3
@@ -50,13 +51,13 @@ from utils import (
     Worker
 )
 from components import (
-    HeaderTags,
     MediaPlayer,
     MusicTable,
     PreferencesWindow,
     AudioVisualizer,
     CreatePlaylistWindow,
     ExportPlaylistWindow,
+    HeaderTags2,
 )
 from utils.export_playlist_by_id import export_playlist_by_id
 
@@ -129,7 +130,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.load_qapp(self)
         self.albumGraphicsView.load_qapp(self)
         self.playlistTreeView.load_qapp(self)
-        self.headers = HeaderTags()
+        self.headers = HeaderTags2()
 
         # Settings init
         self.current_volume: int = int(self.config["settings"]["volume"])
@@ -322,12 +323,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             return
         row: int = index.row()
         prev_row: int = row - 1
-        prev_index: QModelIndex = self.tableView.proxymodel.index(
-            prev_row, index.column()
-        )
-        prev_filepath = prev_index.siblingAtColumn(
-            self.headers.user_fields.index("filepath")
-        ).data()
+        prev_index: QModelIndex = self.tableView.proxymodel.index(prev_row, index.column())
+        prev_filepath = prev_index.siblingAtColumn(self.headers.db_list.index("filepath")).data()
         if prev_filepath is None:
             return
 
@@ -350,7 +347,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             next_row, index.column()
         )
         next_filepath = next_index.siblingAtColumn(
-            self.headers.user_fields.index("filepath")
+            self.headers.db_list.index("filepath")
         ).data()
         if next_filepath is None:
             return
@@ -735,7 +732,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     clipboard = app.clipboard()
     # Dark theme >:3
-    # qdarktheme.setup_theme()
+    qdarktheme.setup_theme()
     # qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
     # Show the UI
     ui = ApplicationWindow(clipboard)
