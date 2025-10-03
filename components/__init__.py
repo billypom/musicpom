@@ -11,6 +11,6 @@ from .CreatePlaylistWindow import CreatePlaylistWindow
 from .PlaylistsPane import PlaylistsPane
 from .ExportPlaylistWindow import ExportPlaylistWindow
 from .QuestionBoxDetails import QuestionBoxDetails
-from .HeaderTags import HeaderTags
+from .HeaderTags import HeaderTags, HeaderTags2
 from .MediaPlayer import MediaPlayer
 from .SearchLineEdit import SearchLineEdit
