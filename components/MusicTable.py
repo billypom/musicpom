@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import (
     QItemSelectionModel,
     QSortFilterProxyModel,
+    QTimer,
     Qt,
     QModelIndex,
     pyqtSignal,
@@ -74,13 +75,13 @@ class MusicTable(QTableView):
         super().__init__(parent)
         # why do i need this?
         self.application_window = application_window
-        self.config = ConfigParser()
         # Config
-        cfg_file = (
+        self.config = ConfigParser()
+        self.cfg_file = (
             Path(user_config_dir(appname="musicpom", appauthor="billypom"))
             / "config.ini"
         )
-        _ = self.config.read(cfg_file)
+        _ = self.config.read(self.cfg_file)
         debug(f"music table config: {self.config}")
 
         # NOTE:
@@ -125,7 +126,6 @@ class MusicTable(QTableView):
         # header
         self.horizontal_header: QHeaderView = self.horizontalHeader()
         assert self.horizontal_header is not None  # i hate look at linting errors
-        self.horizontal_header.setStretchLastSection(False)
         self.horizontal_header.setSectionResizeMode(QHeaderView.Interactive)
         # dumb vertical estupido
         self.vertical_header: QHeaderView = self.verticalHeader()
@@ -142,7 +142,6 @@ class MusicTable(QTableView):
         # Final actions
         # self.load_music_table()
         self.setup_keyboard_shortcuts()
-        self.load_header_widths()
 
     #  _________________
     # |                 |
@@ -165,11 +164,26 @@ class MusicTable(QTableView):
         """
         self.focusLeaveSignal.emit()
 
+
     def resizeEvent(self, e: typing.Optional[QResizeEvent]) -> None:
-        """Do something when the QTableView is resized"""
+        """
+        Do something when the QTableView is resized
+        We will recalculate column widths based on the new table width,
+        retaining the ratio of the original column widths.
+        """
+        super().resizeEvent(e)
         if e is None:
             raise Exception
-        super().resizeEvent(e)
+        self.load_header_widths(self.saved_column_ratios)
+
+    def showEvent(self, a0):
+        # Restore scroll position
+        super().showEvent(a0)
+        # widths = []
+        # for _ in self.saved_column_ratios:
+        #     widths.append('0.001')
+        # self.load_header_widths(widths)
+        QTimer.singleShot(0, lambda: self.load_header_widths(self.saved_column_ratios))
 
     def paintEvent(self, e):
         """Override paint event to highlight the current cell"""
@@ -267,7 +281,7 @@ class MusicTable(QTableView):
                 _ = worker.signals.signal_result.connect(self.on_get_audio_files_recursively_finished)
                 _ = worker.signals.signal_finished.connect(self.load_music_table)
                 if self.qapp:
-                    threadpool = self.qapp.threadpool
+                    threadpool = self.qapp.threadpool # type: ignore
                     threadpool.start(worker)
             if files:
                 self.add_files_to_library(files)
@@ -327,9 +341,6 @@ class MusicTable(QTableView):
         else:  # Default behavior
             super().keyPressEvent(e)
 
-    def showEvent(self, a0):
-        # Restore scroll position
-        super().showEvent(a0)
 
     #  ____________________
     # |                    |
@@ -370,8 +381,8 @@ class MusicTable(QTableView):
         col_count = self.model2.columnCount()
         qtableview_width = self.size().width()
         sum_of_cols = self.horizontal_header.length()
-        debug(f'qtable_width: {qtableview_width}')
-        debug(f'sum of cols: {sum_of_cols}')
+        # debug(f'qtable_width: {qtableview_width}')
+        # debug(f'sum of cols: {sum_of_cols}')
 
         if sum_of_cols != qtableview_width:  # check for discrepancy
             if logicalIndex < col_count:  # if not the last header
@@ -448,6 +459,55 @@ class MusicTable(QTableView):
     # |                    |
     # |____________________|
 
+    def get_current_header_width_ratios(self) -> list[str]:
+        """
+        Get the current header widths, as ratios
+        """
+        total_table_width = self.size().width()
+        column_ratios = []
+        for i in range(self.model2.columnCount() - 1):
+            column_width = self.columnWidth(i)
+            ratio = column_width / total_table_width
+            column_ratios.append(str(round(ratio, 4)))
+        # debug(f'get_current_header_width_ratios = {column_ratios}')
+        return column_ratios
+
+    def save_header_ratios(self):
+        """
+        Saves the current header widths to memory and file, as ratios
+        """
+        # WARNING: DOES NOT WORK and is not used. 
+        # the same functionality is implemented in main.py closeEvent()
+        self.saved_column_ratios = self.get_current_header_width_ratios()
+        column_ratios_as_string = ",".join(self.saved_column_ratios)
+        self.config["table"]["column_ratios"] = column_ratios_as_string
+        # Save the config
+        try:
+            with open(self.cfg_file, "w") as configfile:
+                self.config.write(configfile)
+        except Exception as e:
+            debug(f"wtf man {e}")
+        debug(f"Saved column ratios: {self.saved_column_ratios}")
+
+    def load_header_widths(self, ratios: list[str] | None = None):
+        """
+        Loads the header widths, based on saved ratios
+        or pass in a list of ratios to be loaded
+        """
+        self.horizontal_header.setStretchLastSection(True)
+        if ratios is None:
+            column_ratios = self.get_current_header_width_ratios()
+        else:
+            column_ratios = ratios
+        total_table_width = self.size().width()
+        column_widths = []
+        for ratio in column_ratios:
+            column_widths.append(float(ratio) * total_table_width)
+        if isinstance(column_widths, list):
+            for i in range(self.model2.columnCount() - 1):
+                self.setColumnWidth(i, int(column_widths[i]))
+
+
     def set_qmodel_index(self, index: QModelIndex):
         self.current_song_qmodel_index = index
 
@@ -469,11 +529,11 @@ class MusicTable(QTableView):
         """
         debug('add_files_to_library()')
         worker = Worker(add_files_to_database, files, None)
-        _ = worker.signals.signal_progress.connect(self.qapp.handle_progress)
+        _ = worker.signals.signal_progress.connect(self.qapp.handle_progress) # type: ignore
         _ = worker.signals.signal_result.connect(self.on_add_files_to_database_finished)
         _ = worker.signals.signal_finished.connect(self.load_music_table)
         if self.qapp:
-            threadpool = self.qapp.threadpool
+            threadpool = self.qapp.threadpool # type: ignore
             threadpool.start(worker)
         else:
             error("Application window could not be found")
@@ -819,17 +879,6 @@ class MusicTable(QTableView):
             self.model2.appendRow(items)
         self.proxymodel.setSourceModel(self.model2)
         self.setModel(self.proxymodel)
-
-    def load_header_widths(self):
-        """
-        Loads the header widths from the last application close.
-        """
-        table_view_column_widths = str(
-            self.config["table"]["column_widths"]).split(",")
-        debug(f"loaded header widths: {table_view_column_widths}")
-        if not isinstance(table_view_column_widths, list):
-            for i in range(self.model2.columnCount() - 1):
-                self.setColumnWidth(i, int(table_view_column_widths[i]))
 
     def sort_table_by_multiple_columns(self):
         """

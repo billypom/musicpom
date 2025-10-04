@@ -98,14 +98,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         # widget bits
         self.tableView: MusicTable
+        self.tableView.saved_column_ratios: list[str] = str(self.config["table"]["column_ratios"]).split(",") # type: ignore
+        debug(f'AAAAA - {self.tableView.saved_column_ratios}')
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
         self.player: QMediaPlayer = MediaPlayer()
         # set index on choose song
         # index is the model2's row number? i guess?
         self.probe: QAudioProbe = QAudioProbe()  # Gets audio buffer data
-        self.audio_visualizer: AudioVisualizer = AudioVisualizer(
-            self.player, self.probe, self.PlotWidget
-        )
+        self.audio_visualizer: AudioVisualizer = AudioVisualizer(self.player, self.probe, self.PlotWidget)
         self.timer: QTimer = QTimer(parent=self)  # for playback slider and such
 
         # Button styles
@@ -146,26 +146,17 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.albumGraphicsView.setFixedSize(250, 250)
 
         # Connections
-        self.playbackSlider.sliderReleased.connect(
-            lambda: self.player.setPosition(self.playbackSlider.value())
-        )  # sliderReleased works better than sliderMoved
-        self.volumeSlider.sliderMoved[int].connect(
-            lambda: self.on_volume_changed())
-        self.speedSlider.sliderMoved.connect(
-            lambda: self.on_speed_changed(self.speedSlider.value())
-        )
+        self.playbackSlider.sliderReleased.connect(lambda: self.player.setPosition(self.playbackSlider.value()))  # sliderReleased works better than sliderMoved
+        self.volumeSlider.sliderMoved[int].connect(lambda: self.on_volume_changed())
+        self.speedSlider.sliderMoved.connect(lambda: self.on_speed_changed(self.speedSlider.value()))
         # self.speedSlider.doubleClicked.connect(lambda: self.on_speed_changed(1))
-        self.playButton.clicked.connect(
-            self.on_play_clicked)  # Click to play/pause
+        self.playButton.clicked.connect(self.on_play_clicked)  # Click to play/pause
         self.previousButton.clicked.connect(self.on_prev_clicked)
-        self.nextButton.clicked.connect(
-            self.on_next_clicked)  # Click to next song
+        self.nextButton.clicked.connect(self.on_next_clicked)  # Click to next song
 
         # FILE MENU
-        self.actionOpenFiles.triggered.connect(
-            self.open_files)  # Open files window
-        self.actionNewPlaylist.triggered.connect(
-            self.playlistTreeView.create_playlist)
+        self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
+        self.actionNewPlaylist.triggered.connect(self.playlistTreeView.create_playlist)
         self.actionExportPlaylist.triggered.connect(self.export_playlist)
 
         # EDIT MENU
@@ -175,9 +166,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # QUICK ACTIONS MENU
         self.actionScanLibraries.triggered.connect(self.scan_libraries)
         self.actionDeleteDatabase.triggered.connect(self.delete_database)
-        self.actionSortColumns.triggered.connect(
-            self.tableView.sort_table_by_multiple_columns
-        )
+        self.actionSortColumns.triggered.connect(self.tableView.sort_table_by_multiple_columns)
 
         # QTableView
         # for drag & drop functionality
@@ -187,36 +176,23 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.lineEditSearch: QLineEdit
 
         # CONNECTIONS
-        self.lineEditSearch.textTypedSignal.connect(
-            self.handle_search_box_text)
+        self.lineEditSearch.textTypedSignal.connect(self.handle_search_box_text)
         # tableView
         self.tableView.playSignal.connect(self.play_audio_file)
-        self.tableView.playPauseSignal.connect(
-            self.on_play_clicked
-        )  # Spacebar toggle play/pause signal
+        self.tableView.playPauseSignal.connect(self.on_play_clicked)  # Spacebar toggle play/pause signal
         self.tableView.handleProgressSignal.connect(self.handle_progress)
-        self.tableView.searchBoxSignal.connect(
-            self.handle_search_box_visibility)
-        self.tableView.playlistStatsSignal.connect(
-            self.set_permanent_status_bar_message
-        )
+        self.tableView.searchBoxSignal.connect(self.handle_search_box_visibility)
+        self.tableView.playlistStatsSignal.connect(self.set_permanent_status_bar_message)
         self.tableView.load_music_table()
         self.player.playlistNextSignal.connect(self.on_next_clicked)
 
         # playlistTreeView
-        self.playlistTreeView.playlistChoiceSignal.connect(
-            self.tableView.load_music_table
-        )
-        self.playlistTreeView.allSongsSignal.connect(
-            self.tableView.load_music_table)
+        self.playlistTreeView.playlistChoiceSignal.connect(self.tableView.load_music_table)
+        self.playlistTreeView.allSongsSignal.connect(self.tableView.load_music_table)
 
         # albumGraphicsView
-        self.albumGraphicsView.albumArtDropped.connect(
-            self.set_album_art_for_selected_songs
-        )
-        self.albumGraphicsView.albumArtDeleted.connect(
-            self.delete_album_art_for_current_song
-        )
+        self.albumGraphicsView.albumArtDropped.connect(self.set_album_art_for_selected_songs)
+        self.albumGraphicsView.albumArtDeleted.connect(self.delete_album_art_for_current_song)
 
     #  _________________
     # |                 |
@@ -233,23 +209,22 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def closeEvent(self, a0: QCloseEvent | None) -> None:
         """Save settings when closing the application"""
         # MusicTable/tableView column widths
-        list_of_column_widths = []
-        for i in range(self.tableView.model2.columnCount()):
-            list_of_column_widths.append(str(self.tableView.columnWidth(i)))
-        column_widths_as_string = ",".join(list_of_column_widths)
-        debug(f"saving column widths: {column_widths_as_string}")
-        self.config["table"]["column_widths"] = column_widths_as_string
+        # list_of_column_widths = []
+        # for i in range(self.tableView.model2.columnCount()):
+        #     list_of_column_widths.append(str(self.tableView.columnWidth(i)))
+        # column_widths_as_string = ",".join(list_of_column_widths)
+        # debug(f"saving column widths: {column_widths_as_string}")
+        # self.config["table"]["column_widths"] = column_widths_as_string
+
         self.config["settings"]["volume"] = str(self.current_volume)
-        self.config["settings"]["window_size"] = (
-            str(self.width()) + "," + str(self.height())
-        )
+        self.config["settings"]["window_size"] = (str(self.width()) + "," + str(self.height()))
+        self.config['table']['column_ratios'] = ",".join(self.tableView.get_current_header_width_ratios())
         # Save the config
         try:
             with open(self.cfg_file, "w") as configfile:
                 self.config.write(configfile)
         except Exception as e:
             debug(f"wtf man {e}")
-
         # auto export any playlists that want it
         try:
             with DBA.DBAccess() as db:
@@ -343,12 +318,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             return
         row: int = index.row()
         next_row: int = row + 1
-        next_index: QModelIndex = self.tableView.proxymodel.index(
-            next_row, index.column()
-        )
-        next_filepath = next_index.siblingAtColumn(
-            self.headers.db_list.index("filepath")
-        ).data()
+        next_index: QModelIndex = self.tableView.proxymodel.index(next_row, index.column())
+        next_filepath = next_index.siblingAtColumn(self.headers.db_list.index("filepath")).data()
         if next_filepath is None:
             return
         self.play_audio_file(next_filepath)
