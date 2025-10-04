@@ -15,7 +15,7 @@ class EditPlaylistOptionsWindow(QDialog):
     def __init__(self, playlist_id):
         super(EditPlaylistOptionsWindow, self).__init__()
         self.setWindowTitle("Playlist options")
-        # self.setMinimumSize(600, 400)
+        self.setMinimumSize(800, 200)
         self.playlist_id = playlist_id
         # self.playlist_path_prefix: str = self.config.get(
         #     "settings", "playlist_path_prefix"

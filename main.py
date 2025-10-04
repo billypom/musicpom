@@ -99,7 +99,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # widget bits
         self.tableView: MusicTable
         self.tableView.saved_column_ratios: list[str] = str(self.config["table"]["column_ratios"]).split(",") # type: ignore
-        debug(f'AAAAA - {self.tableView.saved_column_ratios}')
         self.album_art_scene: QGraphicsScene = QGraphicsScene()
         self.player: QMediaPlayer = MediaPlayer()
         # set index on choose song

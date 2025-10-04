@@ -82,7 +82,6 @@ class MusicTable(QTableView):
             / "config.ini"
         )
         _ = self.config.read(self.cfg_file)
-        debug(f"music table config: {self.config}")
 
         # NOTE:
         # QTableView model2 = QSortFilterProxyModel(QStandardItemModel)
@@ -179,10 +178,10 @@ class MusicTable(QTableView):
     def showEvent(self, a0):
         # Restore scroll position
         super().showEvent(a0)
-        # widths = []
-        # for _ in self.saved_column_ratios:
-        #     widths.append('0.001')
-        # self.load_header_widths(widths)
+        widths = []
+        for _ in self.saved_column_ratios:
+            widths.append('0.001')
+        self.load_header_widths(widths)
         QTimer.singleShot(0, lambda: self.load_header_widths(self.saved_column_ratios))
 
     def paintEvent(self, e):
@@ -261,7 +260,6 @@ class MusicTable(QTableView):
         if e is None:
             return
         data = e.mimeData()
-        debug("dropEvent")
         if data and data.hasUrls():
             directories: list[str] = []
             files: list[str] = []
@@ -357,7 +355,6 @@ class MusicTable(QTableView):
         return QModelIndex()  # Invalid index if not found
 
     def on_sort(self):
-        debug("on_sort")
         self.find_current_and_selected_bits()
         self.jump_to_selected_song()
         self.sortSignal.emit()
@@ -378,27 +375,27 @@ class MusicTable(QTableView):
         pass
 
         # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
-        col_count = self.model2.columnCount()
-        qtableview_width = self.size().width()
-        sum_of_cols = self.horizontal_header.length()
-        # debug(f'qtable_width: {qtableview_width}')
-        # debug(f'sum of cols: {sum_of_cols}')
-
-        if sum_of_cols != qtableview_width:  # check for discrepancy
-            if logicalIndex < col_count:  # if not the last header
-                next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
-                if next_header_size > (sum_of_cols - qtableview_width): # if it should shrink
-                    self.horizontal_header.resizeSection(
-                        logicalIndex + 1,
-                        next_header_size - (sum_of_cols - qtableview_width),
-                    ) # shrink it
-                else:
-                    self.horizontal_header.resizeSection(logicalIndex, oldSize) # block the resize
+        # col_count = self.model2.columnCount()
+        # qtableview_width = self.size().width()
+        # sum_of_cols = self.horizontal_header.length()
+        # # debug(f'qtable_width: {qtableview_width}')
+        # # debug(f'sum of cols: {sum_of_cols}')
+        #
+        # if sum_of_cols != qtableview_width:  # check for discrepancy
+        #     if logicalIndex < col_count:  # if not the last header
+        #         next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
+        #         if next_header_size > (sum_of_cols - qtableview_width): # if it should shrink
+        #             self.horizontal_header.resizeSection(
+        #                 logicalIndex + 1,
+        #                 next_header_size - (sum_of_cols - qtableview_width),
+        #             ) # shrink it
+        #         else:
+        #             self.horizontal_header.resizeSection(logicalIndex, oldSize) # block the resize
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""
         # if isinstance(self.model2, QStandardItemModel):
-        debug("on_cell_data_changed")
+        # debug("on_cell_data_changed")
         # get the ID of the row that was edited
         id_index = self.model2.index(topLeft.row(), 0)
         # get the db song_id from the row
@@ -408,7 +405,7 @@ class MusicTable(QTableView):
         # update the ID3 information
         user_input_data: str = topLeft.data()
         edited_column_name: str = self.headers.db_list[topLeft.column()]
-        debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
+        # debug(f"on_cell_data_changed | edited column name: {edited_column_name}")
         response = set_tag(
             filepath=filepath, 
             db_column=edited_column_name, 
@@ -465,7 +462,8 @@ class MusicTable(QTableView):
         """
         total_table_width = self.size().width()
         column_ratios = []
-        for i in range(self.model2.columnCount() - 1):
+        for i in range(self.model2.columnCount()):
+        # for i in range(self.model2.columnCount() - 1):
             column_width = self.columnWidth(i)
             ratio = column_width / total_table_width
             column_ratios.append(str(round(ratio, 4)))
@@ -504,7 +502,8 @@ class MusicTable(QTableView):
         for ratio in column_ratios:
             column_widths.append(float(ratio) * total_table_width)
         if isinstance(column_widths, list):
-            for i in range(self.model2.columnCount() - 1):
+            # for i in range(self.model2.columnCount() - 1):
+            for i in range(self.model2.columnCount()):
                 self.setColumnWidth(i, int(column_widths[i]))
 
 
@@ -527,7 +526,7 @@ class MusicTable(QTableView):
         - Drag & Drop song(s) on tableView
         - File > Open > List of song(s)
         """
-        debug('add_files_to_library()')
+        # debug('add_files_to_library()')
         worker = Worker(add_files_to_database, files, None)
         _ = worker.signals.signal_progress.connect(self.qapp.handle_progress) # type: ignore
         _ = worker.signals.signal_result.connect(self.on_add_files_to_database_finished)
@@ -579,21 +578,37 @@ class MusicTable(QTableView):
                     threadpool = self.qapp.threadpool # type: ignore
                     threadpool.start(worker)
 
+    # def delete_selected_row_indices(self):
+    #     """
+    #     Removes rows from the QTableView based on a list of indices
+    #     and then reload the table
+    #     """
+    #     debug('delete_selected_row_indices')
+    #     selected_indices = self.get_selected_rows()
+    #     for index in selected_indices:
+    #         try:
+    #             self.model2.removeRow(index)
+    #         except Exception as e:
+    #             debug(f"delete_selected_row_indices() failed | {e}")
+    #     self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
+    #     # self.viewport().update()
+
     def delete_selected_row_indices(self):
         """
-        Removes rows from the QTableView based on a list of indices
-        and then reload the table
+        Removes rows from the QTableView (which uses a proxy model)
+        by mapping selected proxy indices to the source model.
         """
-        debug('delete_selected_row_indices')
-        selected_indices = self.get_selected_rows()
-        self.disconnect_data_changed()
-        for index in selected_indices:
+        selected_proxy_indices = self.get_selected_rows()
+        selected_source_rows = [
+            self.proxymodel.mapToSource(self.proxymodel.index(row, 0)).row()
+            for row in selected_proxy_indices
+        ]
+        # Delete in reverse to maintain correct indexes to delete
+        for source_row in sorted(selected_source_rows, reverse=True):
             try:
-                self.model2.removeRow(index)
+                self.model2.removeRow(source_row)
             except Exception as e:
                 debug(f"delete_selected_row_indices() failed | {e}")
-        self.connect_data_changed()
-        self.load_music_table(self.selected_playlist_id)
 
     def edit_selected_files_metadata(self):
         """Opens a form with metadata from the selected audio files"""
@@ -613,13 +628,15 @@ class MusicTable(QTableView):
 
     def jump_to_current_song(self):
         """Moves screen to the currently playing song, then selects the row"""
-        debug("jump_to_current_song")
         # get the proxy model index
-        debug(self.current_song_filepath)
-        debug(self.current_song_qmodel_index)
-        proxy_index = self.proxymodel.mapFromSource(self.current_song_qmodel_index)
-        self.scrollTo(proxy_index)
-        self.selectRow(proxy_index.row())
+        try:
+            proxy_index = self.proxymodel.mapFromSource(self.current_song_qmodel_index)
+            self.scrollTo(proxy_index)
+            self.selectRow(proxy_index.row())
+        except Exception as e:
+            debug(f'MusicTable.py | jump_to_current_song() | {self.current_song_filepath}')
+            debug(f'MusicTable.py | jump_to_current_song() | {self.current_song_qmodel_index}')
+            debug(f'MusicTable.py | jump_to_current_song() | Could not find current song in current table buffer - {e}')
 
     def open_directory(self):
         """Opens the containing directory of the currently selected song, in the system file manager"""
@@ -748,8 +765,8 @@ class MusicTable(QTableView):
 
         hint: You get a `playlist_id` from the signal emitted from PlaylistsPane as a tuple (1,)
         """
-        self.disconnect_data_changed()
-        self.disconnect_layout_changed()
+        # self.disconnect_data_changed()
+        # self.disconnect_layout_changed()
         self.save_scroll_position(self.current_playlist_id)
         self.model2.clear()
         # self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
@@ -761,7 +778,6 @@ class MusicTable(QTableView):
             else ""
         )
         params = ""
-        debug(f'playlist_id: {playlist_id}')
         is_playlist = 0
         if len(playlist_id) > 0:
             self.selected_playlist_id = playlist_id[0]
@@ -777,7 +793,6 @@ class MusicTable(QTableView):
         # except KeyError:
         #     # Query for a playlist
         if is_playlist:
-            debug('load music table a playlist')
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {
@@ -800,7 +815,6 @@ class MusicTable(QTableView):
                 return
         # Query for the entire library
         else:
-            debug('load music table a Whole Table')
             try:
                 with DBA.DBAccess() as db:
                     query = f"SELECT id, {fields} FROM song"
@@ -823,13 +837,14 @@ class MusicTable(QTableView):
         self.populate_model(data)
         self.current_playlist_id = self.selected_playlist_id
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
+
         # reloading the model destroys and makes new indexes
         # so we look for the new index of the current song on load
         # current_song_filepath = self.get_current_song_filepath()
         # debug(f"load_music_table() | current filepath: {current_song_filepath}")
         # for row in range(self.model2.rowCount()):
         #     real_index = self.model2.index(
-        #         row, self.headers.user_fields.index("filepath")
+        #         row, self.headers.db_list.index("filepath")
         #     )
         #     if real_index.data() == current_song_filepath:
         #         self.current_song_qmodel_index = real_index
@@ -838,21 +853,22 @@ class MusicTable(QTableView):
         db_filename = self.config.get("settings", "db")
         self.playlistStatsSignal.emit(f"Songs: {self.model2.rowCount()} | {db_name} | {db_filename}")
         self.loadMusicTableSignal.emit()
-        self.connect_data_changed()
-        self.connect_layout_changed()
+        # self.connect_data_changed()
+        # self.connect_layout_changed()
         # set the current song and such
         self.find_current_and_selected_bits()
+        self.jump_to_current_song()
         # self.restore_scroll_position()
 
     def find_current_and_selected_bits(self):
         """
-        When data changes in the model view, its nice to re-grab the current song. 
+        When data changes in the model view, its nice to re-grab the current song index information
         might as well get the selected song too i guess? though nothing should be selected when reloading the table data
         """
         search_col_num = self.headers.db_list.index("filepath")
         selected_qmodel_index = self.find_qmodel_index_by_value(self.proxymodel, search_col_num, self.selected_song_filepath)
         current_qmodel_index = self.find_qmodel_index_by_value(self.proxymodel, search_col_num, self.current_song_filepath)
-        # Update the 2 QModelIndexes that we track
+        # Update the 2 proxy QModelIndexes that we track
         self.set_selected_song_qmodel_index(selected_qmodel_index)
         self.set_current_song_qmodel_index(current_qmodel_index)
 
@@ -885,8 +901,8 @@ class MusicTable(QTableView):
         Sorts the data in QTableView (self) by multiple columns
         as defined in config.ini
         """
-        self.disconnect_data_changed() # not needed?
-        self.disconnect_layout_changed() # not needed?
+        # self.disconnect_data_changed() # not needed?
+        # self.disconnect_layout_changed() # not needed?
         self.horizontal_header.sortIndicatorChanged.disconnect()
         sort_orders = []
         config_sort_orders: list[int] = [
@@ -911,18 +927,22 @@ class MusicTable(QTableView):
                 # maybe not a huge deal for a small music application...?
                 # `len(config_sort_orders)` number of SELECTs
         self.on_sort()
-        self.connect_data_changed() # not needed?
-        self.connect_layout_changed() # not needed?
+        # self.connect_data_changed() # not needed?
+        # self.connect_layout_changed() # not needed?
         self.model2.layoutChanged.emit()
 
     def save_scroll_position(self, playlist_id: int | None):
         """Save the current scroll position of the table"""
+        # FIXME: does not work - except i'm using jump_to_current_song as a
+        # stand in for scroll position features
         scroll_position = self.verticalScrollBar().value()
         self.playlist_scroll_positions[playlist_id] = scroll_position
         debug(f'save scroll position: {playlist_id}:{scroll_position}')
 
     def restore_scroll_position(self):
         """Set the scroll position to the given value"""
+        # FIXME: does not work - except i'm using jump_to_current_song as a
+        # stand in for scroll position features
         if self.current_playlist_id in self.playlist_scroll_positions:
             scroll_position = self.playlist_scroll_positions[self.current_playlist_id]
             # self.restore_scroll_position(scroll_position)
@@ -1081,7 +1101,7 @@ class MusicTable(QTableView):
         """Connects the layoutChanged signal from QTableView.model"""
         try:
             pass
-            # _ = self.model2.layoutChanged.connect(self.restore_scroll_position)
+            _ = self.model2.layoutChanged.connect(self.restore_scroll_position)
         except Exception:
             pass
 
