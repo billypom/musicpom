@@ -88,3 +88,4 @@ QMultimedia.EncodingMode / Encoding quality...
 - drag and drop song(s) onto PlaylistPane to add to playlist
 - font sizing
 - font choicing? :o
+

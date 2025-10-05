@@ -98,8 +98,8 @@ class HeaderTags2:
             ID3Field(frame_class=TDRC, frame_id="TDRC", db="album_date", gui="Year"),
             ID3Field(frame_class=TLEN, frame_id="TLEN", db="length_ms", gui="Time", editable=False),
             ID3Field(db="codec", gui="Codec", editable=False),
-            ID3Field(db="filepath", gui="Filepath", editable=False),
             ID3Field(db="bitrate", gui="Bitrate", editable=False),
+            ID3Field(db="filepath", gui="Filepath", editable=False),
         ]
         # Lookup dicts 
         # - Usage example: frame_id['TPE1'].db  # => "artist"

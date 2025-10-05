@@ -4,6 +4,8 @@ import logging
 import typing
 import DBA
 import qdarktheme
+from PyQt5.QtGui import QFontDatabase
+
 from PyQt5 import QtCore
 from subprocess import run
 # from pyqtgraph import mkBrush
@@ -58,6 +60,7 @@ from components import (
     CreatePlaylistWindow,
     ExportPlaylistWindow,
     HeaderTags2,
+    DebugWindow
 )
 from utils.export_playlist_by_id import export_playlist_by_id
 
@@ -160,6 +163,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         # EDIT MENU
         self.actionPreferences.triggered.connect(self.open_preferences)
         # VIEW MENU
+        self.actionFontListing.triggered.connect(self.open_font_listing) 
+        QFontDatabase().families()
+
 
         # QUICK ACTIONS MENU
         self.actionScanLibraries.triggered.connect(self.scan_libraries)
@@ -171,10 +177,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.tableView.viewport().installEventFilter(self)
 
         # Search box
-        self.lineEditSearch: QLineEdit
+        self.searchLineEdit: QLineEdit
 
         # CONNECTIONS
-        self.lineEditSearch.textTypedSignal.connect(self.handle_search_box_text)
+        self.searchLineEdit.textTypedSignal.connect(self.handle_search_box_text)
         # tableView
         self.tableView.playSignal.connect(self.play_audio_file)
         self.tableView.playPauseSignal.connect(self.on_play_clicked)  # Spacebar toggle play/pause signal
@@ -382,9 +388,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def handle_search_box_visibility(self):
         """show or hide the searchbox"""
-        visible = self.lineEditSearch.toggle_visibility()
+        visible = self.searchLineEdit.toggle_visibility()
         if visible:
-            self.lineEditSearch.setFocus()
+            self.searchLineEdit.setFocus()
         else:
             self.tableView.setFocus()
 
@@ -544,6 +550,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         preferences_window.reloadConfigSignal.connect(self.load_config)
         preferences_window.reloadDatabaseSignal.connect(self.tableView.load_music_table)
         preferences_window.exec_()  # Display the preferences window modally
+
+    # View
+
+    def open_font_listing(self) -> None:
+        window = DebugWindow(QFontDatabase().families())
+        window.exec_()
 
     # Quick Actions
 

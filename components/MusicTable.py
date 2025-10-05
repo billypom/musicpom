@@ -142,7 +142,6 @@ class MusicTable(QTableView):
         self.doubleClicked.connect(self.play_selected_audio_file)
         self.enterKey.connect(self.play_selected_audio_file)
         self.model2.dataChanged.connect(self.on_cell_data_changed)  # editing cells
-        self.horizontal_header.sectionResized.connect(self.on_header_resized)
         # Final actions
         # self.load_music_table()
         self.setup_keyboard_shortcuts()
@@ -181,7 +180,11 @@ class MusicTable(QTableView):
         self.load_header_widths(self.saved_column_ratios)
 
     def showEvent(self, a0):
-        # Restore scroll position
+        """
+        When the table is shown:
+        - Set the widths very small, then set them to sizes relative to our stored ratios
+        - This is to prevent issues with the widths on app startup
+        """
         super().showEvent(a0)
         widths = []
         for _ in self.saved_column_ratios:
@@ -209,7 +212,12 @@ class MusicTable(QTableView):
 
     def contextMenuEvent(self, a0):
         """Right-click context menu"""
+        font: QFont = QFont()
+        font.setPointSize(11)
+
         menu = QMenu(self)
+        menu.setFont(font)
+
         add_to_playlist_action = QAction("Add to playlist", self)
         _ = add_to_playlist_action.triggered.connect(self.add_selected_files_to_playlist)
         menu.addAction(add_to_playlist_action)
@@ -373,29 +381,6 @@ class MusicTable(QTableView):
         self.set_selected_song_filepath()
         self.set_selected_song_qmodel_index()
         self.viewport().update()  # type: ignore
-
-    def on_header_resized(self, logicalIndex: int, oldSize: int, newSize: int):
-        """Handles keeping headers inside the viewport"""
-        # FIXME: how resize good
-        pass
-
-        # https://stackoverflow.com/questions/46775438/how-to-limit-qheaderview-size-when-resizing-sections
-        # col_count = self.model2.columnCount()
-        # qtableview_width = self.size().width()
-        # sum_of_cols = self.horizontal_header.length()
-        # # debug(f'qtable_width: {qtableview_width}')
-        # # debug(f'sum of cols: {sum_of_cols}')
-        #
-        # if sum_of_cols != qtableview_width:  # check for discrepancy
-        #     if logicalIndex < col_count:  # if not the last header
-        #         next_header_size = self.horizontal_header.sectionSize(logicalIndex + 1)
-        #         if next_header_size > (sum_of_cols - qtableview_width): # if it should shrink
-        #             self.horizontal_header.resizeSection(
-        #                 logicalIndex + 1,
-        #                 next_header_size - (sum_of_cols - qtableview_width),
-        #             ) # shrink it
-        #         else:
-        #             self.horizontal_header.resizeSection(logicalIndex, oldSize) # block the resize
 
     def on_cell_data_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex):
         """Handles updating ID3 tags when data changes in a cell"""

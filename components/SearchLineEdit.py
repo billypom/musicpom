@@ -7,7 +7,7 @@ MusicTable.py had a function called load_music_table(), which loads data
     from the SQLite database to the QTableView. load_music_table()
     checks for the self.search_string
 
-in main.py, on self.lineEditSearch.textChanged(),
+in main.py, on self.searchLineEdit.textChanged(),
 this updates the self.search_string in MusicTable.py
 
 in MusicTable.py, when Ctrl+F is pressed, the line edit gets hidden or visible
