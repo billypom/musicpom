@@ -1,3 +1,4 @@
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QAction,
     QInputDialog,
@@ -42,6 +43,10 @@ class PlaylistsPane(QTreeWidget):
         self.customContextMenuRequested.connect(self.showContextMenu)
         self.currentItemChanged.connect(self.playlist_clicked)
         self.playlist_db_id_choice: int | None = None
+        font: QFont = QFont()
+        font.setPointSize(16)
+        font.setBold(True)
+        self.setFont(font)
 
     def reload_playlists(self, progress_callback=None):
         """
@@ -50,7 +55,7 @@ class PlaylistsPane(QTreeWidget):
         """
         # take all children away
         self._playlists_root.takeChildren()
-        # NOTE: implement user sorting by adding a column to playlist db table for 'rank' or something
+        # TODO: implement user sorting by adding a column to playlist db table for 'rank' or something
         with DBA.DBAccess() as db:
             playlists = db.query(
                 "SELECT id, name FROM playlist ORDER BY date_created DESC;", ()
@@ -144,7 +149,7 @@ class PlaylistsPane(QTreeWidget):
         if item == self._playlists_root or item == self._library_root:
             self.playlist_db_id_choice = None
             # self.all_songs_selected()
-            self.allSongsSignal.emit()
+            self.playlistChoiceSignal.emit(0)
         elif isinstance(item, PlaylistWidgetItem):
             # debug(f"ID: {item.id}, name: {item.text(0)}")
             self.playlist_db_id_choice = item.id
@@ -153,9 +158,3 @@ class PlaylistsPane(QTreeWidget):
     def load_qapp(self, qapp) -> None:
         """Necessary for using members and methods of main application window"""
         self.qapp = qapp
-
-    # def all_songs_selected(self):
-    #     """Emits a signal to display all songs in the library"""
-    #     # I have no idea why this has to be in its own function, but it does
-    #     # or else it doesn't work
-    #     self.allSongsSignal.emit()

@@ -2,6 +2,7 @@ import DBA
 from PyQt5.QtGui import (
     QColor,
     QDragMoveEvent,
+    QFont,
     QPainter,
     QPen,
     QStandardItem,
@@ -82,6 +83,10 @@ class MusicTable(QTableView):
             / "config.ini"
         )
         _ = self.config.read(self.cfg_file)
+
+        font: QFont = QFont()
+        font.setPointSize(11)
+        self.setFont(font)
 
         # NOTE:
         # QTableView model2 = QSortFilterProxyModel(QStandardItemModel)
@@ -765,9 +770,13 @@ class MusicTable(QTableView):
 
         hint: You get a `playlist_id` from the signal emitted from PlaylistsPane as a tuple (1,)
         """
+        if playlist_id:
+            if self.selected_playlist_id == playlist_id[0]:
+                # Don't reload if we clicked the same item
+                return
         # self.disconnect_data_changed()
         # self.disconnect_layout_changed()
-        self.save_scroll_position(self.current_playlist_id)
+        # self.save_scroll_position(self.current_playlist_id)
         self.model2.clear()
         # self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
         self.model2.setHorizontalHeaderLabels(self.headers.db_list)
@@ -780,10 +789,15 @@ class MusicTable(QTableView):
         params = ""
         is_playlist = 0
         if len(playlist_id) > 0:
-            self.selected_playlist_id = playlist_id[0]
-            is_playlist = 1
+            if playlist_id[0] == 0:
+                self.selected_playlist_id = 0
+                is_playlist = 0
+            else:
+                self.selected_playlist_id = playlist_id[0]
+                is_playlist = 1
         else:
-            self.selected_playlist_id = None
+            self.selected_playlist_id = 0
+            is_playlist = 0
 
         # try:
         #     # Check cache for already loaded QTableView QStandardItemModel
@@ -1097,13 +1111,13 @@ class MusicTable(QTableView):
         except Exception:
             pass
 
-    def connect_layout_changed(self):
-        """Connects the layoutChanged signal from QTableView.model"""
-        try:
-            pass
-            _ = self.model2.layoutChanged.connect(self.restore_scroll_position)
-        except Exception:
-            pass
+    # def connect_layout_changed(self):
+    #     """Connects the layoutChanged signal from QTableView.model"""
+    #     try:
+    #         pass
+    #         _ = self.model2.layoutChanged.connect(self.restore_scroll_position)
+    #     except Exception:
+    #         pass
 
 
 # QT Roles

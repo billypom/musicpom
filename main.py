@@ -157,7 +157,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.actionOpenFiles.triggered.connect(self.open_files)  # Open files window
         self.actionNewPlaylist.triggered.connect(self.playlistTreeView.create_playlist)
         self.actionExportPlaylist.triggered.connect(self.export_playlist)
-
         # EDIT MENU
         self.actionPreferences.triggered.connect(self.open_preferences)
         # VIEW MENU
@@ -207,14 +206,6 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, a0: QCloseEvent | None) -> None:
         """Save settings when closing the application"""
-        # MusicTable/tableView column widths
-        # list_of_column_widths = []
-        # for i in range(self.tableView.model2.columnCount()):
-        #     list_of_column_widths.append(str(self.tableView.columnWidth(i)))
-        # column_widths_as_string = ",".join(list_of_column_widths)
-        # debug(f"saving column widths: {column_widths_as_string}")
-        # self.config["table"]["column_widths"] = column_widths_as_string
-
         self.config["settings"]["volume"] = str(self.current_volume)
         self.config["settings"]["window_size"] = (str(self.width()) + "," + str(self.height()))
         self.config['table']['column_ratios'] = ",".join(self.tableView.get_current_header_width_ratios())
@@ -687,8 +678,10 @@ if __name__ == "__main__":
         handlers=handlers,
     )
     debug('--------- musicpom debug started')
-    debug('---------------------|          ')
-    debug(f'----------------------> {handlers}      ')
+    debug('--------------------------------')
+    debug(handlers)
+    debug('--------------------------------')
+    debug('--------------------------------')
     # Initialization
     config: ConfigParser = update_config_file()
     if not update_database_file():
