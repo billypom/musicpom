@@ -131,6 +131,9 @@ class MusicTable(QTableView):
         self.horizontal_header: QHeaderView = self.horizontalHeader()
         assert self.horizontal_header is not None  # i hate look at linting errors
         self.horizontal_header.setSectionResizeMode(QHeaderView.Interactive)
+        self.horizontal_header.sortIndicatorChanged.connect(self.on_user_sort_change)
+        self.horizontal_header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.horizontal_header.customContextMenuRequested.connect(self.show_header_context_menu)
         # dumb vertical estupido
         self.vertical_header: QHeaderView = self.verticalHeader()
         assert self.vertical_header is not None
@@ -360,12 +363,40 @@ class MusicTable(QTableView):
     # |                    |
     # |____________________|
 
-    def find_qmodel_index_by_value(self, model, column: int, value) -> QModelIndex:
-        for row in range(model.rowCount()):
-            index = model.index(row, column)
-            if index.data() == value:
-                return index
-        return QModelIndex()  # Invalid index if not found
+
+
+    def on_user_sort_change(self, column: int, order: Qt.SortOrder):
+        """
+        Called when user clicks a column header to sort.
+        Updates the multi-sort config based on interaction.
+        """
+        try:
+            db_field = self.headers.db_list[column]
+        except IndexError:
+            error(f"Invalid column index: {column}")
+            return
+
+        raw = self.config["table"].get("sort_order", "")
+        sort_list = []
+
+        # Parse current sort_order from config
+        if raw:
+            for item in raw.split(","):
+                if ":" not in item:
+                    continue
+                field, dir_str = item.strip().split(":")
+                direction = Qt.SortOrder.AscendingOrder if dir_str == "1" else Qt.SortOrder.DescendingOrder
+                sort_list.append((field, direction))
+
+        # Update or insert the new sort field at the end (highest priority)
+        sort_list = [(f, d) for f, d in sort_list if f != db_field]  # remove if exists
+        sort_list.append((db_field, order))  # add with latest order
+
+        # Save back to config
+        self.save_sort_config(sort_list)
+
+        # Re-apply the updated sort order
+        self.sort_by_logical_fields()
 
     def on_sort(self):
         self.find_current_and_selected_bits()
@@ -445,6 +476,40 @@ class MusicTable(QTableView):
     # |       Verbs        |
     # |                    |
     # |____________________|
+
+
+    def show_header_context_menu(self, position):
+        """
+        Show context menu on right-click in the horizontal header.
+        """
+        menu = QMenu()
+        clear_action = QAction("Clear all sorts", self)
+        clear_action.triggered.connect(self.clear_all_sorts)
+        menu.addAction(clear_action)
+        # Show menu at global position
+        global_pos = self.horizontal_header.mapToGlobal(position)
+        menu.exec(global_pos)
+
+
+    def clear_all_sorts(self):
+        """
+        Clears all stored sort orders and refreshes the table view.
+        """
+        self.config["table"]["sort_order"] = ""
+        with open(self.config_path, "w") as f:
+            self.config.write(f)
+        # Clear sort visually
+        self.horizontal_header.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
+        # Reload data if necessary, or just reapply sorting
+        self.sort_by_logical_fields()
+
+    def find_qmodel_index_by_value(self, model, column: int, value) -> QModelIndex:
+        for row in range(model.rowCount()):
+            index = model.index(row, column)
+            if index.data() == value:
+                return index
+        return QModelIndex()  # Invalid index if not found
+
 
     def get_current_header_width_ratios(self) -> list[str]:
         """
@@ -759,11 +824,7 @@ class MusicTable(QTableView):
             if self.selected_playlist_id == playlist_id[0]:
                 # Don't reload if we clicked the same item
                 return
-        # self.disconnect_data_changed()
-        # self.disconnect_layout_changed()
-        # self.save_scroll_position(self.current_playlist_id)
         self.model2.clear()
-        # self.model2.setHorizontalHeaderLabels(self.headers.get_user_gui_headers())
         self.model2.setHorizontalHeaderLabels(self.headers.db_list)
         fields = ", ".join(self.headers.db_list)
         search_clause = (
@@ -834,30 +895,15 @@ class MusicTable(QTableView):
         # cache the data
         # self.data_cache[self.selected_playlist_id] = data
         self.populate_model(data)
+        self.sort_table_by_multiple_columns()
         self.current_playlist_id = self.selected_playlist_id
         self.model2.layoutChanged.emit()  # emits a signal that the view should be updated
-
-        # reloading the model destroys and makes new indexes
-        # so we look for the new index of the current song on load
-        # current_song_filepath = self.get_current_song_filepath()
-        # debug(f"load_music_table() | current filepath: {current_song_filepath}")
-        # for row in range(self.model2.rowCount()):
-        #     real_index = self.model2.index(
-        #         row, self.headers.db_list.index("filepath")
-        #     )
-        #     if real_index.data() == current_song_filepath:
-        #         self.current_song_qmodel_index = real_index
-
         db_name: str = self.config.get("settings", "db").split("/").pop()
         db_filename = self.config.get("settings", "db")
         self.playlistStatsSignal.emit(f"Songs: {self.model2.rowCount()} | {db_name} | {db_filename}")
         self.loadMusicTableSignal.emit()
-        # self.connect_data_changed()
-        # self.connect_layout_changed()
-        # set the current song and such
         self.find_current_and_selected_bits()
         self.jump_to_current_song()
-        # self.restore_scroll_position()
 
     def find_current_and_selected_bits(self):
         """
@@ -900,8 +946,6 @@ class MusicTable(QTableView):
         Sorts the data in QTableView (self) by multiple columns
         as defined in config.ini
         """
-        # self.disconnect_data_changed() # not needed?
-        # self.disconnect_layout_changed() # not needed?
         self.horizontal_header.sortIndicatorChanged.disconnect()
         sort_orders = []
         config_sort_orders: list[int] = [
@@ -926,27 +970,58 @@ class MusicTable(QTableView):
                 # maybe not a huge deal for a small music application...?
                 # `len(config_sort_orders)` number of SELECTs
         self.on_sort()
-        # self.connect_data_changed() # not needed?
-        # self.connect_layout_changed() # not needed?
         self.model2.layoutChanged.emit()
 
-    def save_scroll_position(self, playlist_id: int | None):
-        """Save the current scroll position of the table"""
-        # FIXME: does not work - except i'm using jump_to_current_song as a
-        # stand in for scroll position features
-        scroll_position = self.verticalScrollBar().value()
-        self.playlist_scroll_positions[playlist_id] = scroll_position
-        debug(f'save scroll position: {playlist_id}:{scroll_position}')
+    def save_sort_config(self, fields: list[tuple[str, Qt.SortOrder]]):
+        """
+        Save sort config to ini file.
+        fields: List of tuples like [('artist', Qt.AscendingOrder), ('album', Qt.DescendingOrder)]
+        """
+        raw = ",".join(f"{field}:{1 if order == Qt.SortOrder.AscendingOrder else 2}" for field, order in fields)
+        self.config["table"]["sort_order"] = raw
+        with open(self.config_path, "w") as f:
+            self.config.write(f)
 
-    def restore_scroll_position(self):
-        """Set the scroll position to the given value"""
-        # FIXME: does not work - except i'm using jump_to_current_song as a
-        # stand in for scroll position features
-        if self.current_playlist_id in self.playlist_scroll_positions:
-            scroll_position = self.playlist_scroll_positions[self.current_playlist_id]
-            # self.restore_scroll_position(scroll_position)
-            self.verticalScrollBar().setValue(scroll_position)
-            debug(f'restore scroll position: {scroll_position}')
+    def get_sort_config(self) -> list[tuple[int, Qt.SortOrder]]:
+        """
+        Returns a list of (column_index, Qt.SortOrder) tuples based on config and headers
+        """
+        sort_config = []
+        raw_sort = self.config["table"].get("sort_order", "")
+        if not raw_sort:
+            return []
+
+        try:
+            sort_fields = [x.strip() for x in raw_sort.split(",")]
+            for entry in sort_fields:
+                if ":" not in entry:
+                    continue
+                db_field, order_str = entry.split(":")
+                db_field = db_field.strip()
+                order = Qt.SortOrder.AscendingOrder if order_str.strip() == "1" else Qt.SortOrder.DescendingOrder
+
+                # Get the index of the column using your headers class
+                if db_field in self.headers.db:
+                    col_index = self.headers.db_list.index(db_field)
+                    sort_config.append((col_index, order))
+        except Exception as e:
+            error(f"Failed to parse sort config: {e}")
+        return sort_config
+
+    def sort_by_logical_fields(self):
+        """
+        Sorts the table using logical field names defined in config.
+        """
+        self.horizontal_header.sortIndicatorChanged.disconnect()  # Prevent feedback loop
+
+        sort_config = self.get_sort_config()
+
+        # Sort in reverse order (primary sort last)
+        for col_index, order in reversed(sort_config):
+            self.sortByColumn(col_index, order)
+
+        self.model2.layoutChanged.emit()
+        self.on_sort()
 
     def get_audio_files_recursively(self, directories: list[str], progress_callback=None) -> list[str]:
         """Scans a directories for files"""

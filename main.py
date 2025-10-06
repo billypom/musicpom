@@ -706,9 +706,12 @@ if __name__ == "__main__":
     # Start the app
     app = QApplication(sys.argv)
     clipboard = app.clipboard()
-    # Dark theme >:3
-    qdarktheme.setup_theme()
-    # qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
+    try:
+        # Dark theme >:3
+        qdarktheme.setup_theme()
+        # qdarktheme.setup_theme("auto")  # this is supposed to work but doesnt
+    except Exception:
+        pass
     # Show the UI
     ui = ApplicationWindow(clipboard)
     # window size
