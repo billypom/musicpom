@@ -180,20 +180,20 @@ class MusicTable(QTableView):
         super().resizeEvent(e)
         if e is None:
             raise Exception
-        self.load_header_widths(self.saved_column_ratios)
+        self.load_header_widths(ratios=self.saved_column_ratios)
 
     def showEvent(self, a0):
         """
         When the table is shown:
         - Set the widths very small, then set them to sizes relative to our stored ratios
-        - This is to prevent issues with the widths on app startup
+        - This is to prevent issues with the header widths on app startup
         """
         super().showEvent(a0)
         widths = []
         for _ in self.saved_column_ratios:
             widths.append('0.001')
         self.load_header_widths(widths)
-        QTimer.singleShot(0, lambda: self.load_header_widths(self.saved_column_ratios))
+        QTimer.singleShot(0, lambda: self.load_header_widths(ratios=self.saved_column_ratios))
 
     def paintEvent(self, e):
         """Override paint event to highlight the current cell"""
@@ -205,7 +205,6 @@ class MusicTable(QTableView):
         if current_index and current_index.isValid():
             # Get the visual rect for the current cell
             rect = self.visualRect(current_index)
-
             # Create a painter for custom drawing
             with QPainter(self.viewport()) as painter:
                 # Draw a border around the current cell
@@ -1099,14 +1098,12 @@ class MusicTable(QTableView):
 
     def set_current_song_filepath(self, filepath=None) -> None:
         """
-        - Sets the current song filepath to the value in column 'path'
+        - Sets the current song filepath to the value in column 'filepath'
         from the current selected row index
         """
         # update the filepath
         if not filepath:
-            path = self.current_song_qmodel_index.siblingAtColumn(
-                self.headers.db_list.index("filepath")
-            ).data()
+            path = self.current_song_qmodel_index.siblingAtColumn(self.headers.db_list.index("filepath")).data()
             self.current_song_filepath: str = path
         else:
             self.current_song_filepath = filepath
